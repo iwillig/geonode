@@ -52,10 +52,6 @@
                 <exclude name="**/externals/**"/>
                 <exclude name="**/script/**"/>
             </fileset>
-            <fileset dir="externals/buildkit/lib"/>
-        </copy>
-        <copy todir="${build}/${ant.project.name}/WEB-INF">
-            <fileset file="buildjs.cfg"/>
         </copy>
         <copy todir="${build}/${ant.project.name}/WEB-INF/app/static/externals/ext">
             <fileset dir="app/static/externals/ext"/>
