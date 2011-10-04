@@ -10,15 +10,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <dependencies>
-                  <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <version>1.5.0</version>
-                    <scope>system</scope>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                  </dependency>
-                </dependencies>
                 <executions>
                     <execution>
                         <id>initialize</id>
@@ -60,4 +51,30 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+      <profile>
+        <id>find-jvm-for-antrun</id>
+        <activation>
+          <os>
+            <name>!mac os x</name>
+          </os>
+        </activation>
+        <build>
+          <plugins>
+            <plugin>
+              <artifactId>maven-antrun-plugin</artifactId>
+              <dependencies>
+                <dependency>
+                  <groupId>com.sun</groupId>
+                  <artifactId>tools</artifactId>
+                  <version>1.5.0</version>
+                  <scope>system</scope>
+                  <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                </dependency>
+              </dependencies>
+            </plugin>
+          </plugins>
+        </build>
+      </profile>
+    </profiles>
 </project>
