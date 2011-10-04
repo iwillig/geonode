@@ -343,6 +343,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     },
     
     loadConfig: function(config) {
+        config.proxy = "/proxy?url=";
         config.tools = (config.tools || []).concat({
             ptype: "gxp_zoom",
             actionTarget: {target: "paneltbar", index: 4}
@@ -359,6 +360,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         }, {
             ptype: "gxp_zoomtolayerextent",
             actionTarget: "treecontent.contextMenu"
+        }, {
+            ptype: "gxp_wmsgetfeatureinfo",
+            // uncomment the line below if you want feature info in a grid
+            //format: "grid",
+            actionTarget: "main.tbar",
+            outputConfig: {width: 400, height: 300}
         }, {
             ptype: "gxp_addlayers",
             actionTarget: "treetbar",
