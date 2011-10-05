@@ -18,13 +18,6 @@
         var styleEditor, modified = false;
         Ext.onReady(function() {
             var config = {
-                tools: [{
-                    ptype: "gxp_wmsgetfeatureinfo",
-                    // uncomment the line below if you want feature info in a grid
-                    //format: "grid",
-                    actionTarget: "main.tbar",
-                    outputConfig: {width: 400, height: 200, panIn: false}
-                }],
                 proxy: "/proxy/?url=",
                 localGeoServerBaseUrl: "{{GEOSERVER_BASE_URL}}",
                 authorizedRoles: "{{ user.is_authenticated|yesno:"ROLE_ADMINISTRATOR,ROLE_ANONYMOUS" }}",
