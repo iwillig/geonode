@@ -46,7 +46,7 @@ def _project_center(llcenter):
     center.transform("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs")
     return center.x, center.y
 
-def default_map_config():
+def default_map_config(request):
 
     _DEFAULT_MAP_CENTER = _project_center(settings.DEFAULT_MAP_CENTER)
 
@@ -67,7 +67,7 @@ def default_map_config():
         )
 
     DEFAULT_BASE_LAYERS = [_baselayer(lyr, ord) for ord, lyr in enumerate(settings.MAP_BASELAYERS)]
-    DEFAULT_MAP_CONFIG = _default_map.viewer_json(*DEFAULT_BASE_LAYERS)
+    DEFAULT_MAP_CONFIG = _default_map.viewer_json(added_layers=DEFAULT_BASE_LAYERS, authenticated=request.user.is_authenticated())
 
     return DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS
 
@@ -166,7 +166,7 @@ def mapJSON(request, mapid):
         if not request.user.has_perm('maps.view_map', obj=map):
             return HttpResponse(loader.render_to_string('401.html', 
                 RequestContext(request, {})), status=401)
-    	return HttpResponse(json.dumps(map.viewer_json()))
+    	return HttpResponse(json.dumps(map.viewer_json(authenticated=request.user.is_authenticated())))
     elif request.method == 'PUT':
         if not request.user.is_authenticated():
             return HttpResponse(
@@ -199,7 +199,7 @@ def newmap_config(request):
     default map configuration is used.  If copy is specified
     and the map specified does not exist a 404 is returned.
     '''
-    DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config()
+    DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
 
     if request.method == 'GET' and 'copy' in request.GET:
         mapid = request.GET['copy']
@@ -213,7 +213,7 @@ def newmap_config(request):
         map.abstract = DEFAULT_ABSTRACT
         map.title = DEFAULT_TITLE
         if request.user.is_authenticated(): map.owner = request.user
-        config = map.viewer_json()
+        config = map.viewer_json(authenticated=request.user.is_authenticated())
         del config['id']
     else:
         if request.method == 'GET':
@@ -277,7 +277,7 @@ def newmap_config(request):
                 map.zoom = math.ceil(min(width_zoom, height_zoom))
 
             
-            config = map.viewer_json(*(DEFAULT_BASE_LAYERS + layers))
+            config = map.viewer_json(added_layers=(DEFAULT_BASE_LAYERS + layers), authenticated=request.user.is_authenticated())
             config['fromLayer'] = True
         else:
             config = DEFAULT_MAP_CONFIG
@@ -289,11 +289,7 @@ def newmap(request):
     if isinstance(config, HttpResponse):
         return config;
     else:
-        return render_to_response('maps/view.html', RequestContext(request, {
-            'config': config, 
-            'GOOGLE_API_KEY' : settings.GOOGLE_API_KEY,
-            'GEOSERVER_BASE_URL' : settings.GEOSERVER_BASE_URL
-        }))
+        return render_to_response('maps/view.html', RequestContext(request))
 
 @csrf_exempt
 def newmapJSON(request):
@@ -596,7 +592,7 @@ def mapdetail(request,mapid):
             RequestContext(request, {'error_message': 
                 _("You are not allowed to view this map.")})), status=401)
      
-    config = map.viewer_json()
+    config = map.viewer_json(authenticated=request.user.is_authenticated())
     config = json.dumps(config)
     layers = MapLayer.objects.filter(map=map.id) 
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
@@ -660,23 +656,19 @@ def view(request, mapid):
             RequestContext(request, {'error_message': 
                 _("You are not allowed to view this map.")})), status=401)    
     
-    config = map.viewer_json()
-    return render_to_response('maps/view.html', RequestContext(request, {
-        'config': json.dumps(config),
-        'GOOGLE_API_KEY' : settings.GOOGLE_API_KEY,
-        'GEOSERVER_BASE_URL' : settings.GEOSERVER_BASE_URL
-    }))
+    config = map.viewer_json(authenticated=request.user.is_authenticated())
+    return render_to_response('maps/view.html', RequestContext(request))
 
 def embed(request, mapid=None):
     if mapid is None:
-        DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config()
+        DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
         config = DEFAULT_MAP_CONFIG
     else:
         map = Map.objects.get(pk=mapid)
         if not request.user.has_perm('maps.view_map', obj=map):
             return HttpResponse(_("Not Permitted"), status=401, mimetype="text/plain")
         
-        config = map.viewer_json()
+        config = map.viewer_json(authenticated=request.user.is_authenticated())
     return render_to_response('maps/embed.html', RequestContext(request, {
         'config': json.dumps(config)
     }))
@@ -691,7 +683,7 @@ def view_js(request, mapid):
     map = Map.objects.get(pk=mapid)
     if not request.user.has_perm('maps.view_map', obj=map):
         return HttpResponse(_("Not Permitted"), status=401, mimetype="text/plain")
-    config = map.viewer_json()
+    config = map.viewer_json(authenticated=request.user.is_authenticated())
     return HttpResponse(json.dumps(config), mimetype="application/javascript")
 
 def fixdate(str):
@@ -821,7 +813,7 @@ def _changeLayerDefaultStyle(request,layer):
 
 @csrf_exempt
 def layerController(request, layername):
-    DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config()
+    DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
     layer = get_object_or_404(Layer, typename=layername)
     if (request.META['QUERY_STRING'] == "describe"):
         return _describe_layer(request,layer)
@@ -1416,7 +1408,7 @@ def browse_data(request):
 
 @csrf_exempt    
 def search_page(request):
-    DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config()
+    DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
     # for non-ajax requests, render a generic search page
 
     if request.method == 'GET':
@@ -1430,7 +1422,7 @@ def search_page(request):
 
     return render_to_response('search.html', RequestContext(request, {
         'init_search': json.dumps(params or {}),
-        'viewer_config': json.dumps(map.viewer_json(*DEFAULT_BASE_LAYERS)),
+        'viewer_config': json.dumps(map.viewer_json(added_layers=DEFAULT_BASE_LAYERS, authenticated=request.user.is_authenticated())),
         'GOOGLE_API_KEY' : settings.GOOGLE_API_KEY,
         "site" : settings.SITEURL
     }))

@@ -1250,7 +1250,7 @@ class Map(models.Model, PermissionLevelMixin):
 
         return simplejson.dumps(map)
 
-    def viewer_json(self, *added_layers):
+    def viewer_json(self, added_layers=[], authenticated=False):
         """
         Convert this map to a nested dictionary structure matching the JSON
         configuration for GXP Viewers.
@@ -1298,6 +1298,11 @@ class Map(models.Model, PermissionLevelMixin):
             return cfg
 
         config = {
+            'authorizedRoles': ["ROLE_ANONYMOUS"],
+            'localGeoServerBaseUrl': settings.GEOSERVER_BASE_URL,
+            'apiKeys': {
+                'google': settings.GOOGLE_API_KEY,
+            },
             'id': self.id,
             'about': {
                 'title':    self.title,
@@ -1309,9 +1314,12 @@ class Map(models.Model, PermissionLevelMixin):
                 'layers': [layer_config(l) for l in layers],
                 'center': [self.center_x, self.center_y],
                 'projection': self.projection,
-                'zoom': self.zoom
+                'zoom': self.zoom,
+                'numZoomLevels': 22
             }
         }
+        if authenticated == True:
+            config['authorizedRoles'] = ["ROLE_ADMINISTRATOR"]
         '''
         Mark the last added layer as selected - important for data page
         '''
