@@ -145,6 +145,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
              */
             "beforeunload"
         );
+        
+        // Common tools for viewer and composer go here. Note that this
+        // modifies the viewer's initialConfig.
+        config.tools = (config.tools || []).concat({
+            ptype: "gxp_wmsgetfeatureinfo",
+            // uncomment the line below if you want feature info in a grid
+            //format: "grid",
+            actionTarget: "main.tbar",
+            outputConfig: {width: 400, height: 300}
+        });
 
         // add old ptypes
         Ext.preg("gx_wmssource", gxp.plugins.WMSSource);
@@ -366,12 +376,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_googleearth",
                 apiKey: config.apiKeys["google"],
                 actionTarget: "paneltbar"
-            }, {
-                ptype: "gxp_wmsgetfeatureinfo",
-                // uncomment the line below if you want feature info in a grid
-                //format: "grid",
-                actionTarget: "main.tbar",
-                outputConfig: {width: 400, height: 300}
             }, {
                 ptype: "gxp_addlayers",
                 actionTarget: "treetbar",
