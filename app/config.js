@@ -21,6 +21,25 @@ if (java.lang.System.getProperty("READYGXP_DEBUG")) {
         "/theme/ux/colorpicker/": "/script/ux/colorpicker/",
         "/theme/ux/fileuploadfield/": "/script/ux/fileuploadfield/css/"
     };
+
+    // proxy a remote geoserver on /geoserver by setting proxy.geoserver to remote URL
+    // only recommended for debug mode
+    var geoserver = java.lang.System.getProperty("app.proxy.geoserver");
+    if (geoserver) {
+        if (geoserver.charAt(geoserver.length-1) !== "/") {
+            geoserver = geoserver + "/";
+        }
+        // debug specific proxy
+        urls.push(
+            [(/^\/geoserver\/(.*)/), require("./proxy").pass({
+                url: geoserver, 
+                allowAuth: true, 
+                preserveHost: true
+            })]
+        );
+    }
+
+
 }
 
 exports.urls = urls;
