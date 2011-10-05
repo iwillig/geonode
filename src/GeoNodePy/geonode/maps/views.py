@@ -839,7 +839,7 @@ def layerController(request, layername):
         return render_to_response('maps/layer.html', RequestContext(request, {
             "layer": layer,
             "metadata": metadata,
-            "viewer": json.dumps(map.viewer_json(* (DEFAULT_BASE_LAYERS + [maplayer]))),
+            "viewer": json.dumps(map.viewer_json(added_layers=(DEFAULT_BASE_LAYERS + [maplayer]))),
             "permissions_json": _perms_info_json(layer, LAYER_LEV_NAMES),
             "GEOSERVER_BASE_URL": settings.GEOSERVER_BASE_URL
 	    }))
