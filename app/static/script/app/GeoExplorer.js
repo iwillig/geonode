@@ -148,13 +148,15 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         
         // Common tools for viewer and composer go here. Note that this
         // modifies the viewer's initialConfig.
-        config.tools = (config.tools || []).concat({
-            ptype: "gxp_wmsgetfeatureinfo",
-            // uncomment the line below if you want feature info in a grid
-            //format: "grid",
-            actionTarget: "main.tbar",
-            outputConfig: {width: 400, height: 300}
-        });
+        if (config.useToolbar !== false) {
+            config.tools = (config.tools || []).concat({
+                ptype: "gxp_wmsgetfeatureinfo",
+                // uncomment the line below if you want feature info in a grid
+                //format: "grid",
+                actionTarget: "main.tbar",
+                outputConfig: {width: 400, height: 300}
+            });
+        }
 
         // add old ptypes
         Ext.preg("gx_wmssource", gxp.plugins.WMSSource);
