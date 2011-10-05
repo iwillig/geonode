@@ -865,12 +865,28 @@ def upload_layer(request):
             try:
                 tempdir, base_file = form.write_files()
                 name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
+                if settings.USE_UPLOADER:
+                     from geonode.maps.upload import save
+                     if 'import_session' in request.session:
+                         del request.session['import_session']
+
                 saved_layer = save(name, base_file, request.user, 
                         overwrite = False,
                         abstract = form.cleaned_data["abstract"],
                         title = form.cleaned_data["layer_title"],
                         permissions = form.cleaned_data["permissions"]
                         )
+
+                if settings.USE_UPLOADER:
+                     saved_layer, import_session = saved_layer
+                     request.session['import_session'] = import_session
+                     # only feature types have attributes
+                     if hasattr(import_session.tasks[0].items[0].resource,"attributes"):
+                         request.session['final_step'] = saved_layer.get_absolute_url() + "?describe"
+                         return HttpResponse(json.dumps({
+                         "success": True,
+                         "redirect_to": reverse('data_upload2')}))
+                
                 return HttpResponse(json.dumps({
                     "success": True,
                     "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
@@ -887,6 +903,19 @@ def upload_layer(request):
             for e in form.errors.values():
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
+
+
+             
+def upload_layer2(request):
+     from geonode.maps.upload import upload_step2
+     from geonode.maps.upload import upload_step2_context
+     if request.method == 'GET':
+         return render_to_response('maps/layer_upload_step2.html',
+             RequestContext(request, upload_step2_context(request))
+         )
+     elif request.method == 'POST':
+         upload_step2(request)
+         return HttpResponseRedirect(request.session['final_step'])
 
 @login_required
 @csrf_exempt
