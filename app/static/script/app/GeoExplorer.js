@@ -155,6 +155,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 //format: "grid",
                 actionTarget: "main.tbar",
                 outputConfig: {width: 400, height: 300}
+            }, {
+                ptype: "gxp_playback",
+                actionTarget: "main.tbar"
             });
         }
 
