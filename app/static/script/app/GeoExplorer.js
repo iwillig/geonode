@@ -127,6 +127,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     zoomToLayerExtentText: "UT:Zoom to Layer Extent",
 
     constructor: function(config) {
+        config = config || {};
         this.popupCache = {};
         // add any custom application events
         this.addEvents(
@@ -212,6 +213,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                 scope: this
                             });
                         }.bind(this);
+                        var csrfToken, csrfMatch = document.cookie.match(/csrftoken=(.*);/);
+                        if (csrfMatch && csrfMatch.length > 0) {
+                            csrfToken = csrfMatch[1];
+                        }
                         var win = new Ext.Window({
                             title: "GeoNode Login",
                             modal: true,
@@ -250,7 +255,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                 }, {
                                     xtype: "hidden",
                                     name: "csrfmiddlewaretoken",
-                                    value: this.csrfToken
+                                    value: csrfToken
                                 }, {
                                     xtype: "button",
                                     text: "Login",
@@ -302,14 +307,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
         
-        if (!config.map) {
-            config.map = {};
-        }
-        config.map.numZoomLevels = config.map.numZoomLevels || 22;
-
-        GeoExplorer.superclass.constructor.apply(this, arguments);
-
-        this.mapID = this.initialConfig.id;
+        GeoExplorer.superclass.constructor.apply(this, [config]);
     },
     
     displayXHRTrouble: function(response) {
@@ -342,53 +340,72 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         });
     },
     
-    loadConfig: function(config) {
-        config.proxy = "/proxy?url=";
-        config.tools = (config.tools || []).concat({
-            ptype: "gxp_zoom",
-            actionTarget: {target: "paneltbar", index: 4}
-        }, {
-            ptype: "gxp_navigationhistory",
-            actionTarget: {target: "paneltbar", index: 6}
-        }, {
-            ptype: "gxp_zoomtoextent",
-            actionTarget: {target: "paneltbar", index: 8}
-        }, {
-            ptype: "gxp_layertree",
-            outputConfig: {id: "treecontent"},
-            outputTarget: "layertree"
-        }, {
-            ptype: "gxp_zoomtolayerextent",
-            actionTarget: "treecontent.contextMenu"
-        }, {
-            ptype: "gxp_wmsgetfeatureinfo",
-            // uncomment the line below if you want feature info in a grid
-            //format: "grid",
-            actionTarget: "main.tbar",
-            outputConfig: {width: 400, height: 300}
-        }, {
-            ptype: "gxp_addlayers",
-            actionTarget: "treetbar",
-            createExpander: function() {
-                return new GeoExplorer.CapabilitiesRowExpander({
-                    ows: this.localGeoServerBaseUrl + "ows"
-                });
-            }
-        }, {
-            ptype: "gxp_removelayer",
-            actionTarget: ["treetbar", "treecontent.contextMenu"]
-        }, {
-            ptype: "gxp_layerproperties",
-            layerPanelConfig: {
-                "gxp_wmslayerpanel": {rasterStyling: true}
-            },
-            actionTarget: ["treetbar", "treecontent.contextMenu"]
-        }, {
-            ptype: "gxp_styler",
-            rasterStyling: true,
-            actionTarget: ["treetbar", "treecontent.contextMenu"]
+    loadConfig: function(config, callback) {
+        config = Ext.apply(config || {}, {
+            proxy: "/proxy?url=",
+            rest: "/maps/"
         });
-        GeoExplorer.superclass.loadConfig.apply(this, arguments);
+        function createToolCfg(config) {
+            return (config.tools || []).concat({
+                ptype: "gxp_zoom",
+                actionTarget: {target: "paneltbar", index: 4}
+            }, {
+                ptype: "gxp_navigationhistory",
+                actionTarget: {target: "paneltbar", index: 6}
+            }, {
+                ptype: "gxp_zoomtoextent",
+                actionTarget: {target: "paneltbar", index: 8}
+            }, {
+                ptype: "gxp_layertree",
+                outputConfig: {id: "treecontent"},
+                outputTarget: "layertree"
+            }, {
+                ptype: "gxp_zoomtolayerextent",
+                actionTarget: "treecontent.contextMenu"
+            }, {
+                ptype: "gxp_googleearth",
+                apiKey: config.apiKeys["google"],
+                actionTarget: "paneltbar"
+            }, {
+                ptype: "gxp_wmsgetfeatureinfo",
+                // uncomment the line below if you want feature info in a grid
+                //format: "grid",
+                actionTarget: "main.tbar",
+                outputConfig: {width: 400, height: 300}
+            }, {
+                ptype: "gxp_addlayers",
+                actionTarget: "treetbar",
+                createExpander: function() {
+                    return new GeoExplorer.CapabilitiesRowExpander({
+                        ows: this.localGeoServerBaseUrl + "ows"
+                    });
+                }
+            }, {
+                ptype: "gxp_removelayer",
+                actionTarget: ["treetbar", "treecontent.contextMenu"]
+            }, {
+                ptype: "gxp_layerproperties",
+                layerPanelConfig: {
+                    "gxp_wmslayerpanel": {rasterStyling: true}
+                },
+                actionTarget: ["treetbar", "treecontent.contextMenu"]
+            }, {
+                ptype: "gxp_styler",
+                rasterStyling: true,
+                actionTarget: ["treetbar", "treecontent.contextMenu"]
+            });
+        }
+        Ext.Ajax.request({
+            url: window.location.href.split("?")[0].replace(/\/view|\/embed|(\/new)|([0-9])$/, "$1$2/data"),
+            success: function(response) {
+                var loadedConfig = Ext.decode(response.responseText, true);
+                Ext.apply(config, loadedConfig);
+                config.tools = createToolCfg(config);
+                this.mapID = config.id;
+                callback.call(this, config);
+            },
+            scope: this
+        });
     },
     
     initMapPanel: function() {
@@ -546,36 +563,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             });
         }, this);
         
-        var showContextMenu;
-        this.googleEarthPanel = new gxp.GoogleEarthPanel({
-            mapPanel: this.mapPanel,
-            listeners: {
-                "beforeadd": function(record) {
-                    return record.get("group") !== "background";
-                },
-                "show": function() {
-                    // disable layers toolbar, selection and context menu
-                    layerTree.contextMenu.on("beforeshow", OpenLayers.Function.False);
-                    this.on(
-                        "beforelayerselectionchange", OpenLayers.Function.False
-                    );
-                    Ext.getCmp("treetbar").disable();
-                },
-                "hide": function() {
-                    var layerTree = Ext.getCmp("treecontent");
-                    if (layerTree) {
-                        // enable layers toolbar, selection and context menu
-                        layerTree.contextMenu.un("beforeshow", OpenLayers.Function.False);
-                        this.un(
-                            "beforelayerselectionchange", OpenLayers.Function.False
-                        );
-                        Ext.getCmp("treetbar").enable();
-                    }
-                },
-                scope: this
-            }
-        });
-        
         this.mapPanelContainer = new Ext.Panel({
             layout: "card", 
             region: "center",
@@ -585,7 +572,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             },
             items: [
                 this.mapPanel,
-                this.googleEarthPanel
+                {
+                    xtype: 'gxp_googleearthpanel', 
+                    mapPanel: this.mapPanel
+                }
             ],
             activeItem: 0
         });
@@ -799,23 +789,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             scope: this
         });
 
-        var enable3DButton = new Ext.Button({
-            iconCls:"icon-3D",
-            tooltip: this.switchTo3DActionText,
-            enableToggle: true,
-            toggleHandler: function(button, state) {
-                if (state === true) {
-                    this.mapPanelContainer.getLayout().setActiveItem(1);
-                    this.toolbar.disable();
-                    button.enable();
-                } else {
-                    this.mapPanelContainer.getLayout().setActiveItem(0);
-                    this.toolbar.enable();
-                }
-            },
-            scope: this
-        });
-
         var tools = [
             new Ext.Button({
                 tooltip: this.saveMapText,
@@ -831,8 +804,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 disabled: !this.mapID
             }),
             window.printCapabilities ? printButton : "",
-            "-",
-            enable3DButton
+            "-"
         ];
         this.on("saved", function() {
             // enable the "Publish Map" button
