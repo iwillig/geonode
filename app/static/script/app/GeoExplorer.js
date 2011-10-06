@@ -31,12 +31,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     localGeoServerBaseUrl: "",
     
     /**
-     * api: config[fromLayer]
-     * ``Boolean`` true if map view was loaded with layer parameters
-     */
-    fromLayer: false,
-
-    /**
      * private: property[mapPanel]
      * the :class:`GeoExt.MapPanel` instance for the main viewport
      */
@@ -527,7 +521,20 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     addLayers.startSourceId = startSourceId;
                 }
             }
-            if (!this.fromLayer && !this.mapID) {
+            var urlParts = window.location.href.split("?"), fromLayer;
+            if (urlParts.length > 1) {
+                var fromLayer = Ext.urlDecode(urlParts[1]).layer
+                if (fromLayer) {
+                    this.createLayerRecord({
+                        source: startSourceId,
+                        name: fromLayer
+                    }, function(record) {
+                        this.mapPanel.layers.add([record]);
+                        this.mapPanel.map.zoomToExtent(record.getLayer().maxExtent);
+                    }, this);
+                }
+            }
+            if (!fromLayer && !this.mapID) {
                 if (addLayers !== null) {
                     addLayers.showCapabilitiesGrid();
                 }
