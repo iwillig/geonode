@@ -147,6 +147,7 @@ def install_25_deps(options):
 def post_bootstrap(options):
     """installs the current package"""
     pip = path(options.config.bin) / "pip"
+    sh('%s install -e %s' %(pip, path("src/gsuploader/")))
     sh('%s install -e %s' %(pip, path("src/GeoNodePy")))
 
 
