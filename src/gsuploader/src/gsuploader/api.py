@@ -74,7 +74,8 @@ class Target(_UploadBase):
 class Item(_UploadBase):
     def _bind_json(self,json):
         self._bind(json)
-        self.layer = Layer(json['layer'],self)
+        # @todo iws - why is layer nested in another layer
+        self.layer = Layer(json['layer']['layer'],self)
         resource = json['resource']
         if 'featureType' in resource:
             self.resource = FeatureType(resource['featureType'],self)
@@ -83,7 +84,8 @@ class Item(_UploadBase):
         
 class Layer(_UploadBase):
     def _bind_json(self,json):
-        pass
+        self.layer_type = json.pop('type')
+        self._bind(json)
         
 class FeatureType(_UploadBase):
     resource_type = "featureType"

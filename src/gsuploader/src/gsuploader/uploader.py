@@ -104,7 +104,7 @@ class _Client(object):
         _debug(resp, content)
         status = resp['status']
         if status == '500':
-            raise Exception('Server error',response)
+            raise Exception('Server error',content)
         return resp, content
         
     def put_zip(self,url,payload):
