@@ -72,6 +72,7 @@ def geonode_client_target(): return options.deploy.out_dir / "geonode-client.zip
 deploy_req_txt = """
 # NOTE... this file is generated
 -r %(venv)s/shared/core-libs.txt
+-e %(venv)s/src/gsuploader/
 -e %(venv)s/src/GeoNodePy
 """ % locals()
 
