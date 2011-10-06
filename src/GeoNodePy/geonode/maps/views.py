@@ -865,12 +865,34 @@ def upload_layer(request):
             try:
                 tempdir, base_file = form.write_files()
                 name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
+                if settings.USE_UPLOADER:
+                     from geonode.maps.upload import save
+                     if 'import_session' in request.session:
+                         del request.session['import_session']
+
                 saved_layer = save(name, base_file, request.user, 
                         overwrite = False,
                         abstract = form.cleaned_data["abstract"],
                         title = form.cleaned_data["layer_title"],
                         permissions = form.cleaned_data["permissions"]
                         )
+
+                if settings.USE_UPLOADER:
+                     # this is really a import_session object to be clear
+                     import_session = saved_layer
+                     # @todo session objects prolly should be handled more carefully
+                     request.session['import_session'] = import_session
+                     for k in form.cleaned_data.keys():
+                        if k.endswith('_file'):
+                            form.cleaned_data.pop(k)
+                     request.session['import_form'] = form.cleaned_data
+                     request.session['import_base_file'] = base_file
+                     # only feature types have attributes
+                     if hasattr(import_session.tasks[0].items[0].resource,"attributes"):
+                         return HttpResponse(json.dumps({
+                         "success": True,
+                         "redirect_to": reverse('data_upload2')}))
+                
                 return HttpResponse(json.dumps({
                     "success": True,
                     "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
@@ -880,13 +902,26 @@ def upload_layer(request):
                     "success": False,
                     "errors": ["Unexpected error during upload: " + escape(str(e))]}))
             finally:
-                if tempdir is not None:
+                if tempdir is not None and not settings.USE_UPLOADER:
                     shutil.rmtree(tempdir)
         else:
             errors = []
             for e in form.errors.values():
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
+
+
+             
+def upload_layer2(request):
+     from geonode.maps.upload import upload_step2
+     from geonode.maps.upload import upload_step2_context
+     if request.method == 'GET':
+         return render_to_response('maps/layer_upload_step2.html',
+             RequestContext(request, upload_step2_context(request))
+         )
+     elif request.method == 'POST':
+         saved_layer = upload_step2(request)
+         return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
 
 @login_required
 @csrf_exempt
