@@ -3,7 +3,7 @@ from django.conf import settings
 from django.db import models
 from owslib.wms import WebMapService
 from owslib.csw import CatalogueServiceWeb
-from geoserver.catalog import Catalog
+from geoserver.catalog import Catalog, FailedRequestError
 from geonode.core.models import PermissionLevelMixin
 from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.geonetwork import Catalog as GeoNetwork
@@ -940,8 +940,11 @@ class Layer(models.Model, PermissionLevelMixin):
         }).get(self.storeType, "Data")
 
     def delete_from_geoserver(self):
-        cascading_delete(Layer.objects.gs_catalog, self.resource)
-
+        try:
+            cascading_delete(Layer.objects.gs_catalog, self.resource)
+        except FailedRequestError, fre:
+            logger.exception("Error deleting from geoserver")
+            
     def delete_from_geonetwork(self):
         gn = Layer.objects.gn_catalog
         gn.delete_layer(self)
