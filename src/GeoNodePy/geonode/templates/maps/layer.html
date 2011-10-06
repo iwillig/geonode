@@ -33,15 +33,6 @@
                     height: 350
                 },
 
-                createTools: function() {
-                    return [new Ext.Button({
-                        tooltip: GeoExplorer.prototype.backgroundContainerText,
-                        iconCls: 'icon-layer-switcher',
-                        menu: new gxp.menu.LayerMenu({
-                            layers: this.mapPanel.layers
-                        })
-                    })]
-                },
                 listeners: {
                     "ready": function() {
                         var map = app.mapPanel.map;
