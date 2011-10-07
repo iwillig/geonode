@@ -1,7 +1,7 @@
 PIL
 -e  svn+http://svn.gispython.org/svn/gispy/OWSLib/trunk/@1717#egg=OWSLib
 -r py-base-libs.txt
--e git+https://github.com/dwins/gsconfig.py.git#egg=gsconfig.py
+-e git+https://github.com/opengeo/gsconfig.py.git@master#egg=gsconfig.py
 #django-registration
 https://bitbucket.org/ubernostrum/django-registration/get/d36a38202ee3.zip
 django-profiles
