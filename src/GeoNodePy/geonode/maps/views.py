@@ -1712,3 +1712,24 @@ def batch_delete(request):
     nmaps = len(spec.get('maps', []))
 
     return HttpResponse("Deleted %d layers and %d maps" % (nlayers, nmaps))
+
+# Temp function for tschaub while working on the timeline
+def time_info(request):
+    if request.method != "GET":
+        return HttpResponse(json.dumps({}), mimetype="application/javascript")
+    else:
+        from geoserver.support import xml_property, attribute_list
+        cat = Layer.objects.gs_catalog
+        layer_name = request.GET.get('layer')
+        layer = cat.get_resource(layer_name)
+        if layer is not None:
+            if layer.metadata['time']:
+                attributes = {}
+                dimensionInfo = layer.metadata['time'].find('dimensionInfo')
+                for attribute in list(dimensionInfo):
+                    attributes[attribute.tag] = attribute.text
+                return HttpResponse(json.dumps(attributes), mimetype="application/javascript") 
+            else:
+                return HttpResponse(json.dumps({}), mimetype="application/javascript")
+        else:
+            return HttpResponse(json.dumps({}), mimetype="application/javascript")

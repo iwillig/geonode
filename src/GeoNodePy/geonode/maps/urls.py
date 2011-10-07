@@ -19,6 +19,7 @@ urlpatterns = patterns('geonode.maps.views',
     url(r'^search/api/?$', 'maps_search', name='maps_search_api'),
     url(r'^(?P<mapid>\d+)/ajax-permissions$', 'ajax_map_permissions', name='ajax_map_permissions'),
     url(r'^change-poc/(?P<ids>\w+)$', 'change_poc', name="change_poc"),
-    url(r'^data/upload2$', 'upload_layer2', name='data_upload2')
+    url(r'^data/upload2$', 'upload_layer2', name='data_upload2'),
+    url(r'^time_info.json$', 'time_info', name="time_info"), # Temp for tschaub
 
 )
