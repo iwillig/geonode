@@ -1713,7 +1713,6 @@ def batch_delete(request):
 
     return HttpResponse("Deleted %d layers and %d maps" % (nlayers, nmaps))
 
-<<<<<<< HEAD
 # Temp function for tschaub while working on the timeline
 def time_info(request):
     if request.method != "GET":
@@ -1734,6 +1733,7 @@ def time_info(request):
                 return HttpResponse(json.dumps({}), mimetype="application/javascript")
         else:
             return HttpResponse(json.dumps({}), mimetype="application/javascript")
+
 @login_required
 def create_pg_layer(request):
     if request.method == 'POST':
