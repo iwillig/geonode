@@ -941,7 +941,10 @@ class Layer(models.Model, PermissionLevelMixin):
 
     def delete_from_geoserver(self):
         try:
-            cascading_delete(Layer.objects.gs_catalog, self.resource)
+            if self.resource:
+                # if a resource cannot be found (corrupt state, for example)
+                # the following will fail so don't even try it
+                cascading_delete(Layer.objects.gs_catalog, self.resource)
         except FailedRequestError, fre:
             logger.exception("Error deleting from geoserver")
             
@@ -1102,10 +1105,10 @@ class Layer(models.Model, PermissionLevelMixin):
                 self.distribution_description = res.description
 
     def keyword_list(self):
-        if self.keywords is None:
-            return []
-        else:
+        if self.keywords:
             return self.keywords.split(" ")
+        else:
+            return []
 
     def set_bbox(self, box, srs=None):
         """
