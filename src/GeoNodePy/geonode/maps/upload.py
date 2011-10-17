@@ -125,6 +125,26 @@ def _create_time_form(req):
     if req.method == 'POST':
         return TimeForm(req.POST,att_names=att_names)
     return TimeForm(att_names=att_names)
+
+def _create_db_featurestore():
+    """Override the imported method from utils that does too much"""
+    cat = Layer.objects.gs_catalog
+    try:
+        ds = cat.get_store(settings.DB_DATASTORE_NAME)
+    except FailedRequestError, e:
+        logging.info("Creating target datastore %s",settings.DB_DATASTORE_NAME)
+        ds = cat.create_datastore(settings.DB_DATASTORE_NAME)
+        ds.connection_parameters.update(
+            host=settings.DB_DATASTORE_HOST,
+            port=settings.DB_DATASTORE_PORT,
+            database=settings.DB_DATASTORE_DATABASE,
+            user=settings.DB_DATASTORE_USER,
+            passwd=settings.DB_DATASTORE_PASSWORD,
+            dbtype=settings.DB_DATASTORE_TYPE)
+        cat.save(ds)
+        ds = cat.get_store(settings.DB_DATASTORE_NAME)
+
+    return ds
     
 def upload_step2_context(req):
     return {
@@ -152,6 +172,16 @@ def upload_step2(req):
                 )
             logger.info('Setting time dimension info')
             resource.save()
+
+
+    # if a target datastore is configured, ensure the datastore exists in geoserver
+    # and set the uploader target appropriately
+    if settings.DB_DATASTORE:
+        target = _create_db_featurestore()
+        import_session.tasks[0].set_target(target.name,target.workspace.name)
+    else:
+        target = import_session.tasks[0].target
+    
     logger.info('running import session')
     import_session.commit()
     
@@ -216,9 +246,8 @@ def upload_step2(req):
 
     # Step 10. Create the Django record for the layer
     logger.info('>>> Step 10. Creating Django record for [%s]', name)
-    target = import_session.tasks[0].target
     resource = import_session.tasks[0].items[0].resource
-    typename = "%s:%s" % (target.workspace, resource.name)
+    typename = "%s:%s" % (target.workspace.name, resource.name)
     layer_uuid = str(uuid.uuid1())
     
     # @todo iws - session objects
@@ -230,12 +259,11 @@ def upload_step2(req):
     cat._cache.clear()
     saved_layer, created = Layer.objects.get_or_create(name=resource.name, defaults=dict(
                                  store=target.name,
-                                 storeType=target.target_type,
+                                 storeType=resource.resource_type,
                                  typename=typename,
-                                 workspace=target.workspace,
+                                 workspace=target.workspace.name,
                                  title=title or resource.title,
                                  uuid=layer_uuid,
-                                 keywords='',
                                  abstract=abstract or '',
                                  owner=user,
                                  )

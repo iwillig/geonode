@@ -55,8 +55,24 @@ class Task(_UploadBase):
         target_type = target.keys
         self.target = Target(json['target'],self)
         self.items = self._build(json['items'],Item)
+    def set_target(self,store_name,workspace):
+        data = {
+            'target' : {
+                'dataStore' : {
+                    'name' : store_name,
+                    'workspace' : {
+                        'name' : workspace
+                    }
+                }
+            }
+        }
+        self._client().put_json(self.href,json.dumps(data))
     def _add_url_part(self,parts):
         parts.append('tasks/%s' % self.id)
+
+class Workspace(_UploadBase):
+    def _bind_json(self,json):
+        self._bind(json)
     
 class Source(_UploadBase):
     def _bind_json(self,json):
