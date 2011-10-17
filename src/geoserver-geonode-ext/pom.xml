@@ -84,10 +84,15 @@
         <scope>runtime</scope>
         <exclusions>
             <exclusion>
-                <groupId>org.geoserver.community</groupId>
-                <artifactId>ftp</artifactId>
+                <groupId>*</groupId>
+                <artifactId>*</artifactId>
             </exclusion>
         </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.geotools</groupId>
+      <artifactId>gt-shapefile</artifactId>
+      <version>${geotools.version}</version>
     </dependency>
     
 
