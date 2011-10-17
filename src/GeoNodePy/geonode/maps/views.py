@@ -1721,7 +1721,11 @@ def time_info(request):
         from geoserver.support import xml_property, attribute_list
         cat = Layer.objects.gs_catalog
         layer_name = request.GET.get('layer')
-        layer = cat.get_resource(layer_name)
+        after_split = layer_name.split(":", 1)
+        if len(after_split) != 2:
+            return HttpResponse(json.dumps({}), mimetype="application/javascript")
+        ws, lyr = after_split
+        layer = cat.get_resource(workspace=cat.get_workspace(ws), name=lyr)
         if layer is not None:
             if layer.metadata['time']:
                 attributes = {}
@@ -1752,7 +1756,6 @@ def create_layer(request):
         for attribute in attributes.split(','):
             key, value = attribute.split(':')
             attribute_dict[key] = value
-        print attribute_dict
         layer = cat.create_native_layer(request.POST.get('workspace'), 
                                           request.POST.get('store'), 
                                           request.POST.get('name'), 
