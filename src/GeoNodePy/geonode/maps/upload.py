@@ -173,7 +173,6 @@ def upload_step2(req):
             logger.info('Setting time dimension info')
             resource.save()
 
-
     # if a target datastore is configured, ensure the datastore exists in geoserver
     # and set the uploader target appropriately
     if settings.DB_DATASTORE:
@@ -222,6 +221,8 @@ def upload_step2(req):
     
     logger.info('>>> Step 7. Creating style for [%s]' % name)
     publishing = cat.get_layer(name)
+    if publishing is None:
+        raise Exception("Expected to find layer named ''%s' in geoserver",name)
 
     if 'sld' in files:
         f = open(files['sld'], 'r')
@@ -229,7 +230,7 @@ def upload_step2(req):
         f.close()
     else:
         sld = get_sld_for(publishing)
-
+        
     if sld is not None:
         try:
             cat.create_style(name, sld)
@@ -250,16 +251,16 @@ def upload_step2(req):
     typename = "%s:%s" % (target.workspace.name, resource.name)
     layer_uuid = str(uuid.uuid1())
     
-    # @todo iws - session objects
+    # @todo iws - session objects cleanup
     title = req.session['import_form']['layer_title']
     abstract = req.session['import_form']['abstract']
     user = req.user
     
-    # @todo hacking
+    # @todo hacking - any cached layers might cause problems (maybe delete hook on layer should fix this?)
     cat._cache.clear()
     saved_layer, created = Layer.objects.get_or_create(name=resource.name, defaults=dict(
                                  store=target.name,
-                                 storeType=resource.resource_type,
+                                 storeType=target.resource_type,
                                  typename=typename,
                                  workspace=target.workspace.name,
                                  title=title or resource.title,
@@ -268,6 +269,7 @@ def upload_step2(req):
                                  owner=user,
                                  )
     )
+    
     # @todo if layer was not created, need to ensure upload target is same as existing target
     
     logger.info('layer was created : %s',created)
@@ -293,7 +295,7 @@ def upload_step2(req):
     # Step 11. Set default permissions on the newly created layer
     # FIXME: Do this as part of the post_save hook
     
-    # @todo iws - session objects
+    # @todo iws - session objects cleanup
     permissions = req.session['import_form']['permissions']
     logger.info('>>> Step 11. Setting default permissions for [%s]', name)
     if permissions is not None:

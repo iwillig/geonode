@@ -84,7 +84,7 @@ class Target(_UploadBase):
         key,val = json.items()[0]
         self.target_type = key
         self._bind(val)
-        self.workspace = val['workspace']['name']
+        self.workspace = Workspace(val['workspace'])
         # @todo more
 
 class Item(_UploadBase):
