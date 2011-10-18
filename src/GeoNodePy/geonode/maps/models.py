@@ -945,8 +945,8 @@ class Layer(models.Model, PermissionLevelMixin):
                 # if a resource cannot be found (corrupt state, for example)
                 # the following will fail so don't even try it
                 cascading_delete(Layer.objects.gs_catalog, self.resource)
-        except FailedRequestError, fre:
-            logger.exception("Error deleting from geoserver")
+        except (FailedRequestError, RuntimeError):
+            logger.exception("Error deleting layer from geoserver - possible layer did not exist")
             
     def delete_from_geonetwork(self):
         gn = Layer.objects.gn_catalog
