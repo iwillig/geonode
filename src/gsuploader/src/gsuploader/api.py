@@ -56,7 +56,7 @@ class Task(_UploadBase):
         self.target = Target(json['target'],self)
         self.items = self._build(json['items'],Item)
     def set_target(self,store_name,workspace):
-        data = {
+        data = { 'task' : {
             'target' : {
                 'dataStore' : {
                     'name' : store_name,
@@ -65,7 +65,7 @@ class Task(_UploadBase):
                     }
                 }
             }
-        }
+        }}
         self._client().put_json(self.href,json.dumps(data))
     def _add_url_part(self,parts):
         parts.append('tasks/%s' % self.id)
@@ -97,6 +97,20 @@ class Item(_UploadBase):
             self.resource = FeatureType(resource['featureType'],self)
         else:
             raise Exception('not handling resource %s' % resource)
+    def set_transforms(self,transforms):
+        """Set the transforms of this Item. transforms is a list of dicts"""
+        self._transforms = transforms
+    def save(self):
+        """@todo,@hack This really only saves transforms and will overwrite existing"""
+        data = {
+            "item" : {
+                "transformChain" : {
+                    "type" : "VectorTransformChain", #@todo sniff for existing
+                    "transforms" : self._transforms
+                }
+            }
+        }
+        self._client().put_json(self.href,json.dumps(data))
         
 class Layer(_UploadBase):
     def _bind_json(self,json):
