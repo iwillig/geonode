@@ -96,7 +96,6 @@ def save(layer, base_file, user, overwrite = True, title=None, abstract=None, pe
     return import_session
     
 class TimeForm(forms.Form):
-    time_attribute = forms.ChoiceField(required=False)
     presentation_strategy = forms.CharField(required=False)
     precision_value = forms.IntegerField(required=False)
     precision_step = forms.ChoiceField(required=False,choices=[
@@ -109,22 +108,35 @@ class TimeForm(forms.Form):
     ])
     
     def __init__(self, *args, **kwargs):
-        att_names = kwargs.pop('att_names',None)
+        # have to remove these from kwargs or Form gets mad
+        time_names = kwargs.pop('time_names',None)
+        text_names = kwargs.pop('text_names',None)
+        year_names = kwargs.pop('year_names',None)
         super(TimeForm, self).__init__(*args,**kwargs)
-        if att_names:
-            choices =  [ ("","<None>") ] + [ (a,a) for a in att_names ]
-            self.fields['time_attribute'] = forms.ChoiceField(choices=choices)
+        self._build_choice('time_attribute',time_names)
+        self._build_choice('text_attribute',text_names)
+        if text_names:
+            self.fields['text_attribute_format'] = forms.CharField(required=False)
+        self._build_choice('year_attribute',year_names)
+            
+    def _build_choice(self, att, names):
+        if names:
+            choices =  [ ("","<None>") ] + [ (a,a) for a in names ]
+            self.fields[att] = forms.ChoiceField(choices=choices,required=False)
     # @todo implement clean
     
 def _create_time_form(req):
     import_session = req.session['import_session']
     feature_type = import_session.tasks[0].items[0].resource
-    
-    #@todo iws - backout filtering of date (but remember to filter the_geom)
-    att_names = [ att.name for att in feature_type.attributes if att.binding == 'java.util.Date' ]
+    filter_type = lambda b : [ att.name for att in feature_type.attributes if att.binding == b]
+    args = dict(
+        time_names = filter_type('java.util.Date'),
+        text_names = filter_type('java.lang.String'),
+        year_names = filter_type('java.lang.Integer')
+    )
     if req.method == 'POST':
-        return TimeForm(req.POST,att_names=att_names)
-    return TimeForm(att_names=att_names)
+        return TimeForm(req.POST,**args)
+    return TimeForm(**args)
 
 def _create_db_featurestore():
     """Override the imported method from utils that does too much"""
@@ -147,8 +159,10 @@ def _create_db_featurestore():
     return ds
     
 def upload_step2_context(req):
+    import_session = req.session['import_session']
     return {
-        'time_form' : _create_time_form(req)
+        'time_form' : _create_time_form(req),
+        'layer_name' : import_session.tasks[0].items[0].layer.name
     }
     
 def upload_step2(req):
@@ -162,21 +176,47 @@ def upload_step2(req):
     import_session = req.session['import_session']
     if form.is_valid():
         cleaned = form.cleaned_data
-        if cleaned['time_attribute']:
+        time_attribute = cleaned.get('time_attribute',None)
+        transform = None
+        if not time_attribute:
+            time_attribute = cleaned.get('text_attribute',None)
+            if time_attribute:
+                transform = {
+                    'type' : 'DateFormatTransform',
+                    'field' : time_attribute,
+                    'format' : cleaned['text_attribute_format']
+                }
+        if not time_attribute:
+            time_attribute = cleaned.get('year_attribute',None)
+            if time_attribute:
+                transform = {
+                    'type' : 'IntegerFieldToDateTransform',
+                    'field' : time_attribute
+                }
+            
+        if time_attribute:
             resource = import_session.tasks[0].items[0].resource
             resource.add_time_dimension_info(
-                cleaned['time_attribute'],
+                time_attribute,
                 cleaned['presentation_strategy'],
                 cleaned['precision_value'],
                 cleaned['precision_step']
-                )
+            )
             logger.info('Setting time dimension info')
             resource.save()
+        if transform:
+            logger.info('Setting transform')
+            import_session.tasks[0].items[0].set_transforms([transform])
+            import_session.tasks[0].items[0].save()
+    else:
+        #@todo validation feedback
+        raise Exception("form invalid")
 
     # if a target datastore is configured, ensure the datastore exists in geoserver
     # and set the uploader target appropriately
     if settings.DB_DATASTORE:
         target = _create_db_featurestore()
+        logger.info('setting target datastore %s %s',target.name,target.workspace.name)
         import_session.tasks[0].set_target(target.name,target.workspace.name)
     else:
         target = import_session.tasks[0].target
