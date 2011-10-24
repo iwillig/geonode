@@ -1,5 +1,5 @@
 PIL
--e  svn+http://svn.gispython.org/svn/gispy/OWSLib/trunk/@1717#egg=OWSLib
+OWSLib==0.4.0
 -r py-base-libs.txt
 -e git+https://github.com/opengeo/gsconfig.py.git@master#egg=gsconfig.py
 #django-registration
