@@ -404,6 +404,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     "localhost:8000": "ABQIAAAAeDjUod8ItM9dBg5_lz0esxTnme5EwnLVtEDGnh-lFVzRJhbdQhQBX5VH8Rb3adNACjSR5kaCLQuBmw",
                     "example.com": "-your-api-key-here-"
                 }
+            }, {
+                ptype: "gxp_timeline",
+                outputTarget: "timeline-container",
+                playbackTool: "playback-tool"
             });
 	    }
         Ext.Ajax.request({
@@ -495,7 +499,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }
             var urlParts = window.location.href.split("?"), fromLayer;
             if (urlParts.length > 1) {
-                var fromLayer = Ext.urlDecode(urlParts[1]).layer
+                fromLayer = Ext.urlDecode(urlParts[1]).layer;
                 if (fromLayer) {
                     this.createLayerRecord({
                         source: startSourceId,
@@ -597,7 +601,13 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     tbar: this.toolbar,
                     items: [
                         this.mapPanelContainer,
-                        westPanel
+                        westPanel, {
+                            id: "timeline-container",
+                            xtype: "container",
+                            layout: "fit",
+                            region: "south",
+                            height: 250
+                        }
                     ],
                     ref: "../../main"
                 }
