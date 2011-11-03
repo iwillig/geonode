@@ -18,11 +18,15 @@ class Uploader(object):
 
     def _call(self,fun,*args):
         robj = fun(*args)
-        robj._uploader = self
+        if isinstance(robj, list):
+            for i in robj:
+                i._uploader = self
+        else:
+            robj._uploader = self
         return robj
 
     def get_sessions(self):
-        pass 
+        return self._call(self.client.get_imports)
         
     def get_session(self,id):
         """Get an existing session by id.
@@ -115,6 +119,9 @@ class _Client(object):
             
     def get_import(self,i):
         return parse_response(self._request(self.url("imports/%s" % i)))
+
+    def get_imports(self):
+        return parse_response(self._request(self.url("imports")))
     
     def start_import(self):
         return parse_response(self._request(self.url("imports"),"POST"))
