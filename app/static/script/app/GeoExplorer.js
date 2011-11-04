@@ -613,6 +613,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             id: "timeline-container",
                             xtype: "panel",
                             tbar: [],
+                            split: true,
+                            collapsed: true,
+                            collapsible: true,
                             layout: "fit",
                             region: "south",
                             height: 175
