@@ -406,8 +406,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 }
             }, {
                 ptype: "gxp_timeline",
+                id: "timeline-tool",
                 outputTarget: "timeline-container",
+                outputConfig: {
+                    title: null
+                },
                 playbackTool: "playback-tool"
+            }, {
+                ptype: "gxp_timelinelayers",
+                timelineTool: "timeline-tool",
+                actionTarget: "timeline-container.tbar"
             });
 	    }
         Ext.Ajax.request({
@@ -603,10 +611,11 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         this.mapPanelContainer,
                         westPanel, {
                             id: "timeline-container",
-                            xtype: "container",
+                            xtype: "panel",
+                            tbar: [],
                             layout: "fit",
                             region: "south",
-                            height: 250
+                            height: 175
                         }
                     ],
                     ref: "../../main"
