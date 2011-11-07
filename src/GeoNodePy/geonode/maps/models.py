@@ -1208,6 +1208,17 @@ class Map(models.Model, PermissionLevelMixin):
     """
     The last time the map was modified.
     """
+    
+    tools_params = models.CharField(_('tools params'), max_length=1024, null=True)
+    """
+    A JSON-encoded dictionary of arbitrary parameters for the GXP tools
+    configuration for this layer.
+    """
+
+    portal_params = models.CharField(_('portal params'), max_length=1024, null=True)
+    """
+    A JSON-encoded dictionary of arbitrary parameters for the ...(what?)
+    """
 
     def __unicode__(self):
         return '%s by %s' % (self.title, (self.owner.username if self.owner else "<Anonymous>"))
@@ -1329,7 +1340,9 @@ class Map(models.Model, PermissionLevelMixin):
                 'projection': self.projection,
                 'zoom': self.zoom,
                 'numZoomLevels': 22
-            }
+            },
+            'tools' : self.tools_params or '[]',
+            'portalConfig' : self.portal_params
         }
         if authenticated == True:
             config['authorizedRoles'] = ["ROLE_ADMINISTRATOR"]
@@ -1377,6 +1390,10 @@ class Map(models.Model, PermissionLevelMixin):
                 self.layer_set.from_viewer_config(
                     self, layer, source_for(layer), ordering
             ))
+
+        self.tools_params = conf.get('tools',None)
+        self.portal_params = conf.get('portalConfig',None)
+
         self.save()
 
     def get_absolute_url(self):
@@ -1538,7 +1555,7 @@ class MapLayer(models.Model):
     If this dictionary conflicts with options that are stored in other fields
     (such as ows_url) then the fields override.
     """
-    
+
     def local(self): 
         """
         Tests whether this layer is served by the GeoServer instance that is

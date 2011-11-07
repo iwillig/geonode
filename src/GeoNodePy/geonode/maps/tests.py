@@ -247,7 +247,35 @@ community."
         pass
 
     def test_map_update_from_viewer(self):
-        pass
+        c = Client()
+
+        map = Map.objects.get(id=1)
+
+        # check some missing data assumptions
+        self.assertEqual(map.tools_params,None)
+        self.assertEqual(map.portal_params,None)
+        response = c.get('/maps/1/data')
+        config = json.loads(response.content)
+        self.assertEqual(str(config['tools']),"[]")
+        self.assertEqual(config['portalConfig'],None)
+
+        # make some changes
+        c.login(username='bobby',password='bob')
+        config = json.loads(MapTest.viewer_config_alternative)
+        config['tools'] = ['something']
+        response = c.put("/maps/1/data",data=json.dumps(config),content_type="text/json")
+        self.assertEqual(response.status_code,204)
+
+        # verify in model
+        map = Map.objects.get(id=1)
+        self.assertEqual(map.tools_params,"['something']")
+        self.assertEqual(map.portal_params,None)
+
+        # and json
+        response = c.get('/maps/1/data')
+        config = json.loads(response.content)
+        self.assertEqual(str(config['tools']),"['something']")
+        self.assertEqual(config['portalConfig'],None)
 
     def test_map_get_absolute_url(self):
         pass
