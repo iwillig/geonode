@@ -1753,32 +1753,52 @@ def time_info(request):
 
 @login_required
 def create_layer(request):
-    if request.method == 'POST':
-        cat = Layer.objects.gs_catalog
-        ws = cat.get_workspace(request.POST.get('workspace'))
-        if ws is None:
-            msg = 'Specified workspace [%s] not found' % request.POST.get('workspace')
-            return HttpResponse(msg, status='400')
-        store = cat.get_store(request.POST.get('store'))
-        if store is None:
-            msg = 'Specified store [%s] not found' % request.POST.get('store')
-            return HttpResponse(msg, status='400')
 
-        attributes = request.POST.get('attributes')
-        attribute_dict = {}
-        for attribute in attributes.split(','):
-            key, value = attribute.split(':')
-            attribute_dict[key] = value
-        layer = cat.create_native_layer(request.POST.get('workspace'),
-                                          request.POST.get('store'),
-                                          request.POST.get('name'),
-                                          request.POST.get('nativeName'),
-                                          request.POST.get('title'),
-                                          request.POST.get('srs'),
-                                          attribute_dict)
-        return HttpResponse('Patience')
-    else:
+    if request.method != 'POST':
         return HttpResponse('Only POST requests supported', status='405')
 
+    errors = []
+    args = {}
+
+    def respond():
+        return HttpResponse(json.dumps({
+            'success' : len(errors) == 0,
+            'errors' : errors
+        }))
+
+    # these must be provided or fail
+    for r in ('name','srs','attributes'):
+        if r not in request.POST:
+            errors.append('%s is required' % r)
+        else:
+            args[r] = request.POST[r]
+
+    if errors:
+        return respond()
+
+    # optional arguments
+    for r in ('workspace','store','title'):
+        args[r] = request.POST.get(r,None)
+
+    # default native_name to name if not provided
+    args['native_name'] = request.POST.get('nativeName',args['name'])
+
+    # use default store if not provided
+    if not args['store']:
+        args['store'] = settings.DB_DATASTORE_NAME
+
+    args['attributes'] = dict([att.split(":") for att in args['attributes'].split(',')])
+
+    try:
+        layer = Layer.objects.gs_catalog.create_native_layer(**args)
+        if not layer:
+            errors.append('Internal error, layer not created')
+    except Exception,ex:
+        logger.exception('Error in create_layer')
+        errors.append(str(ex))
+
+    return respond()
 
 
+        
+>>>>>>> 8c2615c... make create_layer endpoint handle errors better, add tests
