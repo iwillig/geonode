@@ -12,7 +12,11 @@ _logger = logging.getLogger("gsuploader")
 
 def parse_response(args):
     headers, response = args
-    resp = json.loads(response)
+    try:
+        resp = json.loads(response)
+    except ValueError,ex:
+        _logger.warn('invalid JSON response: %s',response)
+        raise ex
     if "import" in resp:
         return Session(json=resp['import'])
     if "task" in resp:
@@ -80,6 +84,7 @@ class Source(_UploadBase):
         # @todo more
         
 class Target(_UploadBase):
+    resource_type = "featureType"
     def _bind_json(self,json):
         key,val = json.items()[0]
         self.target_type = key
@@ -118,7 +123,6 @@ class Layer(_UploadBase):
         self._bind(json)
         
 class FeatureType(_UploadBase):
-    resource_type = "featureType"
     def _bind_json(self,json):
         self._bind(json)
         attributes = json['attributes']['attribute'] # why extra

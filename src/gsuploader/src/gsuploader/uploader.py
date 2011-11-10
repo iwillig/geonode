@@ -102,8 +102,7 @@ class _Client(object):
         _logger.info("%s request to %s",method,url)
         resp, content = self.http.request(url,method,data,headers)
         _debug(resp, content)
-        status = resp['status']
-        if status == '500':
+        if resp.status < 200 or resp.status > 299:
             raise Exception('Server error',content)
         return resp, content
         
