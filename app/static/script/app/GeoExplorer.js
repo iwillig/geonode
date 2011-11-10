@@ -422,6 +422,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             url: window.location.href.split("?")[0].replace(/\/view|\/embed|(\/new)|([0-9])$/, "$1$2/data"),
             success: function(response) {
                 var loadedConfig = Ext.decode(response.responseText, true);
+                if('portalConfig' in loadedConfig && loadedConfig.portalConfig===null){
+                    delete loadedConfig.portalConfig;
+                }
                 Ext.apply(config, loadedConfig);
                 config.tools = createToolCfg(config);
                 this.mapID = config.id;
