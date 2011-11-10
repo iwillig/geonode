@@ -92,7 +92,10 @@ class Source(_UploadBase):
         # @todo more
         
 class Target(_UploadBase):
+
+    # this allows compatibility with the gsconfig datastore object
     resource_type = "featureType"
+
     def _bind_json(self,json):
         key,val = json.items()[0]
         self.target_type = key
@@ -137,7 +140,7 @@ class FeatureType(_UploadBase):
         self.attributes = self._build(attributes,Attribute)
 
     def set_srs(self,srs):
-        """@todo,@hack This really only saves meta_data additions and will overwrite existing"""
+        """@todo,@hack This immediately changes srs"""
         item = self._parent
         data = {
             "item" : {

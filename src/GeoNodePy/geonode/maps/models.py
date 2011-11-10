@@ -1342,7 +1342,7 @@ class Map(models.Model, PermissionLevelMixin):
                 'numZoomLevels': 22
             },
             'tools' : self.tools_params or '[]',
-            'portalConfig' : self.portal_params
+            'portalConfig' : self.portal_params or '{}'
         }
         if authenticated == True:
             config['authorizedRoles'] = ["ROLE_ADMINISTRATOR"]
