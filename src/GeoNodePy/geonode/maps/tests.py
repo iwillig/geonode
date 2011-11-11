@@ -257,7 +257,7 @@ community."
         response = c.get('/maps/1/data')
         config = json.loads(response.content)
         self.assertEqual(str(config['tools']),"[]")
-        self.assertEqual(config['portalConfig'],None)
+        self.assertEqual(config['portalConfig'],"{}")
 
         # make some changes
         c.login(username='bobby',password='bob')

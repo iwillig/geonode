@@ -79,6 +79,18 @@ class Task(_UploadBase):
             }
         }}
         self._client().put_json(self.href,json.dumps(data))
+    def set_update_mode(self,update_mode):
+        data = { 'task' : {
+            'updateMode' : update_mode
+        }}
+        self._client().put_json(self.href,json.dumps(data))
+    def set_charset(self,charset):
+        data = { 'task' : {
+            'source' : {
+                'charset' : charset
+            }
+        }}
+        self._client().put_json(self.href,json.dumps(data))
     def _add_url_part(self,parts):
         parts.append('tasks/%s' % self.id)
 
