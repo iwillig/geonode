@@ -898,7 +898,7 @@ def upload_layer(request):
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
 
-def _uploader(request,import_session,form,base_file,update_mode=None):
+def _uploader(request,import_session,form,base_file,update_mode=None,layer=None):
      # @todo session objects prolly should be handled more carefully
      request.session['import_session'] = import_session
      # wipe out any file fields contained in the form or session pickle will barf
@@ -908,13 +908,27 @@ def _uploader(request,import_session,form,base_file,update_mode=None):
      request.session['import_form'] = form.cleaned_data
      request.session['import_base_file'] = base_file
      request.session['update_mode'] = update_mode
-     # only feature types have attributes
-     if hasattr(import_session.tasks[0].items[0].resource,"attributes"):
-         return HttpResponse(json.dumps({
-         "success": True,
-         "redirect_to": reverse('data_upload2')}))
+     if update_mode:
+         from geonode.maps.upload import run_import
+         try:
+             run_import(request)
+             return HttpResponse(json.dumps({
+             "success": True,
+             "redirect_to": layer.get_absolute_url() + "?describe"}))
+         except Exception, ex:
+             logging.exception("Unexpected error during upload.")
+             return HttpResponse(json.dumps({
+                 "success" : "False",
+                 "errors" : ["Unexpected error during upload: " + escape(str(e))]
+             }))
      else:
-         return HttpResponse("Can't handle this data",status=500)
+         # only feature types have attributes
+         if hasattr(import_session.tasks[0].items[0].resource,"attributes"):
+             return HttpResponse(json.dumps({
+             "success": True,
+             "redirect_to": reverse('data_upload2')}))
+         else:
+             return HttpResponse("Can't handle this data",status=500)
              
 def upload_layer2(request):
      from geonode.maps.upload import upload_step2
@@ -964,7 +978,7 @@ def _updateLayer(request, layer):
                 saved_layer = save(layer, base_file, request.user, overwrite=True)
 
                 if settings.USE_UPLOADER:
-                    return _uploader(request,saved_layer,form, base_file,update_mode="REPLACE")
+                    return _uploader(request,saved_layer,form, base_file,update_mode="REPLACE",layer=layer)
 
                 return HttpResponse(json.dumps({
                     "success": True,
@@ -975,7 +989,8 @@ def _updateLayer(request, layer):
                     "success": False,
                     "errors": ["Unexpected error during upload: " + escape(str(e))]}))
             finally:
-                if tempdir is not None:
+                # can't cleanup files yet, multi request process
+                if tempdir is not None and not settings.USE_UPLOADER:
                     shutil.rmtree(tempdir)
 
         else:
