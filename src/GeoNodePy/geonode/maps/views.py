@@ -1738,11 +1738,21 @@ def time_info(request):
         else:
             return HttpResponse(json.dumps({}), mimetype="application/javascript")
 
+
 @login_required
 def create_layer(request):
-
     if request.method != 'POST':
         return HttpResponse('Only POST requests supported', status='405')
+    # unpack multi-values into normal dict
+    return _create_layer(**dict(request.POST.items()))
+    
+def _create_layer(**kwargs):
+    '''extracted/abstracted from view easier testing or use elsewhere'''
+    from geonode.maps.gs_helpers import get_sld_for
+
+    # @hack skip_geonode allows test to work - gscatalog responses are mocks
+    # and more work required to fix this ATM
+    skip_geonode = "skip_geonode" in kwargs
 
     errors = []
     args = {}
@@ -1755,20 +1765,20 @@ def create_layer(request):
 
     # these must be provided or fail
     for r in ('name','srs','attributes'):
-        if r not in request.POST:
+        if r not in kwargs:
             errors.append('%s is required' % r)
         else:
-            args[r] = request.POST[r]
+            args[r] = kwargs[r]
 
     if errors:
         return respond()
 
     # optional arguments
     for r in ('workspace','store','title'):
-        args[r] = request.POST.get(r,None)
+        args[r] = kwargs.get(r,None)
 
     # default native_name to name if not provided
-    args['native_name'] = request.POST.get('nativeName',args['name'])
+    args['native_name'] = kwargs.get('nativeName',args['name'])
 
     # use default store if not provided
     if not args['store']:
@@ -1776,13 +1786,58 @@ def create_layer(request):
 
     args['attributes'] = dict([att.split(":") for att in args['attributes'].split(',')])
 
+    gs_ftype = None
+    cat = Layer.objects.gs_catalog
     try:
-        layer = Layer.objects.gs_catalog.create_native_layer(**args)
-        if not layer:
+        logger.info('Creating native_layer %s',args)
+        gs_ftype = cat.create_native_layer(**args)
+        if not gs_ftype:
             errors.append('Internal error, layer not created')
     except Exception,ex:
-        logger.exception('Error in create_layer')
+        logger.exception('Error creating layer in geoserver')
         errors.append(str(ex))
+
+    if not errors:
+        try:
+            logging.info('Creating style %s',gs_ftype.name)
+            gslayer = cat.get_layer(gs_ftype.name)
+            sld = get_sld_for(gslayer)
+            try:
+                cat.create_style(gslayer.name, sld)
+            except geoserver.catalog.ConflictingDataError, e:
+                logger.warn('There was already a style named %s in GeoServer, cannot overwrite: "%s"',gslayer.name,str(e))
+            gslayer.default_style = cat.get_style(gslayer.name)
+            cat.save(gslayer)
+        except Exception,ex:
+            logger.exception('Error creating style for layer')
+            errors.append(str(ex))
+
+    if not errors and not skip_geonode:
+        try:
+            layer, created = Layer.objects.get_or_create(name=gs_ftype.name, defaults = {
+                "workspace": gs_ftype.workspace.name,
+                "store": gs_ftype.store.name,
+                "storeType": gs_ftype.store.resource_type,
+                "typename": "%s:%s" % (gs_ftype.workspace.name, gs_ftype.name),
+                "title": '%s Annotations' % gs_ftype.name,
+                "abstract": 'Store Annotations for %s' % gs_ftype.name,
+                "uuid": str(uuid.uuid4())
+            })
+            assert created, 'Expected layer to have been created'
+            layer.save()
+            layer.set_default_permissions()
+        except Exception,ex:
+            logger.exception('Error in creating geonode layer')
+            errors.append(str(ex))
+
+    if errors and gs_ftype:
+        # rollback
+        # try to wipe out our layer in geoserver
+        try:
+            logging.info('Cleanup layer')
+            cascading_delete(cat, gs_ftype)
+        except:
+            logger.exception('Error cleaning up created_layer %s',gs_ftype.name)
 
     return respond()
 
