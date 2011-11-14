@@ -342,7 +342,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     
     loadConfig: function(config, callback) {
         config = Ext.apply(config || {}, {
-            proxy: "/proxy?url=",
+            proxy: "/proxy/?url=",
             rest: "/maps/"
         });
         function createToolCfg(config) {
