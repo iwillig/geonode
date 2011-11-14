@@ -247,7 +247,35 @@ community."
         pass
 
     def test_map_update_from_viewer(self):
-        pass
+        c = Client()
+
+        map = Map.objects.get(id=1)
+
+        # check some missing data assumptions
+        self.assertEqual(map.tools_params,None)
+        self.assertEqual(map.portal_params,None)
+        response = c.get('/maps/1/data')
+        config = json.loads(response.content)
+        self.assertEqual(str(config['tools']),"[]")
+        self.assertEqual(config['portalConfig'],"{}")
+
+        # make some changes
+        c.login(username='bobby',password='bob')
+        config = json.loads(MapTest.viewer_config_alternative)
+        config['tools'] = ['something']
+        response = c.put("/maps/1/data",data=json.dumps(config),content_type="text/json")
+        self.assertEqual(response.status_code,204)
+
+        # verify in model
+        map = Map.objects.get(id=1)
+        self.assertEqual(map.tools_params,"['something']")
+        self.assertEqual(map.portal_params,None)
+
+        # and json
+        response = c.get('/maps/1/data')
+        config = json.loads(response.content)
+        self.assertEqual(str(config['tools']),"['something']")
+        self.assertEqual(config['portalConfig'],None)
 
     def test_map_get_absolute_url(self):
         pass
@@ -872,6 +900,50 @@ class ViewTest(TestCase):
             client = Client()
             layer = Layer.objects.all()[0]
             response = client.get("/maps/new?layer=" + layer.typename)
+
+    def test_create_layer(self):
+        with patch('geonode.maps.models.Layer.objects.gs_catalog') as mock_gs:
+                settings.DB_DATASTORE_NAME = 'target_datastore'
+                try:
+                    mock_gs.create_native_layer.return_value.layer = 1
+                    self._do_test_create_layer(mock_gs)
+                finally:
+                    del settings.DB_DATASTORE_NAME
+
+    def _do_test_create_layer(self,mock_gs):
+        c = Client()
+
+        # verify required login - redirect to login
+        response = c.post('/data/create_layer')
+        self.assertEquals(response.status_code,302)
+
+        c.login(username='admin', password='admin')
+
+        # bad post
+        response = c.post('/data/create_layer',{})
+        self.assertEquals(response.status_code,200)
+        robj = json.loads(response.content)
+        self.assertEquals(False,robj['success'])
+        self.assertEquals(3,len(robj['errors']))
+
+        # valid post
+        response = c.post('/data/create_layer',{
+            "srs" : "EPSG:4326",
+            "name" : "test_create_layer",
+            "attributes" : "title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry,timestamp:java.util.Date",
+            #@todo remove 'skip_geonode' and fix work around mock objects returned by catalog
+            "skip_geonode" : "true"
+        })
+        robj = json.loads(response.content)
+        self.assertEquals(True,robj['success'])
+        self.assertEquals(0,len(robj['errors']))
+        # test defaults used
+        called, _, args = mock_gs.method_calls[0]
+        self.assertEquals('create_native_layer',called)
+        self.assertEquals('test_create_layer',args['name'])
+        self.assertEquals('test_create_layer',args['native_name'])
+        self.assertEquals('EPSG:4326',args['srs'])
+        self.assertEquals('target_datastore',args['store'])
 
 
 from geonode.maps.forms import JSONField, LayerUploadForm, NewLayerUploadForm

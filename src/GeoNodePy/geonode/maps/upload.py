@@ -94,6 +94,7 @@ def save(layer, base_file, user, overwrite = True, title=None, abstract=None, pe
         logger.debug("Finished upload of [%s] to GeoServer without errors.", name)
 
     return import_session
+
     
 class TimeForm(forms.Form):
     presentation_strategy = forms.CharField(required=False)
@@ -164,6 +165,33 @@ def upload_step2_context(req):
         'time_form' : _create_time_form(req),
         'layer_name' : import_session.tasks[0].items[0].layer.name
     }
+
+def run_import(req):
+    import_session = req.session['import_session']
+    # if a target datastore is configured, ensure the datastore exists in geoserver
+    # and set the uploader target appropriately
+    if settings.DB_DATASTORE:
+        target = _create_db_featurestore()
+        logger.info('setting target datastore %s %s',target.name,target.workspace.name)
+        import_session.tasks[0].set_target(target.name,target.workspace.name)
+    else:
+        target = import_session.tasks[0].target
+
+    update_mode = req.session.get('update_mode',None)
+    if update_mode:
+        logger.info('setting updateMode to %s',update_mode)
+        import_session.tasks[0].set_update_mode(update_mode)
+
+    logger.info('running import session')
+    import_session.commit()
+    # @todo the importer chooses an available featuretype name late in the game
+    # need to reload the item from the uploader and verify the resource.name
+    # otherwise things will fail. This happens when the same data is uploaded
+    # a second time and the default name is chosen
+
+    # @todo check status of import session - it may fail, but due to protocol,
+    # this will not be reported during the commit
+    return target
     
 def upload_step2(req):
     #
@@ -177,24 +205,28 @@ def upload_step2(req):
     if form.is_valid():
         cleaned = form.cleaned_data
         time_attribute = cleaned.get('time_attribute',None)
-        transform = None
+        transforms = []
         if not time_attribute:
             time_attribute = cleaned.get('text_attribute',None)
             if time_attribute:
-                transform = {
+                transforms.append({
                     'type' : 'DateFormatTransform',
                     'field' : time_attribute,
                     'format' : cleaned['text_attribute_format']
-                }
+                })
         if not time_attribute:
             time_attribute = cleaned.get('year_attribute',None)
             if time_attribute:
-                transform = {
+                transforms.append({
                     'type' : 'IntegerFieldToDateTransform',
                     'field' : time_attribute
-                }
+                })
             
         if time_attribute:
+            transforms.append({
+                'type' : 'CreateIndexTransform',
+                'field' : time_attribute
+            })
             resource = import_session.tasks[0].items[0].resource
             resource.add_time_dimension_info(
                 time_attribute,
@@ -204,25 +236,15 @@ def upload_step2(req):
             )
             logger.info('Setting time dimension info')
             resource.save()
-        if transform:
-            logger.info('Setting transform')
-            import_session.tasks[0].items[0].set_transforms([transform])
+        if transforms:
+            logger.info('Setting transforms %s',transforms)
+            import_session.tasks[0].items[0].set_transforms(transforms)
             import_session.tasks[0].items[0].save()
     else:
         #@todo validation feedback
         raise Exception("form invalid")
 
-    # if a target datastore is configured, ensure the datastore exists in geoserver
-    # and set the uploader target appropriately
-    if settings.DB_DATASTORE:
-        target = _create_db_featurestore()
-        logger.info('setting target datastore %s %s',target.name,target.workspace.name)
-        import_session.tasks[0].set_target(target.name,target.workspace.name)
-    else:
-        target = import_session.tasks[0].target
-    
-    logger.info('running import session')
-    import_session.commit()
+    target = run_import(req)
     
     # Get a short handle to the gsconfig geoserver catalog
     cat = Layer.objects.gs_catalog

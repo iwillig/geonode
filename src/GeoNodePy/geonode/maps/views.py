@@ -866,9 +866,9 @@ def upload_layer(request):
                 tempdir, base_file = form.write_files()
                 name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
                 if settings.USE_UPLOADER:
-                     from geonode.maps.upload import save
-                     if 'import_session' in request.session:
-                         del request.session['import_session']
+                    from geonode.maps.upload import save
+                    if 'import_session' in request.session:
+                        del request.session['import_session']
 
                 saved_layer = save(name, base_file, request.user, 
                         overwrite = False,
@@ -878,20 +878,7 @@ def upload_layer(request):
                         )
 
                 if settings.USE_UPLOADER:
-                     # this is really a import_session object to be clear
-                     import_session = saved_layer
-                     # @todo session objects prolly should be handled more carefully
-                     request.session['import_session'] = import_session
-                     for k in form.cleaned_data.keys():
-                        if k.endswith('_file'):
-                            form.cleaned_data.pop(k)
-                     request.session['import_form'] = form.cleaned_data
-                     request.session['import_base_file'] = base_file
-                     # only feature types have attributes
-                     if hasattr(import_session.tasks[0].items[0].resource,"attributes"):
-                         return HttpResponse(json.dumps({
-                         "success": True,
-                         "redirect_to": reverse('data_upload2')}))
+                    return _uploader(request,saved_layer,form,base_file)
                 
                 return HttpResponse(json.dumps({
                     "success": True,
@@ -902,6 +889,7 @@ def upload_layer(request):
                     "success": False,
                     "errors": ["Unexpected error during upload: " + escape(str(e))]}))
             finally:
+                # can't cleanup files yet, multi request process
                 if tempdir is not None and not settings.USE_UPLOADER:
                     shutil.rmtree(tempdir)
         else:
@@ -910,7 +898,37 @@ def upload_layer(request):
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
 
-
+def _uploader(request,import_session,form,base_file,update_mode=None,layer=None):
+     # @todo session objects prolly should be handled more carefully
+     request.session['import_session'] = import_session
+     # wipe out any file fields contained in the form or session pickle will barf
+     for k in form.cleaned_data.keys():
+        if k.endswith('_file'):
+            form.cleaned_data.pop(k)
+     request.session['import_form'] = form.cleaned_data
+     request.session['import_base_file'] = base_file
+     request.session['update_mode'] = update_mode
+     if update_mode:
+         from geonode.maps.upload import run_import
+         try:
+             run_import(request)
+             return HttpResponse(json.dumps({
+             "success": True,
+             "redirect_to": layer.get_absolute_url() + "?describe"}))
+         except Exception, ex:
+             logging.exception("Unexpected error during upload.")
+             return HttpResponse(json.dumps({
+                 "success" : "False",
+                 "errors" : ["Unexpected error during upload: " + escape(str(e))]
+             }))
+     else:
+         # only feature types have attributes
+         if hasattr(import_session.tasks[0].items[0].resource,"attributes"):
+             return HttpResponse(json.dumps({
+             "success": True,
+             "redirect_to": reverse('data_upload2')}))
+         else:
+             return HttpResponse("Can't handle this data",status=500)
              
 def upload_layer2(request):
      from geonode.maps.upload import upload_step2
@@ -950,9 +968,18 @@ def _updateLayer(request, layer):
 
         if form.is_valid():
             try:
+                if settings.USE_UPLOADER:
+                    from geonode.maps.upload import save
+                    if 'import_session' in request.session:
+                        del request.session['import_session']
+
                 tempdir, base_file = form.write_files()
                 name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
                 saved_layer = save(layer, base_file, request.user, overwrite=True)
+
+                if settings.USE_UPLOADER:
+                    return _uploader(request,saved_layer,form, base_file,update_mode="REPLACE",layer=layer)
+
                 return HttpResponse(json.dumps({
                     "success": True,
                     "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
@@ -962,7 +989,8 @@ def _updateLayer(request, layer):
                     "success": False,
                     "errors": ["Unexpected error during upload: " + escape(str(e))]}))
             finally:
-                if tempdir is not None:
+                # can't cleanup files yet, multi request process
+                if tempdir is not None and not settings.USE_UPLOADER:
                     shutil.rmtree(tempdir)
 
         else:
@@ -1738,31 +1766,105 @@ def time_info(request):
         else:
             return HttpResponse(json.dumps({}), mimetype="application/javascript")
 
+
 @login_required
 def create_layer(request):
-    if request.method == 'POST':
-        cat = Layer.objects.gs_catalog 
-        ws = cat.get_workspace(request.POST.get('workspace'))
-        if ws is None:
-            msg = 'Specified workspace [%s] not found' % request.POST.get('workspace')
-            return HttpResponse(msg, status='400')
-        store = cat.get_store(request.POST.get('store'))
-        if store is None:
-            msg = 'Specified store [%s] not found' % request.POST.get('store')
-            return HttpResponse(msg, status='400')
-        
-        attributes = request.POST.get('attributes')
-        attribute_dict = {}
-        for attribute in attributes.split(','):
-            key, value = attribute.split(':')
-            attribute_dict[key] = value
-        layer = cat.create_native_layer(request.POST.get('workspace'), 
-                                          request.POST.get('store'), 
-                                          request.POST.get('name'), 
-                                          request.POST.get('nativeName'), 
-                                          request.POST.get('title'),
-                                          request.POST.get('srs'), 
-                                          attribute_dict) 
-        return HttpResponse('Patience')
-    else:
+    if request.method != 'POST':
         return HttpResponse('Only POST requests supported', status='405')
+    # unpack multi-values into normal dict
+    return _create_layer(**dict(request.POST.items()))
+    
+def _create_layer(**kwargs):
+    '''extracted/abstracted from view easier testing or use elsewhere'''
+    from geonode.maps.gs_helpers import get_sld_for
+
+    # @hack skip_geonode allows test to work - gscatalog responses are mocks
+    # and more work required to fix this ATM
+    skip_geonode = "skip_geonode" in kwargs
+
+    errors = []
+    args = {}
+
+    def respond():
+        return HttpResponse(json.dumps({
+            'success' : len(errors) == 0,
+            'errors' : errors
+        }))
+
+    # these must be provided or fail
+    for r in ('name','srs','attributes'):
+        if r not in kwargs:
+            errors.append('%s is required' % r)
+        else:
+            args[r] = kwargs[r]
+
+    if errors:
+        return respond()
+
+    # optional arguments
+    for r in ('workspace','store','title'):
+        args[r] = kwargs.get(r,None)
+
+    # default native_name to name if not provided
+    args['native_name'] = kwargs.get('nativeName',args['name'])
+
+    # use default store if not provided
+    if not args['store']:
+        args['store'] = settings.DB_DATASTORE_NAME
+
+    args['attributes'] = dict([att.split(":") for att in args['attributes'].split(',')])
+
+    gs_ftype = None
+    cat = Layer.objects.gs_catalog
+    try:
+        logger.info('Creating native_layer %s',args)
+        gs_ftype = cat.create_native_layer(**args)
+        if not gs_ftype:
+            errors.append('Internal error, layer not created')
+    except Exception,ex:
+        logger.exception('Error creating layer in geoserver')
+        errors.append(str(ex))
+
+    if not errors:
+        try:
+            logging.info('Creating style %s',gs_ftype.name)
+            gslayer = cat.get_layer(gs_ftype.name)
+            sld = get_sld_for(gslayer)
+            try:
+                cat.create_style(gslayer.name, sld)
+            except geoserver.catalog.ConflictingDataError, e:
+                logger.warn('There was already a style named %s in GeoServer, cannot overwrite: "%s"',gslayer.name,str(e))
+            gslayer.default_style = cat.get_style(gslayer.name)
+            cat.save(gslayer)
+        except Exception,ex:
+            logger.exception('Error creating style for layer')
+            errors.append(str(ex))
+
+    if not errors and not skip_geonode:
+        try:
+            layer, created = Layer.objects.get_or_create(name=gs_ftype.name, defaults = {
+                "workspace": gs_ftype.workspace.name,
+                "store": gs_ftype.store.name,
+                "storeType": gs_ftype.store.resource_type,
+                "typename": "%s:%s" % (gs_ftype.workspace.name, gs_ftype.name),
+                "title": '%s Annotations' % gs_ftype.name,
+                "abstract": 'Store Annotations for %s' % gs_ftype.name,
+                "uuid": str(uuid.uuid4())
+            })
+            assert created, 'Expected layer to have been created'
+            layer.save()
+            layer.set_default_permissions()
+        except Exception,ex:
+            logger.exception('Error in creating geonode layer')
+            errors.append(str(ex))
+
+    if errors and gs_ftype:
+        # rollback
+        # try to wipe out our layer in geoserver
+        try:
+            logging.info('Cleanup layer')
+            cascading_delete(cat, gs_ftype)
+        except:
+            logger.exception('Error cleaning up created_layer %s',gs_ftype.name)
+
+    return respond()

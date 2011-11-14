@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import pprint
 
 STATE_PENDING = "PENDING"
 STATE_READY = "READY"
@@ -12,11 +13,17 @@ _logger = logging.getLogger("gsuploader")
 
 def parse_response(args):
     headers, response = args
-    resp = json.loads(response)
+    try:
+        resp = json.loads(response)
+    except ValueError,ex:
+        _logger.warn('invalid JSON response: %s',response)
+        raise ex
     if "import" in resp:
         return Session(json=resp['import'])
-    if "task" in resp:
+    elif "task" in resp:
         return Task(resp['task'])
+    elif "imports" in resp:
+        return [ Session(json=j) for j in resp['imports'] ]
     raise Exception("Unknown response %s" % resp)
 
 class _UploadBase(object):
@@ -44,8 +51,13 @@ class _UploadBase(object):
     def _client(self):
         return self._getuploader().client
     def __repr__(self):
-        #@todo hide private fields
-        return "%s : %s" % (self.__class__.__name__,vars(self))
+        # @todo fix this
+        def _fields(obj):
+            fields = filter( lambda kp: kp[0][0] != '_',vars(obj).items())
+            fields.sort(key=lambda f: f[0])
+            return map(lambda f: isinstance(f[1],_UploadBase) and (f[0],_fields(f[1])) or f, fields)
+        repr = pprint.pformat(_fields(self),indent=2)
+        return "%s : %s" % (self.__class__.__name__,repr)
         
 class Task(_UploadBase):
     def _bind_json(self,json):
@@ -67,6 +79,18 @@ class Task(_UploadBase):
             }
         }}
         self._client().put_json(self.href,json.dumps(data))
+    def set_update_mode(self,update_mode):
+        data = { 'task' : {
+            'updateMode' : update_mode
+        }}
+        self._client().put_json(self.href,json.dumps(data))
+    def set_charset(self,charset):
+        data = { 'task' : {
+            'source' : {
+                'charset' : charset
+            }
+        }}
+        self._client().put_json(self.href,json.dumps(data))
     def _add_url_part(self,parts):
         parts.append('tasks/%s' % self.id)
 
@@ -80,6 +104,10 @@ class Source(_UploadBase):
         # @todo more
         
 class Target(_UploadBase):
+
+    # this allows compatibility with the gsconfig datastore object
+    resource_type = "featureType"
+
     def _bind_json(self,json):
         key,val = json.items()[0]
         self.target_type = key
@@ -118,11 +146,26 @@ class Layer(_UploadBase):
         self._bind(json)
         
 class FeatureType(_UploadBase):
-    resource_type = "featureType"
     def _bind_json(self,json):
         self._bind(json)
         attributes = json['attributes']['attribute'] # why extra
         self.attributes = self._build(attributes,Attribute)
+
+    def set_srs(self,srs):
+        """@todo,@hack This immediately changes srs"""
+        item = self._parent
+        data = {
+            "item" : {
+                "id" : item.id,
+                "resource" : {
+                    "featureType" : {
+                        "srs" : srs
+                    }
+                }
+            }
+        }
+        self._client().put_json(item.href,json.dumps(data))
+        self.srs = srs
         
     def add_meta_data_entry(self,key,mtype,**kw):
         if not hasattr(self,'metadata'):
@@ -182,13 +225,15 @@ class Session(_UploadBase):
     def __init__(self,json=None):
         self.tasks = []
         if json:
-            self.id = json['id']
+            self._bind(json)
             if 'tasks' in json:
                 self.tasks = self._build(json['tasks'],Task)
                 
 
     def upload_task(self,files):
         """create a task with the provided files"""
+        # @todo getting the task response updates the session tasks, but
+        # neglects to retreive the overall session status field
         fname = os.path.basename(files[0])
         _,ext = os.path.splitext(fname)
         if ext == '.zip':
@@ -208,6 +253,7 @@ class Session(_UploadBase):
         #@todo check status if we don't have it already
         url = self._url("imports/%s",self.id)
         resp, content = self._client().post(url)
-        return resp, content  
+        if resp['status'] != '204':
+            raise Exception("expected 204 response code, got %s" % resp['status'],content)
     
 
