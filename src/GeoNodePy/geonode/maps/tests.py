@@ -256,8 +256,8 @@ community."
         self.assertEqual(map.portal_params,None)
         response = c.get('/maps/1/data')
         config = json.loads(response.content)
-        self.assertEqual(str(config['tools']),"[]")
-        self.assertEqual(config['portalConfig'],None)
+        self.assertFalse('tools' in config)
+        self.assertFalse('portalConfig' in config)
 
         # make some changes
         c.login(username='bobby',password='bob')
@@ -275,7 +275,7 @@ community."
         response = c.get('/maps/1/data')
         config = json.loads(response.content)
         self.assertEqual(str(config['tools']),"['something']")
-        self.assertEqual(config['portalConfig'],None)
+        self.assertFalse('portalConfig' in config)
 
     def test_map_get_absolute_url(self):
         pass
