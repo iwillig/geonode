@@ -425,6 +425,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 if('portalConfig' in loadedConfig && loadedConfig.portalConfig===null){
                     delete loadedConfig.portalConfig;
                 }
+				if('tools' in loadedConfig && loadedConfig.tools===null){
+                    delete loadedConfig.tools;
+                }
                 Ext.apply(config, loadedConfig);
                 config.tools = createToolCfg(config);
                 this.mapID = config.id;
