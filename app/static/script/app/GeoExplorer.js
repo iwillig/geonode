@@ -416,6 +416,23 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_timelinelayers",
                 timelineTool: "timeline-tool",
                 actionTarget: "timeline-container.tbar"
+            }, {
+                ptype: "gxp_featuremanager",
+                id: "annotations_manager",
+                paging: false,
+                layer: {
+                    source: "local",
+                    forceLazy: true,
+                    name: "geonode:annotations"
+                }
+            }, {
+                ptype: "gxp_featureeditor",
+                supportAbstractGeometry: true,
+                supportNoGeometry: true,
+                featureManager: "annotations_manager",
+                autoLoadFeatures: true,
+                actionTarget: "annotation_menu",
+                actionTarget: {target: "paneltbar", index: 12}
             });
 	    }
         Ext.Ajax.request({
