@@ -244,14 +244,11 @@ community."
         self.assertEquals(map.layer_set.all().count(), 1)
 
     def test_map_viewer_json(self):
-        pass
-
-    def test_map_update_from_viewer(self):
         c = Client()
 
         map = Map.objects.get(id=1)
 
-        # check some missing data assumptions
+        # check some missing data assumptions - tools and portalConfig should not be present
         self.assertEqual(map.tools_params,None)
         self.assertEqual(map.portal_params,None)
         response = c.get('/maps/1/data')
@@ -259,22 +256,28 @@ community."
         self.assertFalse('tools' in config)
         self.assertFalse('portalConfig' in config)
 
+    def test_map_update_from_viewer(self):
+        c = Client()
+
+        map = Map.objects.get(id=1)
+
         # make some changes
         c.login(username='bobby',password='bob')
         config = json.loads(MapTest.viewer_config_alternative)
-        config['tools'] = ['something']
+        config['tools'] = ['something',{'random':'in here'}]
         response = c.put("/maps/1/data",data=json.dumps(config),content_type="text/json")
+        print response
         self.assertEqual(response.status_code,204)
 
         # verify in model
         map = Map.objects.get(id=1)
-        self.assertEqual(map.tools_params,"['something']")
-        self.assertEqual(map.portal_params,None)
+        self.assertEqual(json.loads(map.tools_params), config['tools'])
+        self.assertEqual(map.portal_params, None)
 
         # and json
         response = c.get('/maps/1/data')
         config = json.loads(response.content)
-        self.assertEqual(str(config['tools']),"['something']")
+        self.assertEqual(json.loads(map.tools_params), config['tools'])
         self.assertFalse('portalConfig' in config)
 
     def test_map_get_absolute_url(self):
