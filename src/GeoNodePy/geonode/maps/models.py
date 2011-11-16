@@ -1209,13 +1209,13 @@ class Map(models.Model, PermissionLevelMixin):
     The last time the map was modified.
     """
     
-    tools_params = models.CharField(_('tools params'), max_length=1024, null=True)
+    tools_params = models.TextField(_('tools params'), null=True)
     """
     A JSON-encoded dictionary of arbitrary parameters for the GXP tools
     configuration for this layer.
     """
 
-    portal_params = models.CharField(_('portal params'), max_length=1024, null=True)
+    portal_params = models.TextField(_('portal params'), null=True)
     """
     A JSON-encoded dictionary of arbitrary parameters for the ...(what?)
     """
@@ -1343,9 +1343,9 @@ class Map(models.Model, PermissionLevelMixin):
             },
         }
         if self.tools_params:
-            config['tools'] = self.tools_params
+            config['tools'] = simplejson.loads(self.tools_params)
         if self.portal_params:
-            config['portalConfig'] = self.portal_params
+            config['portalConfig'] = simplejson.loads(self.portal_params)
         if authenticated == True:
             config['authorizedRoles'] = ["ROLE_ADMINISTRATOR"]
         '''
@@ -1393,8 +1393,10 @@ class Map(models.Model, PermissionLevelMixin):
                     self, layer, source_for(layer), ordering
             ))
 
-        self.tools_params = conf.get('tools',None)
-        self.portal_params = conf.get('portalConfig',None)
+        if 'tools' in conf:
+            self.tools_params = simplejson.dumps(conf['tools'])
+        if 'portalConfig' in conf:
+            self.portal_params = simplejson.dumps(conf['portalConfig'])
 
         self.save()
 

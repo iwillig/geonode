@@ -1801,6 +1801,9 @@ def _create_layer(**kwargs):
     if errors:
         return respond()
 
+    time_attribute = kwargs.get('timeAttribute',None)
+    time_presentation = kwargs.get('timePresentation',None)
+
     # optional arguments
     for r in ('workspace','store','title'):
         args[r] = kwargs.get(r,None)
@@ -1815,12 +1818,14 @@ def _create_layer(**kwargs):
     args['attributes'] = dict([att.split(":") for att in args['attributes'].split(',')])
 
     gs_ftype = None
+    gslayer = None
     cat = Layer.objects.gs_catalog
     try:
         logger.info('Creating native_layer %s',args)
         gs_ftype = cat.create_native_layer(**args)
         if not gs_ftype:
             errors.append('Internal error, layer not created')
+        gslayer = cat.get_layer(gs_ftype.name)
     except Exception,ex:
         logger.exception('Error creating layer in geoserver')
         errors.append(str(ex))
@@ -1828,7 +1833,6 @@ def _create_layer(**kwargs):
     if not errors:
         try:
             logging.info('Creating style %s',gs_ftype.name)
-            gslayer = cat.get_layer(gs_ftype.name)
             sld = get_sld_for(gslayer)
             try:
                 cat.create_style(gslayer.name, sld)
@@ -1856,6 +1860,36 @@ def _create_layer(**kwargs):
             layer.set_default_permissions()
         except Exception,ex:
             logger.exception('Error in creating geonode layer')
+            errors.append(str(ex))
+
+     # add time dimension - @todo should be in gsconfig
+    if not errors and time_attribute:
+        try:
+            logger.info('Setting time dimension in geoserver')
+            timedata = json.dumps({
+                'featureType' : {
+                    'enabled' : True,
+                    'metadata' : {
+                        'entry' : {
+                            '@key' : 'time',
+                            'dimensionInfo' : {
+                                'enabled' : True,
+                                'attribute' : time_attribute,
+                                'presentation' : time_presentation or 'LIST'
+                            }
+                        }
+                    }
+                }
+            })
+            resturl = gslayer.resource.href
+            resturl = resturl[:resturl.rfind('.xml')]
+            resp, content = cat.http.request(resturl,'PUT',timedata,{
+                "Content-Type" : "application/json"
+            })
+            if resp.status < 200 or resp.status > 299:
+                errors.append('Error setting time dimension: %s' % content)
+        except Exception,ex:
+            logger.exception('Error setting time dimension in geoserver')
             errors.append(str(ex))
 
     if errors and gs_ftype:
