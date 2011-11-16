@@ -411,6 +411,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 outputConfig: {
                     title: null
                 },
+                featureManager: "annotations_manager",
                 playbackTool: "playback-tool"
             }, {
                 ptype: "gxp_timelinelayers",
