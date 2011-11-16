@@ -45,6 +45,11 @@
       <version>${geoserver.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.geoserver.community</groupId>
+      <artifactId>printing2</artifactId>
+      <version>${geoserver.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.geoserver</groupId>
       <artifactId>restconfig</artifactId>
       <version>${geoserver.version}</version>
@@ -80,6 +85,18 @@
     <dependency>
         <groupId>org.opengeo.geoserver</groupId>
         <artifactId>importer</artifactId>
+        <version>2.4.3-SNAPSHOT</version>
+        <scope>runtime</scope>
+        <exclusions>
+            <exclusion>
+                <groupId>*</groupId>
+                <artifactId>*</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+    <dependency>
+        <groupId>org.opengeo.geoserver</groupId>
+        <artifactId>printng</artifactId>
         <version>2.4.3</version>
         <scope>runtime</scope>
         <exclusions>
