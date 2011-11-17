@@ -342,7 +342,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     
     loadConfig: function(config, callback) {
         config = Ext.apply(config || {}, {
-            proxy: "/proxy?url=",
+            proxy: "/proxy/?url=",
             rest: "/maps/"
         });
         function createToolCfg(config) {
@@ -411,11 +411,29 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 outputConfig: {
                     title: null
                 },
+                featureManager: "annotations_manager",
                 playbackTool: "playback-tool"
             }, {
                 ptype: "gxp_timelinelayers",
                 timelineTool: "timeline-tool",
                 actionTarget: "timeline-container.tbar"
+            }, {
+                ptype: "gxp_featuremanager",
+                id: "annotations_manager",
+                paging: false,
+                layer: {
+                    source: "local",
+                    forceLazy: true,
+                    name: "geonode:annotations"
+                }
+            }, {
+                ptype: "gxp_featureeditor",
+                supportAbstractGeometry: true,
+                supportNoGeometry: true,
+                featureManager: "annotations_manager",
+                autoLoadFeatures: true,
+                actionTarget: "annotation_menu",
+                actionTarget: {target: "paneltbar", index: 12}
             });
 	    }
         Ext.Ajax.request({
