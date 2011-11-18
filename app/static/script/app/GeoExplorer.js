@@ -432,8 +432,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 supportNoGeometry: true,
                 featureManager: "annotations_manager",
                 autoLoadFeatures: true,
-                actionTarget: "annotation_menu",
-                actionTarget: {target: "paneltbar", index: 12}
+                actionTarget: "notes_menu",
+                createFeatureActionText: "Add note",
+                iconClsAdd: 'gxp-icon-addnote',
+                editFeatureActionText: "Edit note"
             });
 	    }
         Ext.Ajax.request({
@@ -577,7 +579,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         this.toolbar = new Ext.Toolbar({
             disabled: true,
             id: 'paneltbar',
-            items: this.createTools()
+            items: this.createTools().concat({xtype: 'button', text: 'Notes', iconCls: 'gxp-icon-note', menu: new Ext.menu.Menu({id: 'notes_menu'})})
         });
 
         this.on("ready", function() {
