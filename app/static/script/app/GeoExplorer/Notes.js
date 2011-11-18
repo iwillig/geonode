@@ -16,6 +16,14 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
     /** api: method[addActions]
      */
     addActions: function() {
+        var editor = this.target.tools[this.featureEditor];
+        var featureManager = editor.getFeatureManager();
+        featureManager.featureLayer.events.on({
+            "visibilitychanged": function(evt) {
+                Ext.getCmp(this.outputConfig.id).items.get(0).setChecked(evt.object.getVisibility());
+            },
+            scope: this
+        });
         return GeoExplorer.plugins.Notes.superclass.addActions.apply(this, [{
             text: this.notesText,
             iconCls: this.iconCls,
@@ -23,11 +31,10 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
                 id: this.outputConfig.id,
                 items: [
                     new Ext.menu.CheckItem({
+                        checked: featureManager.featureLayer.getVisibility(),
                         text: this.showNotesText,
                         listeners: {
                             checkchange: function(item, checked) {
-                                var editor = this.target.tools[this.featureEditor];
-                                var featureManager = editor.getFeatureManager();
                                 if (checked === true) {
                                     featureManager.showLayer(
                                         editor.id, editor.showSelectedOnly && "selected"
