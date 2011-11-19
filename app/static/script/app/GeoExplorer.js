@@ -142,7 +142,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_playback",
                 id: "playback-tool",
-                actionTarget: "main.tbar"
+                actionTarget: "main.tbar",
+                outputConfig: {cls: 'gxp-fade-control'}
             });
         }
 
@@ -467,6 +468,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         this.mapItems = [{
             xtype: "gx_zoomslider",
             vertical: true,
+            cls:'gxp-fade-control',
             height: 100,
             plugins: new GeoExt.ZoomSliderTip({
                 template: "<div>"+this.zoomSliderTipText+": {zoom}<div>"
@@ -559,6 +561,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             // add custom tree contextmenu items
             layerTree = Ext.getCmp("treecontent");
         }, this);
+        
+        //give the native map nav controls a common container
+        this.on('ready',function(){
+            var ctEl = new Ext.Element(Ext.DomHelper.append(Ext.DomQuery.selectNode('.olMapViewport'),[{tag:'div',id:'FadeControlContainer'}]));
+            ctEl.appendChild(Ext.select('.olControlPanPanel, .olControlZoomPanel'));
+        },this);
 
         var layersTabPanel = new Ext.TabPanel({
             border: false,
