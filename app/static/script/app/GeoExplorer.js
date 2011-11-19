@@ -419,8 +419,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 timelineTool: "timeline-tool",
                 actionTarget: "timeline-container.tbar"
             }, {
+                ptype: "app_notes",
+                featureEditor: "annotations_editor",
+                outputConfig: {
+                    id: 'notes_menu'
+                },
+                actionTarget: {target: "paneltbar", index: 12}
+            },{
                 ptype: "gxp_featuremanager",
                 id: "annotations_manager",
+                autoLoadFeatures: true,
                 paging: false,
                 layer: {
                     source: "local",
@@ -429,12 +437,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 }
             }, {
                 ptype: "gxp_featureeditor",
+                id: "annotations_editor",
                 supportAbstractGeometry: true,
+                showSelectedOnly: false,
                 supportNoGeometry: true,
                 featureManager: "annotations_manager",
                 autoLoadFeatures: true,
-                actionTarget: "annotation_menu",
-                actionTarget: {target: "paneltbar", index: 12}
+                actionTarget: "notes_menu",
+                createFeatureActionText: "Add note",
+                iconClsAdd: 'gxp-icon-addnote',
+                editFeatureActionText: "Edit note"
             });
 	    }
         Ext.Ajax.request({
