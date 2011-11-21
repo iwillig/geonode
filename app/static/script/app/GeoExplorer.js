@@ -440,12 +440,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_featuremanager",
                 id: "annotations_manager",
                 autoLoadFeatures: true,
-                paging: false,
-                layer: {
-                    source: "local",
-                    forceLazy: true,
-                    name: "geonode:annotations"
-                }
+                paging: false
             }, {
                 ptype: "gxp_featureeditor",
                 id: "annotations_editor",
