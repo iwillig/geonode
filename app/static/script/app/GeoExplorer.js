@@ -138,6 +138,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 // uncomment the line below if you want feature info in a grid
                 //format: "grid",
                 actionTarget: "main.tbar",
+                layerParams: ['TIME'],
                 outputConfig: {width: 400, height: 300}
             }, {
                 ptype: "gxp_playback",
