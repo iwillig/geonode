@@ -421,6 +421,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "app_notes",
                 createLayerUrl: "/data/create_layer",
+                workspacePrefix: "geonode",
                 params: {
                     workspace: 'geonode',
                     store: 'geonode',

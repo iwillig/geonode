@@ -19,6 +19,8 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
 
     params: null,
 
+    workspacePrefix: null,
+
     onMapSave: function(id) {
         if (this.layerName === null) {
             this.layerName = 'annotations_' + id;
@@ -32,9 +34,20 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
         }
     },
 
-    onLayerCreateSuccess: function(response) {
-        // TODO assign correct featureType to feature editor
+    setLayer: function(layerRecord) {
+        var editor = this.target.tools[this.featureEditor];
+        var featureManager = editor.getFeatureManager();
+        featureManager.setLayer(layerRecord);
         this.actions[0].enable();
+    },
+
+    onLayerCreateSuccess: function(response) {
+        var config = {
+            source: "local",
+            forceLazy: true,
+            name: this.workspacePrefix + ":" + this.layerName
+        };
+        this.target.createLayerRecord(config, this.setLayer, this);
     },
 
     /** api: method[addActions]
