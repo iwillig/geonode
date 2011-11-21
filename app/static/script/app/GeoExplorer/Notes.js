@@ -42,6 +42,8 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
     },
 
     onLayerCreateSuccess: function(response) {
+        // TODO error handling, e.g.
+        // {"errors": ["Internal error, layer not created", "'NoneType' object has no attribute 'name'"], "success": false}
         var config = {
             source: "local",
             forceLazy: true,
