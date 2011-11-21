@@ -13,9 +13,37 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
 
     featureEditor: null,
 
+    layerName: null,
+
+    createLayerUrl: null,
+
+    params: null,
+
+    onMapSave: function(id) {
+        if (this.layerName === null) {
+            this.layerName = 'annotations_' + id;
+            Ext.Ajax.request({
+                method: "POST",
+                url: this.createLayerUrl,
+                params: Ext.apply(this.params, {name: this.layerName}),
+                success: this.onLayerCreateSuccess,
+                scope: this
+            });
+        }
+    },
+
+    onLayerCreateSuccess: function(response) {
+        // TODO assign correct featureType to feature editor
+        this.actions[0].enable();
+    },
+
     /** api: method[addActions]
      */
     addActions: function() {
+        this.target.on({
+            saved: this.onMapSave,
+            scope: this
+        });
         var editor = this.target.tools[this.featureEditor];
         var featureManager = editor.getFeatureManager();
         featureManager.featureLayer.events.on({
@@ -26,6 +54,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
         });
         return GeoExplorer.plugins.Notes.superclass.addActions.apply(this, [{
             text: this.notesText,
+            disabled: this.disabled,
             iconCls: this.iconCls,
             menu: new Ext.menu.Menu({
                 id: this.outputConfig.id,
