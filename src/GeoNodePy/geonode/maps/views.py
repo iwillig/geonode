@@ -2015,7 +2015,8 @@ def _create_layer(**kwargs):
         gs_ftype = cat.create_native_layer(**args)
         if not gs_ftype:
             errors.append('Internal error, layer not created')
-        gslayer = cat.get_layer(gs_ftype.name)
+        else:
+            gslayer = cat.get_layer(gs_ftype.name)
     except Exception,ex:
         logger.exception('Error creating layer in geoserver')
         errors.append(str(ex))
