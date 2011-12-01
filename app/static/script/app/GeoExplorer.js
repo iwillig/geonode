@@ -143,8 +143,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_playback",
                 id: "playback-tool",
-                actionTarget: "main.tbar",
-                outputConfig: {cls: 'gxp-fade-control'}
+                outputTarget: "map-bbar"
             });
         }
 
@@ -453,6 +452,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 createFeatureActionText: "Add note",
                 iconClsAdd: 'gxp-icon-addnote',
                 editFeatureActionText: "Edit note"
+            },{
+                ptype: 'app_scaleoverlay',
+                outputTarget:'map-bbar'
             });
 	    }
         Ext.Ajax.request({
@@ -480,15 +482,28 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 template: "<div>"+this.zoomSliderTipText+": {zoom}<div>"
             })
         }];
-        if (this.useMapOverlay !== false) {
-            this.mapItems.push({
-                xtype: "gxp_scaleoverlay"
-            });
-        }
+        
         this.mapPlugins = [{
             ptype: "gxp_loadingindicator", 
             onlyShowOnFirstLoad: true
         }];
+        
+        //ensure map has a bbar with our prefered id
+        if (this.initialConfig.map && this.initialConfig.map.bbar) {
+            this.initialConfig.map.bbar.id = 'map-bbar';
+            this.initialConfig.map.bbar.height = 55;
+        }
+        else {
+            this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
+            {}, {
+                bbar: {
+                    id: 'map-bbar',
+                    height:55,
+                    items: []
+                }
+            });
+            
+        }
          
         GeoExplorer.superclass.initMapPanel.apply(this, arguments);
     },
