@@ -5,6 +5,8 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
     /** api: ptype = app_notes */
     ptype: "app_notes",
 
+    errorTitle: "Error creating notes layer",
+
     iconCls: "gxp-icon-note",
 
     notesText: "Notes",
@@ -42,14 +44,27 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
     },
 
     onLayerCreateSuccess: function(response) {
-        // TODO error handling, e.g.
-        // {"errors": ["Internal error, layer not created", "'NoneType' object has no attribute 'name'"], "success": false}
-        var config = {
-            source: "local",
-            forceLazy: true,
-            name: this.workspacePrefix + ":" + this.layerName
-        };
-        this.target.createLayerRecord(config, this.setLayer, this);
+        var result = Ext.decode(response.responseText);
+        if (result && result.success === true) {
+            var config = {
+                source: "local",
+                forceLazy: true,
+                name: this.workspacePrefix + ":" + this.layerName
+            };
+            this.target.createLayerRecord(config, this.setLayer, this);
+        } else if (result.errors) {
+            var msg = '';
+            for (var i=0,ii=result.errors.length; i<ii; ++i) {
+                var error = result.errors[i];
+                msg += error + '<br/>';
+            }
+            Ext.Msg.show({
+                title: this.errorTitle,
+                msg: msg,
+                icon: Ext.MessageBox.ERROR,
+                buttons: Ext.Msg.OK
+            });
+        }
     },
 
     /** api: method[addActions]
