@@ -593,6 +593,7 @@ def mapdetail(request,mapid):
                 _("You are not allowed to view this map.")})), status=401)
      
     config = map.viewer_json(authenticated=request.user.is_authenticated())
+    config["tools"] = False;
     config = json.dumps(config)
     layers = MapLayer.objects.filter(map=map.id) 
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
@@ -1677,7 +1678,6 @@ def _new_search(query, start, limit, sort_field, sort_asc, **filters):
     # default sort order by id (could be last_modified when external layers are dealt with)
     results.sort(key=lambda r: r[sort_field or 'id'],reverse=not sort_asc)
 
-    totalQueryCount = len(results)
     results = results[start:start+limit]
     # unique item id for ext store (this could be done client side)
     iid = start
@@ -1686,8 +1686,7 @@ def _new_search(query, start, limit, sort_field, sort_asc, **filters):
         iid += 1
         
     return {
-        'rows' : results,
-        'total' : totalQueryCount
+        'rows' : results
     }
 
 def change_poc(request, ids, template = 'maps/change_poc.html'):
