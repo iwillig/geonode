@@ -447,7 +447,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 showSelectedOnly: false,
                 supportNoGeometry: true,
                 featureManager: "annotations_manager",
-                autoLoadFeatures: true,
                 actionTarget: "notes_menu",
                 createFeatureActionText: "Add note",
                 iconClsAdd: 'gxp-icon-addnote',
