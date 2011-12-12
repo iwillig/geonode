@@ -439,6 +439,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_featuremanager",
                 id: "annotations_manager",
                 autoLoadFeatures: true,
+                autoSetLayer: false,
                 paging: false
             }, {
                 ptype: "gxp_featureeditor",
