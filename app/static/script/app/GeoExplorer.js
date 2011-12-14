@@ -432,8 +432,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 params: {
                     workspace: 'geonode',
                     store: 'geonode',
-                    srs: 'EPSG:900913',
-                    title: "Notes",
+                    srs: 'EPSG:4326',
                     timeAttribute: 'timestamp',
                     attributes: 'title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry,timestamp:java.util.Date'
                 },
