@@ -20,6 +20,7 @@ import traceback
 import inspect
 import string
 import urllib2
+from zipfile import ZipFile
 
 logger = logging.getLogger("geonode.maps.utils")
 
@@ -33,9 +34,20 @@ def layer_type(filename):
        that can be either 'featureType' or 'coverage'
     """
     base_name, extension = os.path.splitext(filename)
-    if extension.lower() in ['.shp',]:
+    
+    shp_exts = ['.shp',]
+    cov_exts = ['.tif', '.tiff', '.geotiff', '.geotif']
+
+    if extension.lower() == '.zip':
+        with ZipFile(filename) as zf:
+            for n in zf.namelist():
+                b, e = os.path.splitext(n)
+                if e in shp_exts or e in cov_exts:
+                    base_name, extension = b,e
+
+    if extension.lower() in shp_exts:
         return FeatureType.resource_type
-    elif extension.lower() in ['.tif', '.tiff', '.geotiff', '.geotif']:
+    elif extension.lower() in cov_exts:
         return Coverage.resource_type
     else:
         msg = ('Saving of extension [%s] is not implemented' % extension)
