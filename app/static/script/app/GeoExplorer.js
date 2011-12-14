@@ -36,6 +36,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * to not add a scale overlay.
      */
     useMapOverlay: null,
+
+    /**
+     * private: property[toggleGroup]
+     * ``String``
+     */
+    toggleGroup: "map",
     
     /**
      * private: property[mapPanel]
@@ -138,6 +144,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 // uncomment the line below if you want feature info in a grid
                 //format: "grid",
                 actionTarget: "main.tbar",
+                toggleGroup: this.toggleGroup,
                 layerParams: ['TIME'],
                 outputConfig: {width: 400, height: 300}
             }, {
@@ -346,7 +353,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             proxy: "/proxy/?url=",
             rest: "/maps/"
         });
-        function createToolCfg(config) {
+        function createToolCfg(config, toggleGroup) {
             return (config.tools || []).concat({
                 ptype: "gxp_zoom",
                 actionTarget: {target: "paneltbar", index: 4}
@@ -426,6 +433,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     workspace: 'geonode',
                     store: 'geonode',
                     srs: 'EPSG:900913',
+                    title: "Notes",
                     timeAttribute: 'timestamp',
                     attributes: 'title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry,timestamp:java.util.Date'
                 },
@@ -437,6 +445,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: {target: "paneltbar", index: 12}
             },{
                 ptype: "gxp_featuremanager",
+                id: "general_manager",
+                autoSetLayer: true
+            }, {
+                ptype: "gxp_featureeditor",
+                toggleGroup: toggleGroup,
+                featureManager: "general_manager",
+                autoLoadFeature: true,
+                actionTarget: {target: "paneltbar", index: 13}
+            }, {
+                ptype: "gxp_featuremanager",
                 id: "annotations_manager",
                 autoLoadFeatures: true,
                 autoSetLayer: false,
@@ -444,6 +462,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_featureeditor",
                 id: "annotations_editor",
+                toggleGroup: toggleGroup,
                 supportAbstractGeometry: true,
                 showSelectedOnly: false,
                 supportNoGeometry: true,
@@ -463,7 +482,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 var loadedConfig = Ext.decode(response.responseText, true);
                 Ext.apply(config, loadedConfig);
                 if(!loadedConfig.tools){
-                    config.tools = createToolCfg(config);
+                    config.tools = createToolCfg(config, this.toggleGroup);
                 }
                 this.mapID = config.id;
                 callback.call(this, config);
