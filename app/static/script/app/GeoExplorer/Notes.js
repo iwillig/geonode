@@ -43,15 +43,19 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
         this.actions[0].enable();
     },
 
+    setupLayer: function() {
+        var config = {
+            source: "local",
+            forceLazy: true,
+            name: this.workspacePrefix + ":" + this.layerName
+        };
+        this.target.createLayerRecord(config, this.setLayer, this);
+    },
+
     onLayerCreateSuccess: function(response) {
         var result = Ext.decode(response.responseText);
         if (result && result.success === true) {
-            var config = {
-                source: "local",
-                forceLazy: true,
-                name: this.workspacePrefix + ":" + this.layerName
-            };
-            this.target.createLayerRecord(config, this.setLayer, this);
+            this.setupLayer();
         } else if (result.errors) {
             var msg = '';
             for (var i=0,ii=result.errors.length; i<ii; ++i) {
@@ -70,10 +74,16 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
     /** api: method[addActions]
      */
     addActions: function() {
-        this.target.on({
-            saved: this.onMapSave,
-            scope: this
-        });
+        if (this.target.mapID) {
+            this.layerName = 'annotations_' + this.target.mapID;
+            // we need to wait for the baseLayer to be there
+            this.target.mapPanel.on("afterlayeradd", this.setupLayer, this, {single: true});
+        } else {
+            this.target.on({
+                saved: this.onMapSave,
+                scope: this
+            });
+        }
         var editor = this.target.tools[this.featureEditor];
         var featureManager = editor.getFeatureManager();
         featureManager.featureLayer.events.on({
@@ -84,7 +94,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
         });
         return GeoExplorer.plugins.Notes.superclass.addActions.apply(this, [{
             text: this.notesText,
-            disabled: this.disabled,
+            disabled: !this.target.mapID,
             iconCls: this.iconCls,
             menu: new Ext.menu.Menu({
                 id: this.outputConfig.id,
