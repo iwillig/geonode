@@ -238,7 +238,7 @@ class Session(_UploadBase):
         _,ext = os.path.splitext(fname)
         if ext == '.zip':
             url = self._url("imports/%s/tasks/%s" % (self.id,fname))
-            resp = self._client().put_zip(url, payload)
+            resp = self._client().put_zip(url, files[0])
         else:
             url = self._url("imports/%s/tasks" % self.id)
             resp = self._client().post_multipart(url, files)
