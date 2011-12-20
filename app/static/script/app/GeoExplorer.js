@@ -221,7 +221,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                 scope: this
                             });
                         }.bind(this);
-                        var csrfToken, csrfMatch = document.cookie.match(/csrftoken=(.*);/);
+                        var csrfToken, csrfMatch = document.cookie.match(/csrftoken=(\w+);/);
                         if (csrfMatch && csrfMatch.length > 0) {
                             csrfToken = csrfMatch[1];
                         }
