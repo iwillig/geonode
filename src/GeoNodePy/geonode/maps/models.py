@@ -1317,7 +1317,10 @@ class Map(models.Model, PermissionLevelMixin):
 
         def source_lookup(source):
             for k, v in sources.iteritems():
-                if v == source: return k
+                if v == source:
+                    if v['id'] in sources:
+                        return v['id']
+                    return k
             return None
 
         def layer_config(l):
