@@ -154,7 +154,10 @@ class FeatureType(_UploadBase):
         self.attributes = self._build(attributes,Attribute)
         self.nativeCRS = None
         if 'nativeCRS' in json:
-            self.nativeCRS = json['nativeCRS']['$']
+            self.nativeCRS = json['nativeCRS']
+            # if nativeCRS is missing, this will be a dict, otherwise a string
+            if isinstance(self.nativeCRS, dict):
+                self.nativeCRS = self.nativeCRS['$']
 
     def set_srs(self,srs):
         """@todo,@hack This immediately changes srs"""
