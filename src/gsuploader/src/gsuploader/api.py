@@ -63,9 +63,9 @@ class Task(_UploadBase):
     def _bind_json(self,json):
         self._bind(json)
         self.source = Source(json['source'],self)
-        target = json['target']
-        target_type = target.keys
-        self.target = Target(json['target'],self)
+        self.target = None
+        if 'target' in json:
+            self.target = Target(json['target'],self)
         self.items = self._build(json['items'],Item)
     def set_target(self,store_name,workspace):
         data = { 'task' : {
@@ -146,10 +146,15 @@ class Layer(_UploadBase):
         self._bind(json)
         
 class FeatureType(_UploadBase):
+    resource_type = "featureType"
+
     def _bind_json(self,json):
         self._bind(json)
         attributes = json['attributes']['attribute'] # why extra
         self.attributes = self._build(attributes,Attribute)
+        self.nativeCRS = None
+        if 'nativeCRS' in json:
+            self.nativeCRS = json['nativeCRS']['$']
 
     def set_srs(self,srs):
         """@todo,@hack This immediately changes srs"""
