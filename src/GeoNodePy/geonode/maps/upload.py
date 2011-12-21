@@ -81,15 +81,23 @@ def save(layer, base_file, user, overwrite = True, title=None, abstract=None, pe
     # Step 4. Create the store in GeoServer
     logger.info('>>> Step 4. Starting upload of [%s] to GeoServer...', base_file)
 
+    error_msg = None
     try:
         import_session = uploader.upload(base_file)
+        if not import_session.tasks:
+            error_msg = 'No upload tasks were created'
+        elif not import_session.tasks[0].items:
+            error_msg = 'No upload items found for task'
         # @todo once the random tmp9723481758915 type of name is not around, need to track the name
         # computed above, for now, the target store name can be used
     except Exception, e:
-        msg = 'Could not save the layer %s, there was an upload error: %s' % (name, str(e))
+        error_msg = str(e)
+        logger.exception('Error during upload')
+        
+    if error_msg:
+        msg = 'Could not save the layer %s, there was an upload error: %s' % (name, error_msg)
         logger.warn(msg)
-        e.args = (msg,)
-        raise
+        raise Exception(msg)
     else:
         logger.debug("Finished upload of [%s] to GeoServer without errors.", name)
 
@@ -98,6 +106,7 @@ def save(layer, base_file, user, overwrite = True, title=None, abstract=None, pe
     
 class TimeForm(forms.Form):
     presentation_strategy = forms.CharField(required=False)
+    srs = forms.CharField(required=False)
     precision_value = forms.IntegerField(required=False)
     precision_step = forms.ChoiceField(required=False,choices=[
         ('years',)*2,
@@ -161,10 +170,21 @@ def _create_db_featurestore():
     
 def upload_step2_context(req):
     import_session = req.session['import_session']
-    return {
+
+    context =  {
         'time_form' : _create_time_form(req),
         'layer_name' : import_session.tasks[0].items[0].layer.name
     }
+
+    # check for various recoverable incomplete states
+    if import_session.tasks[0].state == 'INCOMPLETE':
+        # CRS missing/unknown
+        if import_session.tasks[0].items[0].state == 'NO_CRS':
+            context['missing_crs'] = True
+            # there should be a native_crs
+            context['native_crs'] = import_session.tasks[0].items[0].resource.nativeCRS
+
+    return context
 
 def run_import(req):
     import_session = req.session['import_session']
@@ -240,36 +260,24 @@ def upload_step2(req):
             logger.info('Setting transforms %s',transforms)
             import_session.tasks[0].items[0].set_transforms(transforms)
             import_session.tasks[0].items[0].save()
+
+        if 'srs' in cleaned:
+            srs = cleaned['srs']
+            logger.info('Setting SRS to %s',srs)
+            import_session.tasks[0].items[0].resource.set_srs(srs)
     else:
         #@todo validation feedback
         raise Exception("form invalid")
 
     target = run_import(req)
     
+    # reload the session to check for status
+    logger.info('Reloading session %s to check validity',import_session.id)
+    import_session = Layer.objects.gs_uploader.get_session(import_session.id)
+
+    
     # Get a short handle to the gsconfig geoserver catalog
     cat = Layer.objects.gs_catalog
-    
-    # @todo iws - this needs to be in a separate step prior to finishing
-    # Step 6. Make sure our data always has a valid projection
-    # FIXME: Put this in gsconfig.py
-    #    logger.info('>>> Step 6. Making sure [%s] has a valid projection' % name)
-    #    if gs_resource.latlon_bbox is None:
-    #        box = gs_resource.native_bbox[:4]
-    #        minx, maxx, miny, maxy = [float(a) for a in box]
-    #        if -180 <= minx <= 180 and -180 <= maxx <= 180 and \
-    #           -90  <= miny <= 90  and -90  <= maxy <= 90:
-    #            logger.warn('GeoServer failed to detect the projection for layer [%s]. Guessing EPSG:4326', name)
-    #            # If GeoServer couldn't figure out the projection, we just
-    #            # assume it's lat/lon to avoid a bad GeoServer configuration
-
-    #            gs_resource.latlon_bbox = gs_resource.native_bbox
-    #            gs_resource.projection = "EPSG:4326"
-    #            cat.save(gs_resource)
-    #        else:
-    #            msg = "GeoServer failed to detect the projection for layer [%s]. It doesn't look like EPSG:4326, so backing out the layer."
-    #            logger.warn(msg, name)
-    #            cascading_delete(cat, gs_resource)
-    #            raise GeoNodeException(msg % name)
 
     # @todo iws - session objects
     base_file = req.session['import_base_file']
