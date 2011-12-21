@@ -262,9 +262,10 @@ def upload_step2(req):
             import_session.tasks[0].items[0].save()
 
         if 'srs' in cleaned:
-            srs = cleaned['srs']
-            logger.info('Setting SRS to %s',srs)
-            import_session.tasks[0].items[0].resource.set_srs(srs)
+            srs = cleaned['srs'].strip()
+            if srs:
+                logger.info('Setting SRS to %s',srs)
+                import_session.tasks[0].items[0].resource.set_srs(srs)
     else:
         #@todo validation feedback
         raise Exception("form invalid")
