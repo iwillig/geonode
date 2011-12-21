@@ -18,6 +18,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template import RequestContext, loader
 from django.utils.translation import ugettext as _
+from django.views.decorators.cache import never_cache
 import json
 import math
 import httplib2 
@@ -1128,6 +1129,7 @@ def _get_basic_auth_info(request):
     username, password = base64.b64decode(auth).split(':')
     return username, password
 
+@never_cache
 def layer_acls(request):
     """
     returns json-encoded lists of layer identifiers that 
