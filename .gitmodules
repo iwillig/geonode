@@ -19,3 +19,6 @@
 [submodule "app/static/externals/TimeManager"]
 	path = app/static/externals/TimeManager
 	url = git://github.com/mpriour/TimeManager_OpenLayers-Addin.git
+[submodule "externals/stick"]
+	path = externals/stick
+	url = https://github.com/hns/stick.git
