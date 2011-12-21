@@ -502,7 +502,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         
         this.mapPlugins = [{
             ptype: "gxp_loadingindicator", 
-            onlyShowOnFirstLoad: false
+            onlyShowOnFirstLoad: true
         }];
         
         //ensure map has a bbar with our prefered id
