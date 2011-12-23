@@ -166,7 +166,16 @@ class Catalog(object):
         # use doc.iter for 2.7 - getiterator for 2.6
         kws = doc.getiterator('keywords')[0]
         return dict( [ (el.get('name'),el.get('count')) for el in kws])
-        
+
+    def get_all_layer_uuids(self):
+        # @todo is filtering on dataset enough to ensure these are layers?
+        # is this even a good name for this function?
+        request = urllib2.Request('%ssrv/en/xml.search' % self.base)
+        response = self.urlopen(request)
+        doc = XML(response.read())
+        infos = doc.findall('metadata/{http://www.fao.org/geonetwork}info')
+        return [ i.find('uuid').text for i in infos if i.find('category').text == 'dataset']
+
     def _get_group_ids(self):
         """
         helper to fetch the set of geonetwork 
