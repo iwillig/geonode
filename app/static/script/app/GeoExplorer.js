@@ -220,7 +220,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                 },
                                 scope: this
                             });
-                        }.bind(this);
+                        }.createDelegate(this);
                         var csrfToken, csrfMatch = document.cookie.match(/csrftoken=(\w+);/);
                         if (csrfMatch && csrfMatch.length > 0) {
                             csrfToken = csrfMatch[1];
@@ -303,7 +303,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             if (this.fireEvent("beforeunload") === false) {
                 return "If you leave this page, unsaved changes will be lost.";
             }
-        }).bind(this);
+        }).createDelegate(this);
         
         // limit combo boxes to the window they belong to - fixes issues with
         // list shadow covering list items
