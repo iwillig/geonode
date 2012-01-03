@@ -1,3 +1,4 @@
+import os.path
 from geonode.maps.utils import *
 from django import forms
 from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole, Role
@@ -204,10 +205,6 @@ def run_import(req):
 
     logger.info('running import session')
     import_session.commit()
-    # @todo the importer chooses an available featuretype name late in the game
-    # need to reload the item from the uploader and verify the resource.name
-    # otherwise things will fail. This happens when the same data is uploaded
-    # a second time and the default name is chosen
 
     # @todo check status of import session - it may fail, but due to protocol,
     # this will not be reported during the commit
@@ -275,15 +272,14 @@ def upload_step2(req):
     # reload the session to check for status
     logger.info('Reloading session %s to check validity',import_session.id)
     import_session = Layer.objects.gs_uploader.get_session(import_session.id)
-
+    # @todo the importer chooses an available featuretype name late in the game
+    # need to verify the resource.name otherwise things will fail.
+    # This happens when the same data is uploaded a second time and the default
+    # name is chosen
     
     # Get a short handle to the gsconfig geoserver catalog
     cat = Layer.objects.gs_catalog
 
-    # @todo iws - session objects
-    base_file = req.session['import_base_file']
-    files = get_files(base_file)
-    
     # Step 7. Create the style and assign it to the created resource
     # FIXME: Put this in gsconfig.py
     
@@ -295,13 +291,18 @@ def upload_step2(req):
     if publishing is None:
         raise Exception("Expected to find layer named ''%s' in geoserver",name)
 
-    if 'sld' in files:
-        f = open(files['sld'], 'r')
+    # get_files will not find the sld if it doesn't match the base name
+    # so we've worked around that in the view - if provided, it will be here
+    if 'import_sld_file' in req.session:
+        logger.info('using provided sld file')
+        base_file = req.session['import_base_file']
+        sld_file = os.path.join(os.path.dirname(base_file),req.session['import_sld_file'])
+        f = open(sld_file, 'r')
         sld = f.read()
         f.close()
     else:
         sld = get_sld_for(publishing)
-        
+
     if sld is not None:
         try:
             cat.create_style(name, sld)
@@ -313,6 +314,7 @@ def upload_step2(req):
 
         #FIXME: Should we use the fully qualified typename?
         publishing.default_style = cat.get_style(name)
+        logger.info('default style set to ' + name)
         cat.save(publishing)
     
 

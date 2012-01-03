@@ -927,10 +927,14 @@ def _uploader(request,import_session,form,base_file,update_mode=None,layer=None)
      # wipe out any file fields contained in the form or session pickle will barf
      for k in form.cleaned_data.keys():
         if k.endswith('_file'):
-            form.cleaned_data.pop(k)
+            file = form.cleaned_data.pop(k)
+            # work around sld file named differently from base_file
+            if k.startswith('sld'):
+                request.session['import_sld_file'] = file.name
      request.session['import_form'] = form.cleaned_data
      request.session['import_base_file'] = base_file
      request.session['update_mode'] = update_mode
+     
      if update_mode:
          from geonode.maps.upload import run_import
          try:
