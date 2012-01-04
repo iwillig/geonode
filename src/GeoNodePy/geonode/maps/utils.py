@@ -39,11 +39,15 @@ def layer_type(filename):
     cov_exts = ['.tif', '.tiff', '.geotiff', '.geotif']
 
     if extension.lower() == '.zip':
-        with ZipFile(filename) as zf:
+        zf = ZipFile(filename)
+        # ZipFile doesn't support with statement in 2.6, so don't do it
+        try:
             for n in zf.namelist():
                 b, e = os.path.splitext(n)
                 if e in shp_exts or e in cov_exts:
                     base_name, extension = b,e
+        finally:
+            zf.close()
 
     if extension.lower() in shp_exts:
         return FeatureType.resource_type
