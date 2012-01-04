@@ -929,7 +929,7 @@ def _uploader(request,import_session,form,base_file,update_mode=None,layer=None)
         if k.endswith('_file'):
             file = form.cleaned_data.pop(k)
             # work around sld file named differently from base_file
-            if k.startswith('sld'):
+            if file and k.startswith('sld'):
                 request.session['import_sld_file'] = file.name
      request.session['import_form'] = form.cleaned_data
      request.session['import_base_file'] = base_file
