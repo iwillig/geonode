@@ -559,6 +559,11 @@ def get_wms():
             )
         )
     response, body = http.request(wms_url)
+    # @todo remove this hack once owslib handles empty Extent element
+    import re
+    pattern = re.compile('<Extent name="time"[^>]+/>')
+    body, cnt = pattern.subn('',body)
+    # end hack
     _wms = WebMapService(wms_url, xml=body)
 
 def get_csw():
