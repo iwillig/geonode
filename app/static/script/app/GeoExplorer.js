@@ -464,6 +464,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 supportAbstractGeometry: true,
                 showSelectedOnly: false,
                 supportNoGeometry: true,
+                outputConfig: {
+                    editorPluginConfig: {
+                        ptype: "gxp_editorform",
+                        bodyStyle: "padding: 5px 5px 0"
+                    }
+                },
                 featureManager: "annotations_manager",
                 actionTarget: "notes_menu",
                 createFeatureActionText: "Add note",
