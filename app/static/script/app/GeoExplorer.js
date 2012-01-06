@@ -464,7 +464,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 supportAbstractGeometry: true,
                 showSelectedOnly: false,
                 supportNoGeometry: true,
+                fields: ["title", "timestamp"],
                 outputConfig: {
+                    width: 300,
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
                         bodyStyle: "padding: 5px 5px 0"
