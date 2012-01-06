@@ -966,7 +966,18 @@ def upload_layer2(request):
          )
      elif request.method == 'POST':
          saved_layer = upload_step2(request)
-         return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
+         if saved_layer:
+             return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
+         else:
+             return HttpResponse(json.dumps({
+             "success": True,
+             "redirect_to": reverse('data_upload3')}))
+
+def upload_layer3(request):
+    from geonode.maps.upload import upload_step3
+    saved_layer = upload_step3(request)
+    return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
+
 
 @login_required
 @csrf_exempt

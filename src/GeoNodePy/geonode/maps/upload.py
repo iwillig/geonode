@@ -174,8 +174,16 @@ def upload_step2_context(req):
 
     context =  {
         'time_form' : _create_time_form(req),
-        'layer_name' : import_session.tasks[0].items[0].layer.name
+        'layer_name' : import_session.tasks[0].items[0].layer.name,
     }
+
+    if settings.DB_DATASTORE:
+        # we are importing to a database, use async
+        endpoint = import_session.tasks[0].items[0].progress
+        # @hack endpoint returned points to geoserver, not proxy, fix this up
+        endpoint = endpoint[endpoint.index('/') + 2:]
+        endpoint = endpoint[endpoint.index('/'):]
+        context['progress_endpoint'] = endpoint
 
     # check for various recoverable incomplete states
     if import_session.tasks[0].state == 'INCOMPLETE':
@@ -187,7 +195,7 @@ def upload_step2_context(req):
 
     return context
 
-def run_import(req):
+def run_import(req,async):
     import_session = req.session['import_session']
     # if a target datastore is configured, ensure the datastore exists in geoserver
     # and set the uploader target appropriately
@@ -204,7 +212,8 @@ def run_import(req):
         import_session.tasks[0].set_update_mode(update_mode)
 
     logger.info('running import session')
-    import_session.commit()
+    # run async if using a database
+    import_session.commit(async)
 
     # @todo check status of import session - it may fail, but due to protocol,
     # this will not be reported during the commit
@@ -267,7 +276,25 @@ def upload_step2(req):
         #@todo validation feedback
         raise Exception("form invalid")
 
-    target = run_import(req)
+    target = run_import(req,async=settings.DB_DATASTORE)
+
+    # ugh - some objects cannot be pickled, unpack into dict
+    req.session['import_target'] = {
+        'name' : target.name,
+        'workspace_name' : target.workspace.name,
+        'resource_type' : target.resource_type
+    }
+
+    # if no database import involved, run the next step
+    if not settings.DB_DATASTORE:
+        return upload_step3(req)
+
+    return None
+
+def upload_step3(req):
+
+    target = req.session['import_target']
+    import_session = req.session['import_session']
     
     # reload the session to check for status
     logger.info('Reloading session %s to check validity',import_session.id)
@@ -321,7 +348,7 @@ def upload_step2(req):
     # Step 10. Create the Django record for the layer
     logger.info('>>> Step 10. Creating Django record for [%s]', name)
     resource = import_session.tasks[0].items[0].resource
-    typename = "%s:%s" % (target.workspace.name, resource.name)
+    typename = "%s:%s" % (target['workspace_name'], resource.name)
     layer_uuid = str(uuid.uuid1())
     
     # @todo iws - session objects cleanup
@@ -332,10 +359,10 @@ def upload_step2(req):
     # @todo hacking - any cached layers might cause problems (maybe delete hook on layer should fix this?)
     cat._cache.clear()
     saved_layer, created = Layer.objects.get_or_create(name=resource.name, defaults=dict(
-                                 store=target.name,
-                                 storeType=target.resource_type,
+                                 store=target['name'],
+                                 storeType=target['resource_type'],
                                  typename=typename,
-                                 workspace=target.workspace.name,
+                                 workspace=target['workspace_name'],
                                  title=title or resource.title,
                                  uuid=layer_uuid,
                                  abstract=abstract or '',
