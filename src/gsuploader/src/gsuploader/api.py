@@ -256,10 +256,12 @@ class Session(_UploadBase):
             raise Exception("expected Task, got %s" % task)
         self.tasks.append(task)
 
-    def commit(self):
+    def commit(self, async=False):
         """complete upload"""
         #@todo check status if we don't have it already
         url = self._url("imports/%s",self.id)
+        if async:
+            url = url + "?async"
         resp, content = self._client().post(url)
         if resp['status'] != '204':
             raise Exception("expected 204 response code, got %s" % resp['status'],content)
