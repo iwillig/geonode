@@ -1964,21 +1964,8 @@ def batch_delete(request):
 
     return HttpResponse("Deleted %d layers and %d maps" % (nlayers, nmaps))
 
-# @hack - keep multiple threads from accessing this
-from threading import BoundedSemaphore
-ti_sem = BoundedSemaphore(value=1)
-
-def time_info(request):
-    resp = None
-    ti_sem.acquire()
-    try:
-        resp = _time_info(request)
-    finally:
-       ti_sem.release()
-    return resp
-
 # Temp function for tschaub while working on the timeline
-def _time_info(request):
+def time_info(request):
     if request.method != "GET":
         return HttpResponse(json.dumps({}), mimetype="application/javascript")
     else:
