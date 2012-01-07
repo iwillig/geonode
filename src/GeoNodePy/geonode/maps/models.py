@@ -1779,7 +1779,10 @@ class Thumbnail(models.Model):
             None,
             http
         ))
-        resp, content = http.request(url,"POST",str(self.thumb_spec))
+        data = unicode(self.thumb_spec).encode('UTF-8')
+        resp, content = http.request(url,"POST",data,{
+            'Content-type':'text/html'
+        })
         if resp.status < 200 or resp.status > 299:
             logging.warning('Error generating thumbnail %s',content)
             raise Exception('Error generating thumbnail')
