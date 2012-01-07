@@ -2,6 +2,7 @@ import os.path
 from geonode.maps.utils import *
 from django import forms
 from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole, Role
+from django.core.urlresolvers import reverse
 
 _separator = '\n' + ('-' * 100) + '\n'
 #@todo remove title, abstract, permissions, keywords - these are not used in this, but allow compat to old function
@@ -179,11 +180,7 @@ def upload_step2_context(req):
 
     if settings.DB_DATASTORE:
         # we are importing to a database, use async
-        endpoint = import_session.tasks[0].items[0].progress
-        # @hack endpoint returned points to geoserver, not proxy, fix this up
-        endpoint = endpoint[endpoint.index('/') + 2:]
-        endpoint = endpoint[endpoint.index('/'):]
-        context['progress_endpoint'] = endpoint
+        context['progress_endpoint'] = reverse('data_upload_progress')
 
     # check for various recoverable incomplete states
     if import_session.tasks[0].state == 'INCOMPLETE':

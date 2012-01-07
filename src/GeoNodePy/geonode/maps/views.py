@@ -978,6 +978,12 @@ def upload_layer3(request):
     saved_layer = upload_step3(request)
     return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
 
+def data_upload_progress(req):
+    """This would not be needed if geoserver REST did not require admin role
+    and is an inefficient way of getting this information"""
+    import_session = req.session['import_session']
+    progress = import_session.tasks[0].items[0].get_progress()
+    return HttpResponse(json.dumps(progress),"application/json")
 
 @login_required
 @csrf_exempt
@@ -1958,8 +1964,21 @@ def batch_delete(request):
 
     return HttpResponse("Deleted %d layers and %d maps" % (nlayers, nmaps))
 
-# Temp function for tschaub while working on the timeline
+# @hack - keep multiple threads from accessing this
+from threading import BoundedSemaphore
+ti_sem = BoundedSemaphore(value=1)
+
 def time_info(request):
+    resp = None
+    ti_sem.acquire()
+    try:
+        resp = _time_info(request)
+    finally:
+       ti_sem.release()
+    return resp
+
+# Temp function for tschaub while working on the timeline
+def _time_info(request):
     if request.method != "GET":
         return HttpResponse(json.dumps({}), mimetype="application/javascript")
     else:
@@ -1971,7 +1990,7 @@ def time_info(request):
             return HttpResponse(json.dumps({}), mimetype="application/javascript")
         ws, lyr = after_split
         layer = cat.get_resource(workspace=cat.get_workspace(ws), name=lyr)
-        if layer is not None:
+        if layer is not None and 'time' in layer.metadata:
             if layer.metadata['time']:
                 attributes = {}
                 dimensionInfo = layer.metadata['time'].find('dimensionInfo')

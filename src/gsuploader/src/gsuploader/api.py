@@ -128,6 +128,18 @@ class Item(_UploadBase):
     def set_transforms(self,transforms):
         """Set the transforms of this Item. transforms is a list of dicts"""
         self._transforms = transforms
+    def get_progress(self):
+        """Get a json object representing progress of this item"""
+        if self.progress:
+            client = self._client()
+            headers, response = client._request(self.progress)
+            try:
+                return json.loads(response)
+            except ValueError,ex:
+                _logger.warn('invalid JSON response: %s',response)
+                raise ex
+        else:
+            raise Exception("Item does not have a progress endpoint")
     def save(self):
         """@todo,@hack This really only saves transforms and will overwrite existing"""
         data = {
