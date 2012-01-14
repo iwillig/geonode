@@ -22,6 +22,8 @@ class Command(BaseCommand):
                 help="Delete geonetwork layers, too"),
             make_option('--maps', dest="maps", default=False, action="store_true",
                 help="Delete maps with missing layers, too"),
+            make_option('--styles', dest="styles", default=False, action="store_true",
+                help="Delete unused styles"),
             make_option('--execute', dest="execute", default=False, action="store_true",
                 help="If not provided, only print what would be done")
         )
@@ -33,6 +35,7 @@ class Command(BaseCommand):
             print "THIS IS A DRY RUN - use --execute"
         geonetwork = opts['geonetwork']
         maps = opts['maps']
+        styles = opts['styles']
         try:
             print 'checking layers not present in geoserver'
             pre_delete.disconnect(delete_layer, sender=Layer)
@@ -61,8 +64,11 @@ class Command(BaseCommand):
                     layer = {'uuid' : u}
                     Layer.objects.gn_catalog.delete_layer(layer)
                 md = Layer.objects.gn_catalog.get_by_uuid(u)
-                dom = XML(md.xml)
-                print '\t', dom.findall('.//{http://www.isotc211.org/2005/gmd}title')[0][0].text
+                if md:
+                    dom = XML(md.xml)
+                    print '\t', dom.findall('.//{http://www.isotc211.org/2005/gmd}title')[0][0].text
+                else:
+                    print '\t', 'unknown layer with uuid %s' % u
         if maps:
             print 'checking for maps with missing layers'
             for m in list(Map.objects.all()):
@@ -76,6 +82,22 @@ class Command(BaseCommand):
                     if not self.dryrun:
                         m.delete()
                     print '\t', m, '(missing):', ' '.join(missing)
+        if styles:
+            print 'looking for unused styles'
+            layers = cat.get_layers()
+            styles = dict( (s.name,s) for s in cat.get_styles() )
+            used = set( l.default_style.name for l in layers if l.default_style )
+            used = used | set( [s.name for l in layers for s in l.styles] )
+            for u in set(styles.keys()) - used:
+                print '\t', u
+                if not self.dryrun:
+                    try:
+                        # work around gsconfig bug
+                        from urllib import quote
+                        styles[u].name = quote(styles[u].name)
+                        cat.delete(styles[u], purge=True)
+                    except Exception,ex:
+                        print ex
 
     def delete_by_uuid(self,uuid):
         import traceback
