@@ -46,7 +46,8 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
     setupLayer: function() {
         var config = {
             source: "local",
-            forceLazy: true,
+            title: this.notesText,
+            bbox: this.target.mapPanel.map.maxExtent.toArray(), 
             name: this.workspacePrefix + ":" + this.layerName
         };
         this.target.createLayerRecord(config, this.setLayer, this);
