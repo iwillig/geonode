@@ -1610,12 +1610,7 @@ def _combined_search_results(query):
     # cache based on query key or universal cache key
     from django.core.cache import cache
     from time import time
-    cache_key = query and 'search_results_%s' % query or 'search_results_all'
-    cached_results = cache.get(cache_key)
-    if cached_results: return cached_results
     ts = time()
-    
-    # @todo think about only caching geonetwork results since map queries will be fast
     
     map_query = Map.objects
 
@@ -1653,8 +1648,13 @@ def _combined_search_results(query):
             'keywords' : keywords
             }
         results.append(mapdict)
-        
-    layer_results = _metadata_search(query, 0, 1000)['rows']
+
+    cache_key = query and 'search_results_%s' % query or 'search_results'
+    layer_results = cache.get(cache_key)
+    if not layer_results:
+        layer_results = _metadata_search(query, 0, 1000)['rows']
+        # @todo search cache timeout in settings?
+        cache.set(cache_key, layer_results, timeout=300)
     
     layers = list(Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ]))
     thumbs = Thumbnail.objects.get_thumbnails(layers)
@@ -1675,9 +1675,7 @@ def _combined_search_results(query):
             doc['owner_detail'] = reverse('profiles.views.profile_detail', args=(layer.owner.username,))
         results.append(doc)
         
-    # @todo search cache timeout in settings?
-    cache.set(cache_key,results,timeout=300)
-    logger.info('generated combined search cache in %s',time() - ts)
+    logger.info('generated combined search results in %s',time() - ts)
     return results
 
 def _new_search(query, start, limit, sort_field, sort_asc, **filters):
