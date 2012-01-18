@@ -537,12 +537,10 @@ def _get_viewer_projection_info(srid):
     # TODO: Look up projection details in EPSG database
     return _viewer_projection_lookup.get(srid, {})
 
-_wms = None
 _csw = None
 _user, _password = settings.GEOSERVER_CREDENTIALS
 
-def get_wms():
-    global _wms
+def _get_wms():
     wms_url = settings.GEOSERVER_BASE_URL + "wms?request=GetCapabilities&version=1.1.0"
     netloc = urlparse(wms_url).netloc
     http = httplib2.Http()
@@ -564,7 +562,7 @@ def get_wms():
     pattern = re.compile('<Extent name="time"[^>]+/>')
     body, cnt = pattern.subn('',body)
     # end hack
-    _wms = WebMapService(wms_url, xml=body)
+    return WebMapService(wms_url, xml=body)
 
 def get_csw():
     global _csw
@@ -581,6 +579,7 @@ class LayerManager(models.Manager):
         self.gs_catalog = Catalog(url, _user, _password)
         self.gs_uploader = Uploader(url, _user, _password)
         self.geonetwork = GeoNetwork(settings.GEONETWORK_BASE_URL, settings.GEONETWORK_CREDENTIALS[0], settings.GEONETWORK_CREDENTIALS[1])
+        self._wms = None
 
     @property
     def gn_catalog(self):
@@ -645,6 +644,17 @@ class LayerManager(models.Manager):
                 pass
         # Doing a logout since we know we don't need this object anymore.
         gn.logout()
+
+    def get_wms(self,layer_typename=None,reload=False):
+        """Get the WMS. If the WMS capabilities have not been loaded, this will
+        force a load. If the layer_typename is provided and not in the loaded
+        results, this will force a reload. If reload is True, a reload will occur."""
+        reload = reload or self._wms is None
+        if not reload and layer_typename:
+            reload = layer_typename not in self._wms.contents
+        if reload:
+            self._wms = _get_wms()
+        return self._wms
 
 class Layer(models.Model, PermissionLevelMixin):
     """
@@ -822,11 +832,9 @@ class Layer(models.Model, PermissionLevelMixin):
         http = httplib2.Http() # Do we need to add authentication?
         
         # Check the layer is in the wms get capabilities record
-        # FIXME: Implement caching of capabilities record site wide
-        if (_wms is None) or (self.typename not in _wms.contents):
-            get_wms()
+        wms = Layer.objects.get_wms(self.typename)
         try:
-            wms_layer = _wms[self.typename]
+            wms_layer = wms[self.typename]
         except:
             msg = "WMS Record missing for layer [%s]" % self.typename 
             raise GeoNodeException(msg)
@@ -874,29 +882,8 @@ class Layer(models.Model, PermissionLevelMixin):
         return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name=self.typename).select_related()])
 
     def metadata(self):
-        global _wms
-        if (_wms is None) or (self.typename not in _wms.contents):
-            get_wms()
-            """
-            wms_url = "%swms?request=GetCapabilities" % settings.GEOSERVER_BASE_URL
-            netloc = urlparse(wms_url).netloc
-            http = httplib2.Http()
-            http.add_credentials(_user, _password)
-            http.authorizations.append(
-                httplib2.BasicAuthentication(
-                    (_user, _password), 
-                    netloc,
-                    wms_url,
-                    {},
-                    None,
-                    None, 
-                    http
-                )
-            )
-            response, body = http.request(wms_url)
-            _wms = WebMapService(wms_url, xml=body)
-            """
-        return _wms[self.typename]
+        wms = Layer.objects.get_wms()
+        return wms[self.typename]
 
     def metadata_csw(self):
         global _csw
