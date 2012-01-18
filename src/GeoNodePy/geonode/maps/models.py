@@ -1121,6 +1121,31 @@ class Layer(models.Model, PermissionLevelMixin):
         else:
             srid = box[4]
         self.geographic_bounding_box = bbox_to_wkt(box[0], box[1], box[2], box[3], srid=srid )
+        
+    def get_time_extent(self):
+        """Return tuple of min/max datetime or None if not available. This
+        uses the WMS and will most likely be slow"""
+        wms = Layer.objects.get_wms()
+        # times is a list of time specs already split by comma
+        times = wms[self.typename].timepositions
+        result = None
+        parse = lambda s: datetime.strptime(s, "%Y-%m-%dT%H:%M:%S.%fZ")
+        # from the spec - possible encodings:
+        # 1 value A single value.
+        # 2 value1,value2,value3,... a A list of multiple values.
+        # 3 min/max/resolution
+        # 4 min1/max1/res1,min2/max2/res2,...
+        if times:
+            # handle min/max/resolution (we're handling case 4, but only the first resolution)
+            # not sure what multiple resolutions implies when in comes to computing total extent
+            if len(times) > 0 and times[0].find('/') >= 0:
+                times = times[0].split('/')
+                result = parse(times[0]), parse(times[1])
+            # case 1 and 2
+            elif len(times) > 0:
+                times.sort()
+                result = parse(times[0]), parse(times[-1])
+        return result
 
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)
