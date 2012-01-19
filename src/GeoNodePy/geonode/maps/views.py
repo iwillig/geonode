@@ -2036,7 +2036,12 @@ def _create_layer(**kwargs):
     if not args['store']:
         args['store'] = settings.DB_DATASTORE_NAME
 
-    args['attributes'] = dict([att.split(":") for att in args['attributes'].split(',')])
+    atts = [att.split(":") for att in args['attributes'].split(',')]
+    # check for optional third value that specifies nillability
+    for a in atts:
+        if len(a) == 3:
+            a[2] = dict(nillable=a[2])
+    args['attributes'] = atts
 
     gs_ftype = None
     gslayer = None
