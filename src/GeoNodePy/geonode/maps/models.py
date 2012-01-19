@@ -882,7 +882,7 @@ class Layer(models.Model, PermissionLevelMixin):
         return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name=self.typename).select_related()])
 
     def metadata(self):
-        wms = Layer.objects.get_wms()
+        wms = Layer.objects.get_wms(self.typename)
         return wms[self.typename]
 
     def metadata_csw(self):
@@ -1125,7 +1125,7 @@ class Layer(models.Model, PermissionLevelMixin):
     def get_time_extent(self):
         """Return tuple of min/max datetime or None if not available. This
         uses the WMS and will most likely be slow"""
-        wms = Layer.objects.get_wms()
+        wms = Layer.objects.get_wms(self.typename)
         # times is a list of time specs already split by comma
         times = wms[self.typename].timepositions
         result = None
