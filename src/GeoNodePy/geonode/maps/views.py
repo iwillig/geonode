@@ -1993,9 +1993,9 @@ def create_layer(request):
     if request.method != 'POST':
         return HttpResponse('Only POST requests supported', status='405')
     # unpack multi-values into normal dict
-    return _create_layer(**dict(request.POST.items()))
+    return _create_layer(request.user, **dict(request.POST.items()))
     
-def _create_layer(**kwargs):
+def _create_layer(user = None, **kwargs):
     '''extracted/abstracted from view easier testing or use elsewhere'''
     from geonode.maps.gs_helpers import get_sld_for
 
@@ -2080,11 +2080,12 @@ def _create_layer(**kwargs):
                 "typename": "%s:%s" % (gs_ftype.workspace.name, gs_ftype.name),
                 "title": '%s Annotations' % gs_ftype.name,
                 "abstract": 'Store Annotations for %s' % gs_ftype.name,
-                "uuid": str(uuid.uuid4())
+                "uuid": str(uuid.uuid4()),
+                "owner": user
             })
             assert created, 'Expected layer to have been created'
-            layer.save()
             layer.set_default_permissions()
+            layer.save()
         except Exception,ex:
             logger.exception('Error in creating geonode layer')
             errors.append(str(ex))
@@ -2118,7 +2119,7 @@ def _create_layer(**kwargs):
         except Exception,ex:
             logger.exception('Error setting time dimension in geoserver')
             errors.append(str(ex))
-
+            
     if errors and gs_ftype:
         # rollback
         # try to wipe out our layer in geoserver
