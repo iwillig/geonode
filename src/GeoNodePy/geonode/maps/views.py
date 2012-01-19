@@ -1610,12 +1610,7 @@ def _combined_search_results(query):
     # cache based on query key or universal cache key
     from django.core.cache import cache
     from time import time
-    cache_key = query and 'search_results_%s' % query or 'search_results_all'
-    cached_results = cache.get(cache_key)
-    if cached_results: return cached_results
     ts = time()
-    
-    # @todo think about only caching geonetwork results since map queries will be fast
     
     map_query = Map.objects
 
@@ -1653,8 +1648,13 @@ def _combined_search_results(query):
             'keywords' : keywords
             }
         results.append(mapdict)
-        
-    layer_results = _metadata_search(query, 0, 1000)['rows']
+
+    cache_key = query and 'search_results_%s' % query or 'search_results'
+    layer_results = cache.get(cache_key)
+    if not layer_results:
+        layer_results = _metadata_search(query, 0, 1000)['rows']
+        # @todo search cache timeout in settings?
+        cache.set(cache_key, layer_results, timeout=300)
     
     layers = list(Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ]))
     thumbs = Thumbnail.objects.get_thumbnails(layers)
@@ -1675,9 +1675,7 @@ def _combined_search_results(query):
             doc['owner_detail'] = reverse('profiles.views.profile_detail', args=(layer.owner.username,))
         results.append(doc)
         
-    # @todo search cache timeout in settings?
-    cache.set(cache_key,results,timeout=300)
-    logger.info('generated combined search cache in %s',time() - ts)
+    logger.info('generated combined search results in %s',time() - ts)
     return results
 
 def _new_search(query, start, limit, sort_field, sort_asc, **filters):
@@ -1995,9 +1993,9 @@ def create_layer(request):
     if request.method != 'POST':
         return HttpResponse('Only POST requests supported', status='405')
     # unpack multi-values into normal dict
-    return _create_layer(**dict(request.POST.items()))
+    return _create_layer(request.user, **dict(request.POST.items()))
     
-def _create_layer(**kwargs):
+def _create_layer(user = None, **kwargs):
     '''extracted/abstracted from view easier testing or use elsewhere'''
     from geonode.maps.gs_helpers import get_sld_for
 
@@ -2038,7 +2036,12 @@ def _create_layer(**kwargs):
     if not args['store']:
         args['store'] = settings.DB_DATASTORE_NAME
 
-    args['attributes'] = dict([att.split(":") for att in args['attributes'].split(',')])
+    atts = [att.split(":") for att in args['attributes'].split(',')]
+    # check for optional third value that specifies nillability
+    for a in atts:
+        if len(a) == 3:
+            a[2] = dict(nillable=a[2])
+    args['attributes'] = atts
 
     gs_ftype = None
     gslayer = None
@@ -2077,11 +2080,12 @@ def _create_layer(**kwargs):
                 "typename": "%s:%s" % (gs_ftype.workspace.name, gs_ftype.name),
                 "title": '%s Annotations' % gs_ftype.name,
                 "abstract": 'Store Annotations for %s' % gs_ftype.name,
-                "uuid": str(uuid.uuid4())
+                "uuid": str(uuid.uuid4()),
+                "owner": user
             })
             assert created, 'Expected layer to have been created'
-            layer.save()
             layer.set_default_permissions()
+            layer.save()
         except Exception,ex:
             logger.exception('Error in creating geonode layer')
             errors.append(str(ex))
@@ -2115,7 +2119,7 @@ def _create_layer(**kwargs):
         except Exception,ex:
             logger.exception('Error setting time dimension in geoserver')
             errors.append(str(ex))
-
+            
     if errors and gs_ftype:
         # rollback
         # try to wipe out our layer in geoserver
