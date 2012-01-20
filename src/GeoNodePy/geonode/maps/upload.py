@@ -3,6 +3,8 @@ from geonode.maps.utils import *
 from django import forms
 from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole, Role
 from django.core.urlresolvers import reverse
+from gsuploader.uploader import RequestFailed
+import json
 
 _separator = '\n' + ('-' * 100) + '\n'
 #@todo remove title, abstract, permissions, keywords - these are not used in this, but allow compat to old function
@@ -267,8 +269,19 @@ def upload_step2(req):
         if 'srs' in cleaned:
             srs = cleaned['srs'].strip()
             if srs:
+                srs = srs.upper()
+                if not srs.startswith("EPSG:"):
+                    srs = "EPSG:%s" % srs
                 logger.info('Setting SRS to %s',srs)
-                import_session.tasks[0].items[0].resource.set_srs(srs)
+                try:
+                    import_session.tasks[0].items[0].resource.set_srs(srs)
+                except RequestFailed,ex:
+                    args = ex.args
+                    if ex.args[1] == 400:
+                        errors = json.loads(ex.args[2])
+                        args = "\n".join(errors['errors'])
+                    raise Exception(args)
+                    
     else:
         #@todo validation feedback
         raise Exception("form invalid")

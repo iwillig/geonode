@@ -965,7 +965,13 @@ def upload_layer2(request):
              RequestContext(request, upload_step2_context(request))
          )
      elif request.method == 'POST':
-         saved_layer = upload_step2(request)
+         try:
+             saved_layer = upload_step2(request)
+         except Exception, ex:
+             return HttpResponse(json.dumps({
+                "success" : False,
+                "errors" : ex.args
+             }))
          if saved_layer:
              return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
          else:

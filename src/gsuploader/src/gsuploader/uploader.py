@@ -63,8 +63,8 @@ class Uploader(object):
     def __setstate__(self,state):
         self.client = _Client(state['url'],state['username'],state['password'])
             
-        
-                
+class RequestFailed(Exception):
+    pass
         
 class _Client(object):
     """Lower level http client"""
@@ -107,7 +107,7 @@ class _Client(object):
         resp, content = self.http.request(url,method,data,headers)
         _debug(resp, content)
         if resp.status < 200 or resp.status > 299:
-            raise Exception('Server error',content)
+            raise RequestFailed('Server error',resp.status,content)
         return resp, content
         
     def put_zip(self,url,payload):
