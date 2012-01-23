@@ -36,6 +36,8 @@ class Group(models.Model):
         return user.id in self.member_queryset().values_list("user", flat=True)
     
     def user_is_role(self, user, role):
+        if not user.is_authenticated():
+            return False
         return self.member_queryset().filter(user=user, role=role).exists()
     
     def can_view(self, user):
