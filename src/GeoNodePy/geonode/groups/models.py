@@ -26,6 +26,9 @@ class Group(models.Model):
         ("public-invite", "Public (invite-only)"),
         ("private", "Private"),
     ])
+
+    def __unicode__(self):
+        return self.title
     
     def member_queryset(self):
         return self.groupmember_set.all()
