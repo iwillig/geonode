@@ -91,9 +91,16 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, "site_media", "static")
 # Example: "http://media.lawrence.com"
 STATIC_URL = "/media/"
 
+# Location of generated thumbnails on filesystem - will be automatically created
+THUMBNAIL_STORAGE = os.path.join(PROJECT_ROOT, 'thumbs')
+
+# Prefix for thumbnail URLs
+THUMBNAIL_URL = '/thumbs/'
+
 # Additional directories which hold static files
 STATICFILES_DIRS = [
     os.path.join(PROJECT_ROOT, "media"),
+    THUMBNAIL_STORAGE
 ]
 
 GEONODE_UPLOAD_PATH = os.path.join(STATIC_URL, "upload/")

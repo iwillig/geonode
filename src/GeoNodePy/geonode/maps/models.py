@@ -570,6 +570,26 @@ def get_csw():
     _csw = CatalogueServiceWeb(csw_url)
     return _csw
 
+class ThumbnailMixin:
+    def get_thumbnail(self):
+        """Obtain the thumbnail, if one exists for this object"""
+        return Thumbnail.objects.get_thumbnail(self)
+    def set_thumbnail(self, spec):
+        """Update the thumbnail specification for this object
+        and generate a new thumbnail image. Returns the thumbnail object.
+        """
+        thumb = Thumbnail.objects.get_thumbnail(self,allow_null=False)
+        thumb.thumb_spec = spec
+        thumb.generate_thumbnail()
+        # if newly created, the thumb will not have an id
+        created = thumb.id is not None
+        thumb.save()
+        self._thumbnail_updated(thumb, created)
+        return thumb
+    def _thumbnail_updated(self, thumb, created):
+        """Hook for update behavior"""
+        pass
+
 class LayerManager(models.Manager):
     
     def __init__(self):
@@ -656,7 +676,7 @@ class LayerManager(models.Manager):
             self._wms = _get_wms()
         return self._wms
 
-class Layer(models.Model, PermissionLevelMixin):
+class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """
     Layer Object loosely based on ISO 19115:2003
     """
@@ -995,6 +1015,10 @@ class Layer(models.Model, PermissionLevelMixin):
 
     def _set_styles(self, styles):
         self.publishing.styles = styles
+        
+    def _thumbnail_updated(self, thumb, created):
+        if created:
+            self.save_to_geonetwork()
 
     styles = property(_get_styles, _set_styles)
     
@@ -1180,7 +1204,7 @@ class Layer(models.Model, PermissionLevelMixin):
             self.set_user_level(self.owner, self.LEVEL_ADMIN)
 
 
-class Map(models.Model, PermissionLevelMixin):
+class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """
     A Map aggregates several layers together and annotates them with a viewport
     configuration.
@@ -1722,8 +1746,8 @@ class ThumbnailManager(models.Manager):
     def __init__(self):
         models.Manager.__init__(self)
         self.storage = FileSystemStorage(
-            location = os.path.join(settings.PROJECT_ROOT, "static","thumbs"),
-            base_url = settings.STATIC_URL + "thumbs/"
+            location = os.path.join(settings.THUMBNAIL_STORAGE),
+            base_url = settings.THUMBNAIL_URL
         )
         if not os.path.exists(self.storage.location):
             os.makedirs(self.storage.location)
@@ -1748,7 +1772,7 @@ class ThumbnailManager(models.Manager):
         ids = [ o.id for o in objs]
         thumbs = thumbs.filter(object_id__in=ids)
         return dict([ (t.content_object.id,t) for t in thumbs])
-
+    
 class Thumbnail(models.Model):
     objects = ThumbnailManager()
 
@@ -1764,7 +1788,8 @@ class Thumbnail(models.Model):
             parts = "layer",self.content_object.uuid
         return "".join(parts) + ".png"
     def get_thumbnail_url(self):
-        return Thumbnail.objects.storage.url(self._path())
+        relative = Thumbnail.objects.storage.url(self._path())
+        return settings.SITEURL[:-1] + relative
     def get_thumbnail_path(self):
         return Thumbnail.objects.storage.path(self._path())
     def delete(self):

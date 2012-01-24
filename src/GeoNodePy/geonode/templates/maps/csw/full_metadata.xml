@@ -142,20 +142,22 @@
            </gmd:maintenanceAndUpdateFrequency>
          </gmd:MD_MaintenanceInformation>
        </gmd:resourceMaintenance>
-       <!--
+       {% if layer.get_thumbnail %}
        <gmd:graphicOverview>
          <gmd:MD_BrowseGraphic>
            <gmd:fileName>
-             <gco:CharacterString>thumbnail_s.gif</gco:CharacterString>
+             <gco:CharacterString>{{ layer.get_thumbnail.get_thumbnail_url }}</gco:CharacterString>
            </gmd:fileName>
            <gmd:fileDescription>
              <gco:CharacterString>thumbnail</gco:CharacterString>
            </gmd:fileDescription>
            <gmd:fileType>
-             <gco:CharacterString>gif</gco:CharacterString>
+             <gco:CharacterString>png</gco:CharacterString>
            </gmd:fileType>
          </gmd:MD_BrowseGraphic>
        </gmd:graphicOverview>
+       {% endif %}
+       <!--
        <gmd:graphicOverview>
          <gmd:MD_BrowseGraphic>
            <gmd:fileName>

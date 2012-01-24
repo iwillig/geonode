@@ -862,10 +862,7 @@ def _handleThumbNail(req, obj):
         else:
             raise HttpResponse(status=404)
     elif req.method == 'POST':
-        thumb = Thumbnail.objects.get_thumbnail(obj,allow_null=False)
-        thumb.thumb_spec = req.raw_post_data
-        thumb.generate_thumbnail()
-        thumb.save()
+        thumb = obj.set_thumbnail(req.raw_post_data)
         return HttpResponseRedirect(thumb.get_thumbnail_url())
 
 GENERIC_UPLOAD_ERROR = _("There was an error while attempting to upload your data. \
