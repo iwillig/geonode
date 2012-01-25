@@ -538,12 +538,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * Create the various parts that compose the layout.
      */
     initPortal: function() {
-        this.on("beforeunload", function() {
+        /*this.on("beforeunload", function() {
             if (this.modified) {
                 this.showMetadataForm();
                 return false;
             }
-        }, this);
+        }, this);*/
 
         this.on("ready", function() {
             this.mapPanel.layers.on({
