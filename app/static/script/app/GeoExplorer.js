@@ -434,7 +434,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     store: 'geonode',
                     srs: 'EPSG:4326',
                     timeAttribute: 'timestamp',
-                    attributes: 'title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry,timestamp:java.util.Date'
+                    attributes: 'title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry:true,timestamp:java.util.Date'
                 },
                 featureEditor: "annotations_editor",
                 outputConfig: {
