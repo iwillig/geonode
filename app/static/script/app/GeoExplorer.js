@@ -698,7 +698,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         westPanel, {
                             id: "timeline-container",
                             xtype: "panel",
-                            tbar: [],
+                            tbar: ['->'],
                             split: true,
                             collapsed: true,
                             collapsible: true,
