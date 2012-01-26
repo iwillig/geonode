@@ -3,7 +3,7 @@ import itertools
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import models
+from django.db import models, IntegrityError
 from django.template.loader import render_to_string
 from django.utils.hashcompat import sha_constructor
 from django.utils.translation import ugettext_lazy as _
@@ -71,7 +71,13 @@ class Group(models.Model):
             settings.SECRET_KEY
         ]
         params["token"] = sha_constructor("".join(bits)).hexdigest()
-        invitation = self.invitations.create(**params)
+        
+        # If an invitation already exists, re-use it.
+        try:
+            invitation = self.invitations.create(**params)
+        except IntegrityError:
+            invitation = self.invitations.get(group=self, email=params["email"])
+        
         if send:
             invitation.send(from_user)
         return invitation
