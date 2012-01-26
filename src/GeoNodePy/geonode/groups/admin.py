@@ -12,3 +12,4 @@ admin.site.register(geonode.groups.models.Group,
         GroupMemberInline
     ]
 )
+admin.site.register(geonode.groups.models.GroupInvitation)

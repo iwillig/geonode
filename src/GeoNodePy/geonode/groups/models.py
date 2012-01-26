@@ -116,6 +116,9 @@ class GroupInvitation(models.Model):
     )
     created = models.DateTimeField(default=datetime.datetime.now)
     
+    def __unicode__(self):
+        return "%s to %s" % (self.email, self.group.title)
+
     class Meta:
         unique_together = [("group", "email")]
     
