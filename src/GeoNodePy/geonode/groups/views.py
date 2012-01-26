@@ -119,6 +119,10 @@ def group_invite(request, slug):
 def group_invite_response(request, token):
     invite = get_object_or_404(GroupInvitation, token=token)
     ctx = {"invite": invite}
+    
+    if request.user != invite.user:
+        redirect("group_detail", slug=invite.group.slug)
+    
     if request.method == "POST":
         if "accept" in request.POST:
             invite.accept(request.user)
