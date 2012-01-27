@@ -382,7 +382,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_removelayer",
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             }, {
-                ptype: "gxp_layerproperties",
+                ptype: "app_layerproperties",
                 layerPanelConfig: {
                     "gxp_wmslayerpanel": {rasterStyling: true}
                 },
@@ -434,7 +434,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     store: 'geonode',
                     srs: 'EPSG:4326',
                     timeAttribute: 'timestamp',
-                    attributes: 'title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry:true,timestamp:java.util.Date'
+                    attributes: 'title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry,timestamp:java.util.Date'
                 },
                 featureEditor: "annotations_editor",
                 outputConfig: {
@@ -538,12 +538,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * Create the various parts that compose the layout.
      */
     initPortal: function() {
-        /*this.on("beforeunload", function() {
+        this.on("beforeunload", function() {
             if (this.modified) {
                 this.showMetadataForm();
                 return false;
             }
-        }, this);*/
+        }, this);
 
         this.on("ready", function() {
             this.mapPanel.layers.on({
@@ -698,7 +698,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         westPanel, {
                             id: "timeline-container",
                             xtype: "panel",
-                            tbar: ['->'],
+                            tbar: [],
                             split: true,
                             collapsed: true,
                             collapsible: true,
