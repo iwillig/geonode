@@ -222,7 +222,7 @@ def group_remove_maps_data(request, slug):
     map_form.fields["maps"].queryset = Map.objects.filter(id__in=map_ids)
     
     layer_form = GroupLayerForm()
-    layer_form.fields["layers"].queryset = Map.objects.filter(id__in=layer_ids)
+    layer_form.fields["layers"].queryset = Layer.objects.filter(id__in=layer_ids)
     
     ctx["map_form"] = map_form
     ctx["layer_form"] = layer_form
