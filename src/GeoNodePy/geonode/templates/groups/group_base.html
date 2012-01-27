@@ -13,8 +13,8 @@
             {% avatar object.logo 50 %}
             url below is wrong
         {% endcomment %}
-        <img src="{{ object.logo.url }}" alt="{{ object.title }}" class="group-logo" />
-        <h2>{{ object.title }}</h2>
+        <a href="{% url group_detail object.slug %}"><img src="{{ object.logo.url }}" alt="{{ object.title }}" class="group-logo" /></a>
+        <a href="{% url group_detail object.slug %}"><h2>{{ object.title }}</h2></a>
         {% if object.access == "public" and not is_member %}
           {% if user.is_authenticated %}
               <form method="POST" action="">
