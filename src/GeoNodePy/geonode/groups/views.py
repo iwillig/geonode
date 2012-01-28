@@ -100,6 +100,21 @@ def group_members(request, slug):
 
 
 @require_POST
+@login_required
+def group_join(request, slug):
+    group = get_object_or_404(Group, slug=slug)
+    
+    if group.access == "private":
+        raise Http404()
+    
+    if group.user_is_member(request.user):
+        return redirect("group_members", slug=group.slug)
+    else:
+        group.join(request.user, role="member")
+        return redirect("group_members", slug=group.slug)
+
+
+@require_POST
 def group_invite(request, slug):
     group = get_object_or_404(Group, slug=slug)
     
