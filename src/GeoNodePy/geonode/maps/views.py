@@ -1539,7 +1539,7 @@ def search_page(request):
         "site" : settings.SITEURL
     }))
 
-def new_search_page(request):
+def new_search_page(request, **kw):
     DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
     # for non-ajax requests, render a generic search page
 
@@ -1549,6 +1549,10 @@ def new_search_page(request):
         params = request.POST
     else:
         return HttpResponse(status=405)
+    
+    if kw:
+        params = dict(params)
+        params.update(kw)
 
     map = Map(projection="EPSG:900913", zoom = 1, center_x = 0, center_y = 0)
 
@@ -1655,7 +1659,9 @@ def _combined_search_results(query):
     cache_key = query and 'search_results_%s' % query or 'search_results'
     layer_results = cache.get(cache_key)
     if not layer_results:
+        annotations = re.compile('_map_\d+_annotations')
         layer_results = _metadata_search(query, 0, 1000)['rows']
+        layer_results = filter(lambda l: not annotations.search(l['name']), layer_results)
         # @todo search cache timeout in settings?
         cache.set(cache_key, layer_results, timeout=300)
     
