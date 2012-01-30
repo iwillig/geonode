@@ -173,8 +173,8 @@ def group_add_layers(request, slug):
             owner=request.user
             ).exclude(
             id__in=[li for li in current_layers.values_list('id', flat=True)]
-        )
-
+    )
+    
     
     ctx["form"] = form
     ctx.update({
@@ -212,7 +212,7 @@ def group_add_maps(request, slug):
             id__in=[mi for mi in current_maps.values_list('id', flat=True)]
     )
     
-        
+    
     ctx["form"] = form
     ctx.update({
         "object": group,
