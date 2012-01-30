@@ -1282,8 +1282,8 @@ class GroupLayer(models.Model):
     layer = models.ForeignKey(Layer)
 
     @classmethod
-    def layers_for_group(cls, group_id):
-        layer_ids = cls.objects.filter(group=group_id).values_list('layer', flat=True)
+    def layers_for_group(cls, group):
+        layer_ids = cls.objects.filter(group=group).values_list('layer', flat=True)
         return Layer.objects.filter(id__in=layer_ids)
 
     class Meta:
@@ -1296,8 +1296,8 @@ class GroupMap(models.Model):
     map = models.ForeignKey(Map)
 
     @classmethod
-    def maps_for_group(cls, group_id):
-        map_ids = cls.objects.filter(group=group_id).values_list('map', flat=True)
+    def maps_for_group(cls, group):
+        map_ids = cls.objects.filter(group=group).values_list('map', flat=True)
         return Map.objects.filter(id__in=map_ids)
 
     class Meta:
