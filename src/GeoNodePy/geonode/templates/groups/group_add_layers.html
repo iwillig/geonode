@@ -17,5 +17,14 @@
         to group {{ object.title }}.
         </p>
     {% endif %}
+    {% if current_layers %}
+    <h2>Group's layers</h2>
+    <ul>
+        {% for layer in current_layers %}
+        <li><a href="{{ layer.get_absolute_url }}">{{ layer.title }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
 </div>
 {% endblock %}
