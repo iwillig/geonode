@@ -3,6 +3,8 @@
 *.egg-info
 build
 target
+docs/_build
+man
 
 # virtualenv stuff
 /bin
