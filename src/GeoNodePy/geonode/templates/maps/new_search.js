@@ -2,7 +2,7 @@ Ext.onReady(function() {
     var start = 0,
     limit = 5,
     loadnotify = Ext.get('loading'),
-    itemTemplate = "<li id='item{iid}'><img class='thumb {thumbclass}' src='{thumb}'></img>" +
+    itemTemplate = "<li id='item{iid}'><a href='{detail}'><img class='thumb {thumbclass}' src='{thumb}'></img></a>" +
     "<div class='itemButtons'><div id='toggle{iid}'></div><div id='save{iid}'></div><div id='map{iid}'></div></div>" +
     "<div class='itemTitle'><a href='{detail}'>{title}</a></div>" +
     "<div class='itemInfo'>{_display_type}, uploaded by <a href='{owner_detail}'>{owner}</a> on {last_modified:date(\"F j, Y\")}</div>" +
@@ -170,6 +170,15 @@ Ext.onReady(function() {
         });
     }
 
+    if (init_search) {
+        if (init_search.q) {
+            Ext.get('searchField').dom.value = init_search.q;
+        }
+        if ('bytype' in init_search) {
+            Ext.get('bytype').parent('.refineSection').setVisibilityMode(Ext.Element.DISPLAY).hide();
+        }
+        queryItems = init_search;
+    }
     fetch();
     var scrollEl = Ext.isIE ? document.body : document;
     Ext.fly(scrollEl).on('scroll',function() {
