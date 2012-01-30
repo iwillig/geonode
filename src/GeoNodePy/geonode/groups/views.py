@@ -204,7 +204,14 @@ def group_add_maps(request, slug):
     else:
         form = GroupMapForm()
     
-    form.fields["maps"].queryset = Map.objects.filter(owner=request.user)
+    current_maps = GroupMap.maps_for_group(group)
+    
+    form.fields["maps"].queryset = Map.objects.filter(
+            owner=request.user
+            ).exclude(
+            id__in=[mi for mi in current_maps.values_list('id', flat=True)]
+    )
+    
         
     ctx["form"] = form
     ctx.update({
@@ -212,6 +219,7 @@ def group_add_maps(request, slug):
         "members": group.member_queryset(),
         "is_member": group.user_is_member(request.user),
         "is_manager": group.user_is_role(request.user, "manager"),
+        "current_maps": current_maps,
     })
     ctx = RequestContext(request, ctx)
     return render_to_response("groups/group_add_maps.html", ctx)

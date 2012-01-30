@@ -17,5 +17,13 @@
         to group {{ object.title }}.
         </p>
     {% endif %}
+    {% if current_maps %}
+    <h2>Group's maps</h2>
+    <ul>
+        {% for map in current_maps %}
+        <li><a href="{{ map.get_absolute_url }}">{{ map.title }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 </div>
 {% endblock %}
