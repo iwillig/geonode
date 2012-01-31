@@ -16,7 +16,7 @@ Ext.onReady(function() {
         storeId: 'items',
         root: 'rows',
         idProperty: 'iid',
-        fields: ['title'],
+        fields: ['title','name'],
         listeners: []
     }),
     selModel = null,
