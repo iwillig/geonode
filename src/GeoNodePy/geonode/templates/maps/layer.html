@@ -350,6 +350,14 @@
     <h3>{% trans "Permissions" %}</h3>
       <div id="permissions_form"></div>
     {% endif %}
+    {% if groups %}
+        <h3>{% trans "Groups" %}</h3>
+        <ul>
+        {% for group in groups %}
+            <li><a href="{% url group_detail group.slug %}">{{ group.title }}</a></li>
+        {% endfor %}
+        </ul>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}
