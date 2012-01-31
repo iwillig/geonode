@@ -1,5 +1,6 @@
 from django import forms
 from django.core.validators import email_re
+from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext_lazy as _
 
 from django.contrib.auth.models import User
@@ -12,6 +13,8 @@ class GroupForm(forms.ModelForm):
     
     slug = forms.SlugField(max_length=20,
             help_text=_("a short version of the name consisting only of letters, numbers, underscores and hyphens."),
+            widget=forms.HiddenInput,
+            required=False
         )
             
     def clean_slug(self):
@@ -24,6 +27,16 @@ class GroupForm(forms.ModelForm):
             raise forms.ValidationError(_("A group already exists with that title."))
         return self.cleaned_data["title"]
     
+    def clean(self):
+        cleaned_data = self.cleaned_data
+        
+        title = cleaned_data.get("title")
+        slug = slugify(title)
+        
+        cleaned_data["slug"] = slug
+        
+        return cleaned_data
+        
     class Meta:
         model = Group
 
