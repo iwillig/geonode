@@ -1593,14 +1593,19 @@ def new_search_api(request):
                     MAX_MAPS_SEARCH_BATCH_SIZE)
     except:
         limit = DEFAULT_MAPS_SEARCH_BATCH_SIZE
+        
+    # handle old search link parameters
+    if 'sort' in params and 'dir' in params:
+        sort_field = params['sort']
+        sort_asc = params['dir'] == 'ASC'
+    else:    
+        sort_field, sort_asc = {
+            'newest' : ('last_modified',False),
+            'oldest' : ('last_modified',True),
+            'alphaaz' : ('title',True),
+            'alphaza' : ('title',False),
 
-    sort_field, sort_asc = {
-        'newest' : ('last_modified',False),
-        'oldest' : ('last_modified',True),
-        'alphaaz' : ('title',True),
-        'alphaza' : ('title',False),
-
-    }[params.get('sort','newest')]
+        }[params.get('sort','newest')]
 
     filters = {}
     for k in ('bytype','kw'):
