@@ -42,6 +42,8 @@ Ext.onReady(function() {
             }
         }
     });
+    var hasThumb = {% if map.get_thumbnail %}true{% else %}false{% endif %};
+    var thumbURL = "{% url geonode.maps.views.map_controller map.id %}?thumbnail";
     {% include "maps/thumbnail_help.js" %}
 {% endif %}
 {% endautoescape %}

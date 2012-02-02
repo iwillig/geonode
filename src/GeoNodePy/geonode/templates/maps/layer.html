@@ -92,6 +92,8 @@
                 }
             });
 {% endif %}
+            var hasThumb = {% if layer.get_thumbnail %}true{% else %}false{% endif %};
+            var thumbURL = "{% url geonode.maps.views.layerController layer.typename %}?thumbnail";
             {% include "maps/thumbnail_help.js" %}
         });
 

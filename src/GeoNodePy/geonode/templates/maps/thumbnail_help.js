@@ -1,38 +1,42 @@
 var set_thumbnail = Ext.get("set_thumbnail");
 function promptThumbnail() {
-    var img = '<img src="?thumbnail">';
+    var img = '<img src="' + thumbURL + '">';
     Ext.MessageBox.show({
        title:'Generate Thumbnail?',
        msg: 'This will generate a new thumbnail. The existing one is shown below.<div>' + img + '</div>',
        buttons: Ext.MessageBox.OKCANCEL,
        fn: function(buttonId) {
            if (buttonId == 'ok') {
-               updateThumbnail();
+               updateThumbnail(true);
            }
        },
        icon: Ext.MessageBox.QUESTION
     });
 }
 
-function updateThumbnail() {
+function updateThumbnail(interactive) {
     var map = Ext.get(Ext.query(".olMapViewport")[0]);
     var html = Ext.DomHelper.markup({
-       style: {
-                    width: map.getWidth(), height:map.getHeight()
-                },
-                html: map.dom.innerHTML
+        style: {
+            width: map.getWidth(), height:map.getHeight()
+        },
+        html: map.dom.innerHTML
     });
-    Ext.MessageBox.wait("Generating Thumbnail","Please wait while the thumbnail is generated.");
+    if (interactive) {
+        Ext.MessageBox.wait("Generating Thumbnail","Please wait while the thumbnail is generated.");
+    }
     Ext.Ajax.request({
-      url : "?thumbnail",
+      url : thumbURL,
       method : "POST",
       xmlData: html,
       success: function() {
-          Ext.MessageBox.show({
-             title : "Thumbnail Updated",
-             msg : '<img src="?thumbnail&_=' + Math.random() + '">',
-             buttons: Ext.MessageBox.OK
-          });
+          if (interactive) {
+            Ext.MessageBox.show({
+                title : "Thumbnail Updated",
+                msg : '<img src="' + thumbURL + "'?_='" + Math.random() + '">',
+                buttons: Ext.MessageBox.OK
+            });
+          }
       }
     });
 }
@@ -41,4 +45,21 @@ if (set_thumbnail) {
        ev.stopEvent();
        promptThumbnail();
     });
+    if (!hasThumb) {
+        var loadCnt = 0, toLoad = 0;
+        function checkload(layer) {
+            layer.events.unregister('loadend',null, checkload);
+            if (++loadCnt == toLoad) {
+                updateThumbnail(false);
+            }
+        }
+        app.mapPanel.map.events.register("addlayer",null,function(ev) {
+            if (ev.layer.visibility) {
+                toLoad++;
+                ev.layer.events.register("loadend",null,function(ev) {
+                    checkload(ev.object);
+                });
+            }
+        });
+    }
 }
