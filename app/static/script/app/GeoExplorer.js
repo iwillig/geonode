@@ -427,15 +427,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: "timeline-container.tbar"
             }, {
                 ptype: "app_notes",
-                createLayerUrl: "/data/create_layer",
+                createLayerUrl: "/data/create_annotations_layer/{mapID}",
+                layerNameTpl: "_map_{mapID}_annotations",
                 workspacePrefix: "geonode",
-                params: {
-                    workspace: 'geonode',
-                    store: 'geonode',
-                    srs: 'EPSG:4326',
-                    timeAttribute: 'timestamp',
-                    attributes: 'title:java.lang.String,the_geom:com.vividsolutions.jts.geom.Geometry:true,timestamp:java.util.Date'
-                },
                 featureEditor: "annotations_editor",
                 outputConfig: {
                     id: 'notes_menu'

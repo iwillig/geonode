@@ -15,6 +15,8 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
 
     featureEditor: null,
 
+    layerNameTpl: null,
+
     layerName: null,
 
     createLayerUrl: null,
@@ -25,11 +27,10 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
 
     onMapSave: function(id) {
         if (this.layerName === null) {
-            this.layerName = 'annotations_' + id;
+            this.layerName = new Ext.Template(this.layerNameTpl).applyTemplate({mapID: id});
             Ext.Ajax.request({
                 method: "POST",
-                url: this.createLayerUrl,
-                params: Ext.apply(this.params, {name: this.layerName}),
+                url: new Ext.Template(this.createLayerUrl).applyTemplate({mapID: id}),
                 success: this.onLayerCreateSuccess,
                 scope: this
             });
