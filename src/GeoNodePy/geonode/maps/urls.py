@@ -22,8 +22,6 @@ urlpatterns = patterns('geonode.maps.views',
     url(r'^data/upload2$', 'upload_layer2', name='data_upload2'),
     url(r'^data/upload3$', 'upload_layer3', name='data_upload3'),
     url(r'^data/upload_progress$', 'data_upload_progress', name='data_upload_progress'),
-    url(r'^newsearch/?$', 'new_search_page', name='new_search'),
-    url(r'^newsearch/api?$', 'new_search_api', name='new_search_api'),
     url(r'^time_info.json$', 'time_info', name="time_info"), # Temp for tschaub
 
 )

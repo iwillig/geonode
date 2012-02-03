@@ -211,10 +211,10 @@
 
     <div class="refineSection collapse">
         <h5>By category</h5>
-        <p>Not sure what these are?.</p>
-        <ul class="searchLinks refineControls">
-            <li>Category 1</li>
-            <li>Category 2</li>
+        <ul id="bytopic" class="searchLinks refineControls">
+            {% for cat, cnt in topics.items %}
+            <li><a href="#{{ cat }}">{{ cat }} ({{ cnt }})</a></li>
+            {% endfor %}
         </ul>
     </div>
 
@@ -222,7 +222,7 @@
         <h5>By keywords</h5>
         <ul id="bykeyword" class="searchLinks refineControls">
             {% for kw,cnt in keywords.items %}
-            <li><a href="#{{ kw }}">{{ kw }} ({{cnt}})</a>
+            <li><a href="#{{ kw }}">{{ kw }} ({{ cnt }})</a></li>
             {% endfor %}
         </ul>
     </div>

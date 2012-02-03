@@ -162,8 +162,7 @@ Ext.onReady(function() {
                 limit: limit
             },queryItems);
         Ext.Ajax.request({
-            // @todo URL
-            url: '/maps/newsearch/api',
+            url: '{% url new_search_api %}',
             method: 'GET',
             success: appendResults,
             params: params
@@ -302,7 +301,8 @@ Ext.onReady(function() {
         });
     }
     enableSearchLink('#bytype a','bytype',false);
-    enableSearchLink('#bykeyword a','kw',true);
+    enableSearchLink('#bykeyword a','bykw',true);
+    enableSearchLink('#bytopic a','bytopic',false);
 
     // and combine with search form
     Ext.get('searchForm').on('submit',function(ev) {
