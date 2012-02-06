@@ -458,12 +458,19 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 supportAbstractGeometry: true,
                 showSelectedOnly: false,
                 supportNoGeometry: true,
-                fields: ["title", "timestamp"],
                 outputConfig: {
                     width: 300,
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
-                        bodyStyle: "padding: 5px 5px 0"
+                        bodyStyle: "padding: 5px 5px 0",
+                        fieldConfig: {
+                            'title': {fieldLabel: "Title"},
+                            'start_time': {xtype: 'gxp_datefield', fieldLabel: "Start time"},
+                            'end_time': {xtype: 'gxp_datefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
+                            'in_timeline': {boxLabel: "Include in timeline"},
+                            'in_map': {boxLabel: "Include in map"}
+                        },
+                        excludeFields: ["appearance"]
                     }
                 },
                 featureManager: "annotations_manager",

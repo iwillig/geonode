@@ -1,3 +1,6 @@
+.optional-form-label {
+    color: #736F6E;
+}
 /* don't wrap lines on any tooltips */
 .x-tip {
     white-space: nowrap;
