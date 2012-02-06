@@ -27,7 +27,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
 
     onMapSave: function(id) {
         if (this.layerName === null) {
-            this.layerName = new Ext.Template(this.layerNameTpl).applyTemplate({mapID: id});
+            this.layerName = this.getLayerName(id);
             Ext.Ajax.request({
                 method: "POST",
                 url: new Ext.Template(this.createLayerUrl).applyTemplate({mapID: id}),
@@ -73,11 +73,15 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
         }
     },
 
+    getLayerName: function(mapID) {
+        return new Ext.Template(this.layerNameTpl).applyTemplate({mapID: mapID});
+    },
+
     /** api: method[addActions]
      */
     addActions: function() {
         if (this.target.mapID) {
-            this.layerName = 'annotations_' + this.target.mapID;
+            this.layerName = this.getLayerName(this.target.mapID);
             // we need to wait for the baseLayer to be there
             this.target.mapPanel.on("afterlayeradd", this.setupLayer, this, {single: true});
         } else {
