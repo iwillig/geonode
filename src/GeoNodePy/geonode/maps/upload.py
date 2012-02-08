@@ -146,7 +146,7 @@ def _create_time_form(req):
     args = dict(
         time_names = filter_type('java.util.Date'),
         text_names = filter_type('java.lang.String'),
-        year_names = filter_type('java.lang.Integer')
+        year_names = filter_type('java.lang.Integer') + filter_type('java.lang.Long')
     )
     if req.method == 'POST':
         return TimeForm(req.POST,**args)
