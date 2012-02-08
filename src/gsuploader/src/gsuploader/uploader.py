@@ -45,7 +45,7 @@ class Uploader(object):
         returns a gsuploader.api.Session object
         """
         files = [ fpath ]
-        if fpath.endswith(".shp"):
+        if fpath.lower().endswith(".shp"):
             files = _util.shp_files(fpath)
             
         session = self.start_import()

@@ -2,7 +2,8 @@ from zipfile import ZipFile
 import tempfile
 from os import path
 
-_shp_exts = ("dbf","prj","shx")
+_shp_exts = ["dbf","prj","shx"]
+_shp_exts = _shp_exts + map(lambda s: s.upper(), _shp_exts)
 
 def shp_files(fpath):
     basename, ext = path.splitext(fpath)
