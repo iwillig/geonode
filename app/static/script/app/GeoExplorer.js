@@ -468,9 +468,19 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             'start_time': {xtype: 'gxp_datefield', fieldLabel: "Start time"},
                             'end_time': {xtype: 'gxp_datefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
                             'in_timeline': {boxLabel: "Include in timeline"},
-                            'in_map': {boxLabel: "Include in map"}
-                        },
-                        excludeFields: ["appearance"]
+                            'in_map': {boxLabel: "Include in map"},
+                            'appearance': {xtype: "combo", fieldLabel: "Alignment", comboStoreData: [
+                                ['tl', 'top left corner'], 
+                                ['t', 'center of the top edge'],
+                                ['tr', 'top right corner'],
+                                ['l', 'center of the left edge'],
+                                ['c', 'center of the element'],
+                                ['r', 'center of the right edge'],
+                                ['bl', 'bottom left corner'],
+                                ['b', 'center of the bottom edge'],
+                                ['br', 'bottom right corner']
+                            ]}
+                        }
                     }
                 },
                 featureManager: "annotations_manager",
