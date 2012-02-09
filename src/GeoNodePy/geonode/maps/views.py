@@ -872,8 +872,14 @@ Please try again, or contact and administrator if the problem continues.")
 @csrf_exempt
 def upload_layer(request):
     if request.method == 'GET':
+        import os
+        s = os.statvfs('/')
+        mb = s.f_bsize * s.f_bavail / (1024. * 1024)
         return render_to_response('maps/layer_upload.html',
-                                  RequestContext(request, {}))
+                                  RequestContext(request, {
+                                  'storage_remaining' : "%d MB" % mb,
+                                  'enough_storage' : mb > 64
+                                  }))
     elif request.method == 'POST':
         from geonode.maps.forms import NewLayerUploadForm
         from geonode.maps.utils import save
