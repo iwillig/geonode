@@ -453,6 +453,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 autoSetLayer: false,
                 paging: false
             }, {
+                ptype: "gxp_featuregrid",
+                featureManager: "annotations_manager",
+                outputConfig: {
+                    loadMask: true,
+                    viewConfig: {
+                        forceFit: true
+                    }
+                },
+                outputTarget: "feature-grid"
+            }, {
                 ptype: "gxp_featureeditor",
                 id: "annotations_editor",
                 toggleGroup: toggleGroup,
@@ -708,15 +718,27 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     items: [
                         this.mapPanelContainer,
                         westPanel, {
-                            id: "timeline-container",
-                            xtype: "panel",
-                            tbar: ['->'],
+                            region: "south",
+                            xtype: "tabpanel",
+                            deferredRender: false,
+                            height: 175,
                             split: true,
                             collapsed: true,
                             collapsible: true,
-                            layout: "fit",
-                            region: "south",
-                            height: 175
+                            activeTab: 0,
+                            items: [{
+                                id: "timeline-container",
+                                title: "Timeline",
+                                xtype: "panel",
+                                tbar: ['->'],
+                                layout: "fit",
+                                region: "south"
+                            }, {
+                                xtype: "panel",
+                                layout: "fit",
+                                title: "Table",
+                                id: "feature-grid"
+                            }]
                         }
                     ],
                     ref: "../../main"
