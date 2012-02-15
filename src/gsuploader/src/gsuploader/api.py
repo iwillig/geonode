@@ -192,13 +192,15 @@ class FeatureType(_UploadBase):
             self.metadata = []
         self.metadata.append((key,mtype,kw))
         
-    def add_time_dimension_info(self,att_name,presentation,amt,period):
+    def add_time_dimension_info(self,att_name,end_att_name,presentation,amt,period):
     
         kw = {
             'enabled' : True,
             'attribute' : att_name,
             'presentation' : presentation
         }
+        if end_att_name:
+            kw['endAttribute'] = end_att_name
         if amt and period:
             mult = {
                 'seconds': 1,
