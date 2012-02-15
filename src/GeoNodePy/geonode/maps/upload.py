@@ -1,44 +1,175 @@
-import os.path
+"""
+Provide views and business logic of doing an upload.
+
+The upload process may be multi step so views are all handled internally here
+by the view function.
+
+The pattern to support separation of view/logic is each step in the upload
+process is suffixed with "_step". The view for that step is suffixed with 
+"_step_view". The goal of seperation of view/logic is to support various
+programatic uses of this API. The logic steps should not accept request objects
+or return response objects.
+
+State is stored in a UploaderSession object stored in the user's session.
+This needs to be made more stateful by adding a model.
+"""
 from geonode.maps.utils import *
-from django import forms
-from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole, Role
-from django.core.urlresolvers import reverse
+from geonode.maps.models import *
+from geonode.maps.forms import NewLayerUploadForm
+from geonode.maps.views import json_response
+from geonode.maps.utils import get_default_user
+
 from gsuploader.uploader import RequestFailed
+
+from django import forms
+from django.http import HttpResponse, HttpResponseRedirect
+from django.utils.html import escape
+from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+
+import shutil
 import json
+import os.path
 
-_separator = '\n' + ('-' * 100) + '\n'
-#@todo remove title, abstract, permissions, keywords - these are not used in this, but allow compat to old function
-def save(layer, base_file, user, overwrite = True, title=None, abstract=None, permissions=None, keywords = []):
-    """Upload layer data to Geoserver and registers it with Geonode.
 
-       If specified, the layer given is overwritten, otherwise a new layer is created.
-    """
-    logger.info(_separator)
-    logger.info('Uploading layer: [%s], base filename: [%s]', layer, base_file)
 
-    # Step 0. Verify the file exists
-    logger.info('>>> Step 0. Verify if the file %s exists so we can create the layer [%s]' % (base_file, layer))
-    if not os.path.exists(base_file):
-        msg = ('Could not open %s to save %s. Make sure you are using a valid file' %(base_file, layer))
-        logger.warn(msg)
-        raise GeoNodeException(msg)
+_SESSION_KEY = 'geonode_upload_session'
 
-    # Step 1. Figure out a name for the new layer, the one passed might not be valid or being used.
-    logger.info('>>> Step 1. Figure out a name for %s', layer)
+class UploaderSession(object):
+    'All objects held must be able to surive a good pickling'
+    
+    import_session = None
+    'the gsuploader session object'
+    
+    import_sld_file = None
+    'if provided, this file will be uploaded to geoserver and set as the default'
+    
+    tempdir = None
+    'location of any temporary uploaded files'
+    
+    base_file = None
+    'the main uploaded file, zip, shp, tif, etc.'
+    
+    name = None
+    'the name to try to give the layer'
+    
+    permissions = None
+    'blob of permissions JSON'
+    
+    form = None #@todo - needed?
+    
+    update_mode = None
+    'defaults to REPLACE if not provided. Accepts APPEND, too'
+    
+    layer_title = None
+    'the title given to the layer'
+    
+    layer_abstract = None
+    'the abstract'
+    
+    import_target = None
+    'computed target (dict since gsconfig objects do not pickle, but attributes matching a datastore) of the import'
+    
+    _completed_step = None
+    'track the most recently completed upload step'
+    
+    def set_target(self,target):
+        self.import_target = {
+            'name' : target.name,
+            'workspace_name' : target.workspace.name,
+            'resource_type' : target.resource_type
+        }
+    
+    def __init__(self, **kw):
+        for k,v in kw.items():
+            if hasattr(self,k):
+                setattr(self,k,v)
+            else:
+                raise Exception('not handled : %s' % k)
+    def cleanup(self):
+        """do what we should at the given state of the upload"""
+        pass
+    
+def upload(name, base_file, user=None, time_attribute=None, time_transform_type=None,
+    end_time_attribute=None, end_time_transform_type=None,
+    presentation_strategy=None, precision_value=None, precision_step=None,
+    use_big_date=False):
+        
+    
+    if user is None:
+        user = get_default_user()
+    if isinstance(user, basestring):
+        user = User.objects.get(username = user)
+        
+    s = UploaderSession()
+    s.target = 'foo'
+    import_session = save_step(name, base_file)
+    upload_session = UploaderSession(
+        base_file = base_file,
+        name = name,
+        import_session = import_session,
+        layer_abstract = "",
+        layer_title = name,
+        permissions = None
+    )
+    time_step(upload_session,
+        time_attribute, time_transform_type,
+        presentation_strategy, precision_value, precision_step,
+        end_time_attribute = end_time_attribute, 
+        end_time_transform_type = end_time_transform_type,
+        time_format = None, srs = None, use_big_date=use_big_date)
+    target = run_import(upload_session, async=False)
+    upload_session.set_target(target)
+    final_step(upload_session, user)
+
+def _log(msg, *args):
+    logger.info(msg, *args)
+    
+def _redirect(step):
+    return json_response(redirect_to=reverse('data_upload', args=[step]))
+    
+def save_step_view(req, session):
+    assert session is None
+    
+    form = NewLayerUploadForm(req.POST, req.FILES)
+    tempdir = None
+    if form.is_valid():
+        tempdir, base_file = form.write_files()
+        name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
+        import_session = save_step(name, base_file, overwrite=False) 
+        req.session[_SESSION_KEY] = UploaderSession(
+            tempdir = tempdir,
+            base_file = base_file,
+            name = name,
+            import_session = import_session,
+            layer_abstract = form.cleaned_data["abstract"],
+            layer_title = form.cleaned_data["layer_title"],
+            permissions = form.cleaned_data["permissions"]
+        )
+        return _redirect('time')
+    else:
+        errors = []
+        for e in form.errors.values():
+            errors.extend([escape(v) for v in e])
+        return json_response(errors = errors)
+
+def save_step(layer, base_file, overwrite = True):
+    
+    _log('Uploading layer: [%s], base file [%s]', layer, base_file)
+    
+    assert os.path.exists(base_file), 'invalid base_file - does not exist'
+
     name = get_valid_layer_name(layer, overwrite)
-    logger.info('figured out name "%s"', name)
+    _log('Name for layer: [%s]', name)
 
     # Step 2. Check that it is uploading to the same resource type as the existing resource
-    logger.info('>>> Step 2. Make sure we are not trying to overwrite a existing resource named [%s] with the wrong type', name)
     the_layer_type = layer_type(base_file)
-
-    # Get a short handle to the gsconfig geoserver catalog
-    cat = Layer.objects.gs_catalog
-    uploader = Layer.objects.gs_uploader
 
     # Check if the store exists in geoserver
     try:
-        store = cat.get_store(name)
+        store = Layer.objects.gs_catalog.get_store(name)
     except geoserver.catalog.FailedRequestError, e:
         # There is no store, ergo the road is clear
         pass
@@ -63,31 +194,16 @@ def save(layer, base_file, user, overwrite = True, title=None, abstract=None, pe
                     if existing_type != the_layer_type:
                         msg =  ('Type of uploaded file %s (%s) does not match type '
                             'of existing resource type %s' % (layer_name, the_layer_type, existing_type))
-                        logger.info(msg)
+                        _log(msg)
                         raise GeoNodeException(msg)
 
-    # Step 3. Identify whether it is vector or raster and which extra files are needed.
-    logger.info('>>> Step 3. Identifying if [%s] is vector or raster and gathering extra files', name)
-    if the_layer_type == FeatureType.resource_type:
-        logger.debug('Uploading vector layer: [%s]', base_file)
-        
-
-    elif the_layer_type == Coverage.resource_type:
-        logger.debug("Uploading raster layer: [%s]", base_file)
-        
-    else:
-        msg = 'The layer type for name %s is %s. It should be %s or %s,' % (layer_name, the_layer_type,
-                                                                            FeatureType.resource_type,
-                                                                            Coverage.resource_type)
-        logger.warn(msg)
-        raise GeoNodeException(msg)
-
-    # Step 4. Create the store in GeoServer
-    logger.info('>>> Step 4. Starting upload of [%s] to GeoServer...', base_file)
+    if the_layer_type not in  (FeatureType.resource_type, Coverage.resource_type):
+        raise Exception('Expected the layer type to be a FeatureType or Coverage, not %s' % the_layer_type)
+    _log('Uploading %s', the_layer_type)
 
     error_msg = None
     try:
-        import_session = uploader.upload(base_file)
+        import_session = Layer.objects.gs_uploader.upload(base_file)
         if not import_session.tasks:
             error_msg = 'No upload tasks were created'
         elif not import_session.tasks[0].items:
@@ -96,14 +212,11 @@ def save(layer, base_file, user, overwrite = True, title=None, abstract=None, pe
         # computed above, for now, the target store name can be used
     except Exception, e:
         error_msg = str(e)
-        logger.exception('Error during upload')
         
     if error_msg:
-        msg = 'Could not save the layer %s, there was an upload error: %s' % (name, error_msg)
-        logger.warn(msg)
-        raise Exception(msg)
+        raise Exception('Could not save the layer %s, there was an upload error: %s' % (name, error_msg))
     else:
-        logger.debug("Finished upload of [%s] to GeoServer without errors.", name)
+        _log("Finished upload of [%s] to GeoServer without errors.", name)
 
     return import_session
 
@@ -128,10 +241,13 @@ class TimeForm(forms.Form):
         year_names = kwargs.pop('year_names',None)
         super(TimeForm, self).__init__(*args,**kwargs)
         self._build_choice('time_attribute',time_names)
+        self._build_choice('end_time_attribute',time_names)
         self._build_choice('text_attribute',text_names)
+        self._build_choice('end_text_attribute',text_names)
         if text_names:
             self.fields['text_attribute_format'] = forms.CharField(required=False)
         self._build_choice('year_attribute',year_names)
+        self._build_choice('end_year_attribute',year_names)
             
     def _build_choice(self, att, names):
         if names:
@@ -139,17 +255,17 @@ class TimeForm(forms.Form):
             self.fields[att] = forms.ChoiceField(choices=choices,required=False)
     # @todo implement clean
     
-def _create_time_form(req):
-    import_session = req.session['import_session']
+def _create_time_form(import_session, form_data):
     feature_type = import_session.tasks[0].items[0].resource
     filter_type = lambda b : [ att.name for att in feature_type.attributes if att.binding == b]
     args = dict(
         time_names = filter_type('java.util.Date'),
         text_names = filter_type('java.lang.String'),
-        year_names = filter_type('java.lang.Integer') + filter_type('java.lang.Long')
+        year_names = filter_type('java.lang.Integer') + filter_type('java.lang.Long') +
+            filter_type('java.lang.Double')
     )
-    if req.method == 'POST':
-        return TimeForm(req.POST,**args)
+    if form_data:
+        return TimeForm(form_data,**args)
     return TimeForm(**args)
 
 def _create_db_featurestore():
@@ -171,18 +287,43 @@ def _create_db_featurestore():
         ds = cat.get_store(settings.DB_DATASTORE_NAME)
 
     return ds
+
+def _do_upload(upload_session):
+    if upload_session.update_mode:
+        try:
+            run_import(request)
+            return HttpResponse(json.dumps({
+            "success": True,
+            "redirect_to": layer.get_absolute_url() + "?describe"}))
+        except Exception, ex:
+            logging.exception("Unexpected error during upload.")
+            return json_response(error = "Unexpected error during upload: " + escape(str(e)))
+    else:
+        # only feature types have attributes
+        if hasattr(upload_session.import_session.tasks[0].items[0].resource,"attributes"):
+            return json_response(reverse('data_upload',args=['time']))
+        else:
+            return HttpResponse("Can't handle this data",status=500)
+             
+
+
+def data_upload_progress(req, upload_session):
+    """This would not be needed if geoserver REST did not require admin role
+    and is an inefficient way of getting this information"""
+    import_session = upload_session.import_session
+    progress = import_session.tasks[0].items[0].get_progress()
+    return HttpResponse(json.dumps(progress),"application/json")
     
-def upload_step2_context(req):
-    import_session = req.session['import_session']
+def time_step_context(import_session, form_data):
 
     context =  {
-        'time_form' : _create_time_form(req),
+        'time_form' : _create_time_form(import_session, form_data),
         'layer_name' : import_session.tasks[0].items[0].layer.name,
     }
 
     if settings.DB_DATASTORE:
         # we are importing to a database, use async
-        context['progress_endpoint'] = reverse('data_upload_progress')
+        context['progress_endpoint'] = reverse('data_upload',args=['progress'])
 
     # check for various recoverable incomplete states
     if import_session.tasks[0].state == 'INCOMPLETE':
@@ -194,146 +335,205 @@ def upload_step2_context(req):
 
     return context
 
-def run_import(req,async):
-    import_session = req.session['import_session']
+def run_import(upload_session, async):
+    """Run the import, possibly asynchronously.
+    
+    Returns the target datastore.
+    """
+    import_session = upload_session.import_session
     # if a target datastore is configured, ensure the datastore exists in geoserver
     # and set the uploader target appropriately
     if settings.DB_DATASTORE:
         target = _create_db_featurestore()
-        logger.info('setting target datastore %s %s',target.name,target.workspace.name)
+        _log('setting target datastore %s %s',target.name,target.workspace.name)
         import_session.tasks[0].set_target(target.name,target.workspace.name)
     else:
         target = import_session.tasks[0].target
 
-    update_mode = req.session.get('update_mode',None)
-    if update_mode:
-        logger.info('setting updateMode to %s',update_mode)
+    if upload_session.update_mode:
+        _log('setting updateMode to %s',update_mode)
         import_session.tasks[0].set_update_mode(update_mode)
 
-    logger.info('running import session')
+    _log('running import session')
     # run async if using a database
     import_session.commit(async)
 
     # @todo check status of import session - it may fail, but due to protocol,
     # this will not be reported during the commit
     return target
-    
-def upload_step2(req):
-    #
-    # handle time dimension form and commit session
-    #
-    form = _create_time_form(req)
+
+def time_step_view(request, upload_session):
+    if request.method == 'GET':
+        return render_to_response('maps/layer_upload_step2.html',
+            RequestContext(request, time_step_context(upload_session.import_session, form_data=None))
+        )
+    elif request.method != 'POST':
+        raise Exception()
+        
+    import_session = upload_session.import_session
+        
+    form = _create_time_form(import_session, request.POST)
     #@todo validation feedback
-    
-    
-    import_session = req.session['import_session']
-    if form.is_valid():
-        cleaned = form.cleaned_data
-        time_attribute = cleaned.get('time_attribute',None)
-        transforms = []
-        if not time_attribute:
-            time_attribute = cleaned.get('text_attribute',None)
-            if time_attribute:
-                transforms.append({
-                    'type' : 'DateFormatTransform',
-                    'field' : time_attribute,
-                    'format' : cleaned['text_attribute_format']
-                })
-        if not time_attribute:
-            time_attribute = cleaned.get('year_attribute',None)
-            if time_attribute:
-                transforms.append({
-                    'type' : 'IntegerFieldToDateTransform',
-                    'field' : time_attribute
-                })
-            
-        if time_attribute:
-            transforms.append({
-                'type' : 'CreateIndexTransform',
-                'field' : time_attribute
-            })
-            resource = import_session.tasks[0].items[0].resource
-            resource.add_time_dimension_info(
-                time_attribute,
-                cleaned['presentation_strategy'],
-                cleaned['precision_value'],
-                cleaned['precision_step']
-            )
-            logger.info('Setting time dimension info')
-            resource.save()
-        if transforms:
-            logger.info('Setting transforms %s',transforms)
-            import_session.tasks[0].items[0].set_transforms(transforms)
-            import_session.tasks[0].items[0].save()
-
-        if 'srs' in cleaned:
-            srs = cleaned['srs'].strip()
-            if srs:
-                srs = srs.upper()
-                if not srs.startswith("EPSG:"):
-                    srs = "EPSG:%s" % srs
-                logger.info('Setting SRS to %s',srs)
-                try:
-                    import_session.tasks[0].items[0].resource.set_srs(srs)
-                except RequestFailed,ex:
-                    args = ex.args
-                    if ex.args[1] == 400:
-                        errors = json.loads(ex.args[2])
-                        args = "\n".join(errors['errors'])
-                    raise Exception(args)
-                    
-    else:
-        #@todo validation feedback
+    if not form.is_valid():
         raise Exception("form invalid")
-
-    target = run_import(req,async=settings.DB_DATASTORE)
-
-    # ugh - some objects cannot be pickled, unpack into dict
-    req.session['import_target'] = {
-        'name' : target.name,
-        'workspace_name' : target.workspace.name,
-        'resource_type' : target.resource_type
-    }
-
-    # if no database import involved, run the next step
-    if not settings.DB_DATASTORE:
-        return upload_step3(req)
-
-    return None
-
-def upload_step3(req):
-
-    target = req.session['import_target']
-    import_session = req.session['import_session']
     
-    # reload the session to check for status
-    logger.info('Reloading session %s to check validity',import_session.id)
+    cleaned = form.cleaned_data
+    
+    time_attribute, time_transform_type = None, None
+    end_time_attribute, end_time_transform_type = None, None
+    
+    field_collectors = [
+        ('time_attribute',None),
+        ('text_attribute','DateFormatTransform'),
+        ('year_attribute','IntegerFieldToDateTransform')
+    ]
+    
+    for field, transform_type in field_collectors:
+        time_attribute = cleaned.get( field, None)
+        if time_attribute:
+            time_attribute = transform_type
+            break
+    for field, transform_type in field_collectors:
+        end_time_attribute = cleaned.get( "end_" + field, None)
+        if end_time_attribute:
+            end_time_attribute = transform_type
+            break
+
+    async = settings.DB_DATASTORE is not None
+    try:
+        time_step(
+            upload_session,
+            time_attribute = time_attribute,
+            time_transform_type = time_transform_type,
+            time_format = cleaned.get('text_attribute_format',None),
+            end_time_attribute = end_time_attribute,
+            end_time_transform_type = end_time_transform_type,
+            end_time_format = cleaned.get('end_text_attribute_format',None),
+            presentation_strategy = cleaned['presentation_strategy'],
+            precision_value = cleaned['precision_value'],
+            precision_step = cleaned['precision_step'],
+            srs = cleaned.get('srs',None)
+        )
+        target = run_import(upload_session, async)
+    except Exception, ex:
+        return json_response(exception=ex);
+
+    upload_session.set_target(target)
+    
+    if async:
+        return json_response(redirect_to= reverse('data_upload',args=['final']))
+    
+    return HttpResponseRedirect(upload_session.layer.get_absolute_url() + "?describe")
+
+    
+def time_step(upload_session, time_attribute, time_transform_type, 
+    presentation_strategy, precision_value, precision_step,
+    end_time_attribute = None, end_time_transform_type = None, end_time_format = None,
+    time_format = None, srs = None, use_big_date = False):
+    '''
+    Apply any time transformations, set dimension info, and SRS 
+    (@todo SRS should be extracted to a different step)
+    
+    time_attribute - name of attribute to use as time
+    time_transform_type - name of transform. either DateFormatTransform or IntegerFieldToDateTransform
+    time_format - optional string format
+    end_time_attribute - optional name of attribute to use as end time
+    end_time_transform_type - optional name of transform. either DateFormatTransform or IntegerFieldToDateTransform
+    end_time_format - optional string format
+    presentation_strategy - LIST, DISCRETE_INTERVAL, CONTINUOUS_INTERVAL
+    precision_value - number
+    precision_step - year, month, day, week, etc.
+    srs - optional srs to add to transformation
+    '''
+    resource = upload_session.import_session.tasks[0].items[0].resource
+    transforms = []
+    def build_time_transform(att, type, format):
+        trans = {'type': type, 'field': att}
+        if format: trans['format'] = format
+        return trans
+    def build_att_remap_transform(att):
+        # @todo the target is so ugly it should be obvious
+        return {'type' : 'AttributeRemapTransform', 'field' : att, 'target' : 'org.geotools.data.postgis.PostGISDialect$XDate'}
+    if time_attribute:
+        if use_big_date:
+            transforms.append(build_att_remap_transform(time_attribute))
+            if end_time_attribute:
+                transforms.append(build_att_remap_transform(end_time_attribute))
+        if time_transform_type:
+            transforms.append(build_time_transform(time_attribute, time_transform_type, time_format))
+        if end_time_attribute and end_time_transform_type:
+            transforms.append(build_time_transform(end_time_attribute, end_time_transform_type, end_time_format))
+        transforms.append({
+            'type' : 'CreateIndexTransform',
+            'field' : time_attribute
+        })
+        resource.add_time_dimension_info(
+            time_attribute,
+            end_time_attribute,
+            presentation_strategy,
+            precision_value,
+            precision_step,
+        )
+        logger.info('Setting time dimension info')
+        resource.save()
+        
+    if transforms:
+        logger.info('Setting transforms %s',transforms)
+        upload_session.import_session.tasks[0].items[0].set_transforms(transforms)
+        upload_session.import_session.tasks[0].items[0].save()
+        
+    if srs:
+        srs = cleaned['srs'].strip()
+        srs = srs.upper()
+        if not srs.startswith("EPSG:"):
+            srs = "EPSG:%s" % srs
+        logger.info('Setting SRS to %s',srs)
+        # this particular REST operation provides nice error handling
+        try:
+            resource.set_srs(srs)
+        except RequestFailed,ex:
+            args = ex.args
+            if ex.args[1] == 400:
+                errors = json.loads(ex.args[2])
+                args = "\n".join(errors['errors'])
+            raise Exception(args)
+
+def final_step_view(req, upload_session):
+    saved_layer = final_step(upload_session, req.user)
+    return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
+
+def final_step(upload_session, user):
+    target = upload_session.import_target
+    if target is None: raise 'shitbag'
+    import_session = upload_session.import_session
+    
+    _log('Reloading session %s to check validity',import_session.id)
     import_session = Layer.objects.gs_uploader.get_session(import_session.id)
+    
     # @todo the importer chooses an available featuretype name late in the game
     # need to verify the resource.name otherwise things will fail.
     # This happens when the same data is uploaded a second time and the default
     # name is chosen
     
-    # Get a short handle to the gsconfig geoserver catalog
     cat = Layer.objects.gs_catalog
 
-    # Step 7. Create the style and assign it to the created resource
+    # Create the style and assign it to the created resource
     # FIXME: Put this in gsconfig.py
     
-    # @todo see above in save, regarding computed unique name
+    # @todo see above in save_step, regarding computed unique name
     name = import_session.tasks[0].items[0].layer.name
     
-    logger.info('>>> Step 7. Creating style for [%s]' % name)
+    _log('Creating style for [%s]', name)
     publishing = cat.get_layer(name)
     if publishing is None:
         raise Exception("Expected to find layer named ''%s' in geoserver",name)
 
     # get_files will not find the sld if it doesn't match the base name
     # so we've worked around that in the view - if provided, it will be here
-    if 'import_sld_file' in req.session:
-        logger.info('using provided sld file')
-        base_file = req.session['import_base_file']
-        sld_file = os.path.join(os.path.dirname(base_file),req.session['import_sld_file'])
+    if upload_session.import_sld_file:
+        _log('using provided sld file')
+        base_file = upload_session.base_file
+        sld_file = os.path.join(os.path.dirname(base_file), upload_session.import_sld_file)
         f = open(sld_file, 'r')
         sld = f.read()
         f.close()
@@ -351,71 +551,67 @@ def upload_step3(req):
 
         #FIXME: Should we use the fully qualified typename?
         publishing.default_style = cat.get_style(name)
-        logger.info('default style set to ' + name)
+        _log('default style set to %s', name)
         cat.save(publishing)
     
 
-    # Step 10. Create the Django record for the layer
-    logger.info('>>> Step 10. Creating Django record for [%s]', name)
+    _log('Creating Django record for [%s]', name)
     resource = import_session.tasks[0].items[0].resource
     typename = "%s:%s" % (target['workspace_name'], resource.name)
     layer_uuid = str(uuid.uuid1())
     
-    # @todo iws - session objects cleanup
-    title = req.session['import_form']['layer_title']
-    abstract = req.session['import_form']['abstract']
-    user = req.user
+    title = upload_session.layer_title
+    abstract = upload_session.layer_abstract
     
     # @todo hacking - any cached layers might cause problems (maybe delete hook on layer should fix this?)
     cat._cache.clear()
     saved_layer, created = Layer.objects.get_or_create(name=resource.name, defaults=dict(
-                                 store=target['name'],
-                                 storeType=target['resource_type'],
-                                 typename=typename,
-                                 workspace=target['workspace_name'],
-                                 title=title or resource.title,
-                                 uuid=layer_uuid,
-                                 abstract=abstract or '',
-                                 owner=user,
-                                 )
+        store=target['name'],
+        storeType=target['resource_type'],
+        typename=typename,
+        workspace=target['workspace_name'],
+        title=title or resource.title,
+        uuid=layer_uuid,
+        abstract=abstract or '',
+        owner=user,
+        )
     )
     
-    # @todo if layer was not created, need to ensure upload target is same as existing target
+    assert saved_layer is not None
     
-    logger.info('layer was created : %s',created)
+    # @todo if layer was not created, need to ensure upload target is same as existing target
+    _log('layer was created : %s',created)
 
     if created:
         saved_layer.set_default_permissions()
 
-    # Step 9. Create the points of contact records for the layer
+    # Create the points of contact records for the layer
     # A user without a profile might be uploading this
-    logger.info('>>> Step 9. Creating points of contact records for [%s]', name)
+    _log('Creating points of contact records for [%s]', name)
     poc_contact, __ = Contact.objects.get_or_create(user=user,
                                            defaults={"name": user.username })
     author_contact, __ = Contact.objects.get_or_create(user=user,
                                            defaults={"name": user.username })
-
-    logger.debug('Creating poc and author records for %s', poc_contact)
-
     saved_layer.poc = poc_contact
     saved_layer.metadata_author = author_contact
 
+    _log('Saving to geonetwork')
     saved_layer.save_to_geonetwork()
 
-    # Step 11. Set default permissions on the newly created layer
+    # Set default permissions on the newly created layer
     # FIXME: Do this as part of the post_save hook
     
-    # @todo iws - session objects cleanup
-    permissions = req.session['import_form']['permissions']
-    logger.info('>>> Step 11. Setting default permissions for [%s]', name)
+    permissions = upload_session.permissions
+    _log('Setting default permissions for [%s]', name)
     if permissions is not None:
         from geonode.maps.views import set_layer_permissions
         set_layer_permissions(saved_layer, permissions)
 
-    # Step 12. Verify the layer was saved correctly and clean up if needed
-    logger.info('>>> Step 12. Verifying the layer [%s] was created correctly' % name)
+    _log('Verifying the layer [%s] was created correctly' % name)
 
     # Verify the object was saved to the Django database
+    # @revisit - this should always work since we just created it above and the
+    # message is confusing
     try:
         Layer.objects.get(name=name)
     except Layer.DoesNotExist, e:
@@ -423,22 +619,54 @@ def upload_step3(req):
         logger.exception(msg)
         logger.debug('Attempting to clean up after failed save for layer [%s]', name)
         # Since the layer creation was not successful, we need to clean up
-        cleanup(name, layer_uuid)
+        # @todo implement/test cleanup
+        # cleanup(name, layer_uuid)
         raise GeoNodeException(msg)
 
     # Verify it is correctly linked to GeoServer and GeoNetwork
     try:
-        #FIXME: Implement a verify method that makes sure it was saved in both GeoNetwork and GeoServer
         saved_layer.verify()
-    except NotImplementedError, e:
-        logger.exception('>>> FIXME: Please, if you can write python code, implement "verify()"'
-                         'method in geonode.maps.models.Layer')
     except GeoNodeException, e:
-        msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (layer, str(e)))
+        msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (name, str(e)))
         logger.exception(msg)
         e.args = (msg,)
         # Deleting the layer
         saved_layer.delete()
         raise
     
+    if upload_session.tempdir and os.path.exists(upload_session.tempdir):
+        shutil.rmtree(upload_session.tempdir)
+    
     return saved_layer
+
+
+_steps = {
+    'save' : save_step_view,
+    'progress' : data_upload_progress,
+    'time' : time_step_view,
+    'final' : final_step_view
+}
+    
+def view(req, step):
+    """Main uploader view"""
+    
+    upload_session = None
+    
+    if step is None:
+        step = 'save'
+        # @todo should warn user if session is being abandoned!
+        if _SESSION_KEY in req.session:
+            del req.session[_SESSION_KEY]
+    else:
+        assert _SESSION_KEY in req.session, 'Expected uploader session for step %s' % step
+        upload_session = req.session[_SESSION_KEY]
+        
+    try:
+        resp = _steps[step](req, upload_session)
+        if upload_session:
+            req.session[_SESSION_KEY] = upload_session
+        return resp
+    except Exception,e:
+        if upload_session:
+            upload_session.cleanup()
+        return json_response('Error in upload step : %s',exception = e)

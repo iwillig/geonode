@@ -33,6 +33,9 @@ from django.views.decorators.csrf import csrf_exempt, csrf_response_exempt
 from django.forms.models import inlineformset_factory
 from django.db.models import Q
 import logging
+import traceback    
+from django.utils.html import escape
+
 
 logger = logging.getLogger("geonode.maps.views")
 
@@ -870,129 +873,76 @@ Please try again, or contact and administrator if the problem continues.")
 
 @login_required
 @csrf_exempt
-def upload_layer(request):
-    if request.method == 'GET':
-        import os
-        s = os.statvfs('/')
-        mb = s.f_bsize * s.f_bavail / (1024. * 1024)
-        return render_to_response('maps/layer_upload.html',
-                                  RequestContext(request, {
-                                  'storage_remaining' : "%d MB" % mb,
-                                  'enough_storage' : mb > 64
-                                  }))
-    elif request.method == 'POST':
-        from geonode.maps.forms import NewLayerUploadForm
-        from geonode.maps.utils import save
-        from django.utils.html import escape
-        import os, shutil
-        form = NewLayerUploadForm(request.POST, request.FILES)
-        tempdir = None
-        if form.is_valid():
+def upload_layer(request, step=None):
+    """Allow use of the old uploader and the new one. This is done by the
+    USE_UPLOADER setting. The optional step will be ignored by the old uploader.
+    The step is managed by the uploader and since it is part of a sequence,
+    shouldn't be used by other code (so it's not in urls).
+    """
+    
+    if settings.USE_UPLOADER:
+        from geonode.maps.upload import view
+        
+    try:
+        if request.method == 'GET':
+            if step is None:
+                import os
+                s = os.statvfs('/')
+                mb = s.f_bsize * s.f_bavail / (1024. * 1024)
+                return render_to_response('maps/layer_upload.html',
+                                        RequestContext(request, {
+                                        'storage_remaining' : "%d MB" % mb,
+                                        'enough_storage' : mb > 64
+                                        }))
+            else:
+                return view(request, step)
+        elif request.method == 'POST':
+            if settings.USE_UPLOADER:
+                return view(request, step)
+            else:
+                return _old_upload(request)
+    except Exception, e:
+        return json_response("Unexpected error during upload: %s.", exception=e)
+        
+def _old_upload(request):
+    from geonode.maps.forms import NewLayerUploadForm
+    from geonode.maps.utils import save
+    import os, shutil
+    form = NewLayerUploadForm(request.POST, request.FILES)
+    tempdir = None
+    if form.is_valid():
+        try:
+            tempdir, base_file = form.write_files()
+            name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
+            if settings.USE_UPLOADER:
+                from geonode.maps.upload import save
+                if 'import_session' in request.session:
+                    del request.session['import_session']
+
+            saved_layer = save(name, base_file, request.user, 
+                    overwrite = False,
+                    abstract = form.cleaned_data["abstract"],
+                    title = form.cleaned_data["layer_title"],
+                    permissions = form.cleaned_data["permissions"]
+                    )
+
+            if settings.USE_UPLOADER:
+                return _uploader(request,saved_layer,form,base_file)
+
+            return HttpResponse(json.dumps({
+                "success": True,
+                "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
+        finally:
             try:
-                tempdir, base_file = form.write_files()
-                name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
-                if settings.USE_UPLOADER:
-                    from geonode.maps.upload import save
-                    if 'import_session' in request.session:
-                        del request.session['import_session']
-
-                saved_layer = save(name, base_file, request.user, 
-                        overwrite = False,
-                        abstract = form.cleaned_data["abstract"],
-                        title = form.cleaned_data["layer_title"],
-                        permissions = form.cleaned_data["permissions"]
-                        )
-
-                if settings.USE_UPLOADER:
-                    return _uploader(request,saved_layer,form,base_file)
-                
-                return HttpResponse(json.dumps({
-                    "success": True,
-                    "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
-            except Exception, e:
-                logger.exception("Unexpected error during upload.")
-                return HttpResponse(json.dumps({
-                    "success": False,
-                    "errors": ["Unexpected error during upload: " + escape(str(e))]}))
-            finally:
-                # can't cleanup files yet, multi request process
-                if tempdir is not None and not settings.USE_UPLOADER:
+                if tempdir is not None:
                     shutil.rmtree(tempdir)
-        else:
-            errors = []
-            for e in form.errors.values():
-                errors.extend([escape(v) for v in e])
-            return HttpResponse(json.dumps({ "success": False, "errors": errors}))
-
-def _uploader(request,import_session,form,base_file,update_mode=None,layer=None):
-     # @todo session objects prolly should be handled more carefully
-     request.session['import_session'] = import_session
-     # wipe out any file fields contained in the form or session pickle will barf
-     for k in form.cleaned_data.keys():
-        if k.endswith('_file'):
-            file = form.cleaned_data.pop(k)
-            # work around sld file named differently from base_file
-            if file and k.startswith('sld'):
-                request.session['import_sld_file'] = file.name
-     request.session['import_form'] = form.cleaned_data
-     request.session['import_base_file'] = base_file
-     request.session['update_mode'] = update_mode
-     
-     if update_mode:
-         from geonode.maps.upload import run_import
-         try:
-             run_import(request)
-             return HttpResponse(json.dumps({
-             "success": True,
-             "redirect_to": layer.get_absolute_url() + "?describe"}))
-         except Exception, ex:
-             logging.exception("Unexpected error during upload.")
-             return HttpResponse(json.dumps({
-                 "success" : "False",
-                 "errors" : ["Unexpected error during upload: " + escape(str(e))]
-             }))
-     else:
-         # only feature types have attributes
-         if hasattr(import_session.tasks[0].items[0].resource,"attributes"):
-             return HttpResponse(json.dumps({
-             "success": True,
-             "redirect_to": reverse('data_upload2')}))
-         else:
-             return HttpResponse("Can't handle this data",status=500)
-             
-def upload_layer2(request):
-     from geonode.maps.upload import upload_step2
-     from geonode.maps.upload import upload_step2_context
-     if request.method == 'GET':
-         return render_to_response('maps/layer_upload_step2.html',
-             RequestContext(request, upload_step2_context(request))
-         )
-     elif request.method == 'POST':
-         try:
-             saved_layer = upload_step2(request)
-         except Exception, ex:
-             return HttpResponse(json.dumps({
-                "success" : False,
-                "errors" : ex.args
-             }))
-         if saved_layer:
-             return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
-         else:
-             return HttpResponse(json.dumps({
-             "success": True,
-             "redirect_to": reverse('data_upload3')}))
-
-def upload_layer3(request):
-    from geonode.maps.upload import upload_step3
-    saved_layer = upload_step3(request)
-    return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
-
-def data_upload_progress(req):
-    """This would not be needed if geoserver REST did not require admin role
-    and is an inefficient way of getting this information"""
-    import_session = req.session['import_session']
-    progress = import_session.tasks[0].items[0].get_progress()
-    return HttpResponse(json.dumps(progress),"application/json")
+            except:
+                logger.exception('Error cleaning up tempdir %s' % tempdir)
+    else:
+        errors = []
+        for e in form.errors.values():
+            errors.extend([escape(v) for v in e])
+        return HttpResponse(json.dumps({ "success": False, "errors": errors}))
 
 @login_required
 @csrf_exempt
@@ -1051,8 +1001,43 @@ def _updateLayer(request, layer):
             for e in form.errors.values():
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
-
-
+        
+def json_response(body=None, errors=None, redirect_to=None, exception=None):
+    """Create a proper JSON response. If body is provided, this is the response.
+    If errors is not None, the response is a success/errors json object.
+    If redirect_to is not None, the response is a success=True, redirect_to object
+    If the exception is provided, it will be logged. If body is a string, the
+    exception message will be used as a format option to that string and the
+    result will be a success=False, errors = body % exception
+    """
+    if errors:
+        body = {
+            'success' : False,
+            'errors' : errors
+        }
+    elif redirect_to:
+        body = {
+            'success' : True,
+            'redirect_to' : redirect_to
+        }
+    elif exception:
+        if body is None:
+            body = "Unexpected exception %s" % exception
+        else:
+            body = body % exception
+        logger.warn(body)
+        logger.warn(traceback.format_exc(exception))
+        body = {
+            'success' : False,
+            'errors' : [ body ]
+        }
+    elif body:
+        if not isinstance(body, basestring):
+            body = json.dumps(body)
+    else:
+        raise Exception("must call with body, errors or redirect_to")
+    return HttpResponse(json.dumps(body), mimetype = "application/json")
+        
 @login_required
 def view_layer_permissions(request, layername):
     layer = get_object_or_404(Layer,typename=layername) 
