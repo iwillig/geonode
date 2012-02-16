@@ -22,6 +22,7 @@ from geonode.maps.utils import get_default_user
 from gsuploader.uploader import RequestFailed
 
 from django import forms
+from django.config import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.html import escape
 from django.contrib.auth.models import User
@@ -391,14 +392,14 @@ def time_step_view(request, upload_session):
     for field, transform_type in field_collectors:
         time_attribute = cleaned.get( field, None)
         if time_attribute:
-            time_attribute = transform_type
+            time_transform_type = transform_type
             break
     for field, transform_type in field_collectors:
         end_time_attribute = cleaned.get( "end_" + field, None)
         if end_time_attribute:
-            end_time_attribute = transform_type
+            end_time_transform_type = transform_type
             break
-
+            
     async = settings.DB_DATASTORE is not None
     try:
         time_step(
@@ -429,7 +430,7 @@ def time_step_view(request, upload_session):
 def time_step(upload_session, time_attribute, time_transform_type, 
     presentation_strategy, precision_value, precision_step,
     end_time_attribute = None, end_time_transform_type = None, end_time_format = None,
-    time_format = None, srs = None, use_big_date = False):
+    time_format = None, srs = None, use_big_date = None):
     '''
     Apply any time transformations, set dimension info, and SRS 
     (@todo SRS should be extracted to a different step)
@@ -454,6 +455,11 @@ def time_step(upload_session, time_attribute, time_transform_type,
     def build_att_remap_transform(att):
         # @todo the target is so ugly it should be obvious
         return {'type' : 'AttributeRemapTransform', 'field' : att, 'target' : 'org.geotools.data.postgis.PostGISDialect$XDate'}
+    if use_big_date is None:
+        try:
+            use_big_date = settings.USE_BIG_DATE
+        except:
+            use_big_date = False
     if time_attribute:
         if use_big_date:
             transforms.append(build_att_remap_transform(time_attribute))
