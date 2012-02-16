@@ -470,14 +470,14 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 showSelectedOnly: false,
                 supportNoGeometry: true,
                 outputConfig: {
-                    width: 300,
+                    width: 400,
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
                         bodyStyle: "padding: 5px 5px 0",
                         fieldConfig: {
                             'title': {fieldLabel: "Title"},
-                            'start_time': {xtype: 'gxp_datefield', fieldLabel: "Start time"},
-                            'end_time': {xtype: 'gxp_datefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
+                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time"},
+                            'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
                             'in_timeline': {boxLabel: "Include in timeline"},
                             'in_map': {boxLabel: "Include in map"},
                             'appearance': {xtype: "combo", fieldLabel: "Alignment", comboStoreData: [

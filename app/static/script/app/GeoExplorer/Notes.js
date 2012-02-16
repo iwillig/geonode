@@ -103,7 +103,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
             disabled: !this.target.mapID,
             iconCls: this.iconCls,
             menu: new Ext.menu.Menu({
-                id: this.outputConfig.id/*,
+                id: this.outputConfig.id,
                 items: [
                     new Ext.menu.CheckItem({
                         checked: featureManager.featureLayer.getVisibility(),
@@ -121,7 +121,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
                             scope: this
                         }
                     })
-                ]*/
+                ]
             })
         }]);
     }
