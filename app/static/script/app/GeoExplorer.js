@@ -470,7 +470,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 showSelectedOnly: false,
                 supportNoGeometry: true,
                 outputConfig: {
-                    width: 400,
+                    width: 325,
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
                         bodyStyle: "padding: 5px 5px 0",
