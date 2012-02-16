@@ -22,7 +22,7 @@ from geonode.maps.utils import get_default_user
 from gsuploader.uploader import RequestFailed
 
 from django import forms
-from django.config import settings
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.html import escape
 from django.contrib.auth.models import User
