@@ -375,7 +375,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: "treetbar",
                 createExpander: function() {
                     return new GeoExplorer.CapabilitiesRowExpander({
-                        ows: this.localGeoServerBaseUrl + "ows"
+                        ows: config.localGeoServerBaseUrl + "ows"
                     });
                 }
             }, {
