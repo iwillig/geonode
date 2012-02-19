@@ -1,6 +1,6 @@
 Ext.onReady(function() {
     var start = 0,
-    limit = 5,
+    limit = 10,
     loadnotify = Ext.get('loading'),
     itemTemplate = "<li id='item{iid}'><a href='{detail}'><img class='thumb {thumbclass}' src='{thumb}'></img></a>" +
     "<div class='itemButtons'><div id='toggle{iid}'></div><div id='save{iid}'></div><div id='map{iid}'></div></div>" +
