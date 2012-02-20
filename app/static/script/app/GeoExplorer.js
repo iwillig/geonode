@@ -465,8 +465,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         ptype: "gxp_editorform",
                         bodyStyle: "padding: 5px 5px 0",
                         fieldConfig: {
-                            'title': {fieldLabel: "Title"},
-                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time"},
+                            'title': {fieldLabel: "Title", allowBlank: false},
+                            'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false},
                             'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
                             'in_timeline': {boxLabel: "Include in timeline"},
                             'in_map': {boxLabel: "Include in map"},
