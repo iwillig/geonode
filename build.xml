@@ -7,7 +7,7 @@
 
     <property name="build" location="build"/>
     <property name="app.proxy.geoserver" value=""/>
-    <property name="app.port" value="8080"/>
+    <property name="app.port" value="8888"/>
     <condition property="git" value="git.cmd" else="git">
         <os family="windows"/>
     </condition>
