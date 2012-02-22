@@ -21,7 +21,7 @@ display: block;
 zoom: 1; /* IE < 7 */
 }
 
-.nodisplay { 
+.nodisplay {
 display: none;
 }
 
@@ -76,13 +76,13 @@ table.x-btn td.x-btn-tr {
 height: 2px;
 }
 
-table.x-btn td.x-btn-tr i, 
+table.x-btn td.x-btn-tr i,
 table.x-btn td.x-btn-tl i {
 height:2px;
 }
 
 form table,
-.x-panel table, 
+.x-panel table,
 .x-toolbar-ct table {
 margin-bottom: 0;
 }
@@ -280,6 +280,50 @@ border-bottom: 1px solid #d5d5d5;
 padding: 10px 0 0;
 }
 
+/* subnav */
+#subnav {
+margin: -6px -10px 20px -11px;
+list-style-type: none;
+line-height: 1;
+background:#66abc0;
+-webkit-border-top-left-radius: 10px;
+-webkit-border-top-right-radius: 10px;
+-moz-border-radius-topleft: 10px;
+-moz-border-radius-topright: 10px;
+border-top-left-radius: 10px;
+border-top-right-radius: 10px;
+padding:12px 0 0 15px;
+}
+
+#subnav li {
+float: left;
+margin: 0;
+padding: 0;
+}
+
+#subnav li a {
+float: left;
+margin: 0;
+padding: 8px 14px;
+color: #fff;
+text-decoration: none;
+font-size: 0.95em;
+line-height:1.2em;
+}
+
+#subnav li a.current {
+background: #fff;
+color: #003c4c;
+margin-bottom: -2px;
+box-shadow:0 -1px 1px #467685;
+-webkit-box-shadow:0 -1px 1px #467685;
+-moz-box-shadow:0 -1px 1px #467685;
+}
+
+#subnav li a:hover {
+  color: #003c4c;
+}
+
 /*-----------------------
 Columns
 -----------------------*/
@@ -339,7 +383,7 @@ background: #f1f6f7;
 /*-----------------------
 CAPRA Styles (Does this belong in a site-specific theme?)
 -----------------------*/
-#ja-topbar{ 
+#ja-topbar{
 background: #fff url(img/language-en.png) no-repeat scroll 0 0;
 height:35px;
 margin:0 auto;
@@ -347,12 +391,12 @@ position:relative;
 width:950px;
 }
 
-#ja-topbar.es{ 
+#ja-topbar.es{
 background: #fff url(img/language-es.png) no-repeat scroll 0 0;
 }
 
 
-#ja-search { 
+#ja-search {
 padding-left:8px;
 }
 
@@ -366,7 +410,7 @@ align: right;
 display: inline;
 }
 
-#ja-search .english button { 
+#ja-search .english button {
 width:74px;
 height: 30px;
 background: #fff url(img/english.jpg) no-repeat scroll 0 0;
@@ -375,7 +419,7 @@ display: block;
 float:left;
 }
 
-#ja-search .spanish button { 
+#ja-search .spanish button {
 width:62px;
 height: 30px;
 background: #fff url(img/spanish.jpg) no-repeat scroll 0 0;
@@ -384,36 +428,36 @@ display: block;
 float:left;
 }
 
-div#app-header #ja-search button { 
+div#app-header #ja-search button {
 float:right;
 }
 
-div#app-header #ja-search .spanish button { 
+div#app-header #ja-search .spanish button {
 width: 16px;
 height: 12px;
 margin: 2px;
 background: url(img/es.gif) no-repeat scroll 0 0;
 }
 
-div#app-header #ja-search .english button { 
+div#app-header #ja-search .english button {
 width: 16px;
 height: 12px;
 margin: 2px;
 background: url(img/gb.gif) no-repeat scroll 0 0;
 }
 
-#home{ 
+#home{
 display: block;
 float:left;
 height: 30px;
 }
 
-.en a#home{ 
+.en a#home{
 width:65px;
 background: #fff url(img/home.jpg) no-repeat scroll 0 0;
 }
 
-.es a#home{ 
+.es a#home{
 background: #fff url(img/inicio.png) no-repeat scroll 0 0;
 width: 50px;
 }
@@ -422,29 +466,29 @@ width: 50px;
 /*-----------------------
 Application Styles
 -----------------------*/
-#app-div { 
+#app-div {
 width:100%;
 height:85%;
 }
 
-.x-btn .icon-create-map { 
+.x-btn .icon-create-map {
 background-image: url(img/silk/map_add.png);
 }
 
 
-.x-btn .icon-open-map { 
+.x-btn .icon-open-map {
 background-image: url(img/silk/map_magnify.png);
 }
 
-.x-btn .icon-delete { 
+.x-btn .icon-delete {
     background-image: url(img/silk/delete.png);
 }
 
-.x-btn .icon-security { 
+.x-btn .icon-security {
     background-image: url(img/silk/lock.png);
 }
 
-a.download { 
+a.download {
 background-repeat:no-repeat;
 padding-left: 18px;
 padding-top: 2px;
@@ -452,35 +496,35 @@ padding-bottom:2px;
 background-image: url(img/silk/page_white.png)
 }
 
-a.download.pdf { 
+a.download.pdf {
 background-image: url(img/silk/page_white_acrobat.png)
 }
 
-a.download.kml, 
-a.download.kmz { 
+a.download.kml,
+a.download.kmz {
 background-image: url(img/geosilk/kml.png)
 }
 
 a.download.geotiff,
 a.download.tiff,
-a.download.png { 
+a.download.png {
 background-image: url(img/geosilk/page_white_raster.png)
 }
 
 a.download.shp,
-a.download.zip { 
+a.download.zip {
 background-image: url(img/geosilk/page_white_vector.png)
 }
 
-a.permalink { 
-text-decoration: none;  
+a.permalink {
+text-decoration: none;
 background-repeat:no-repeat;
 padding-left: 18px;
 background-image: url(img/silk/link.png);
 }
 
 a.layer-upload-link {
-text-decoration: none;  
+text-decoration: none;
 background-repeat:no-repeat;
 padding-left: 18px;
 margin-top: 1em;
@@ -535,7 +579,7 @@ color: #888;
 Index Elements
 -----------------------*/
 
-.content-button { 
+.content-button {
 float:left;
 padding-right:1em;
 }
@@ -561,7 +605,7 @@ span.info-layer {
     padding-bottom:2px;
 }
 
-span.remote-layer {   
+span.remote-layer {
     background-image: url(img/silk/world_link.png)
 }
 span.unviewable-layer {
@@ -589,20 +633,20 @@ table.permissions th {
 
 table.permissions td {
     padding: 9px 8px 0px 8px;
-	border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 
-.login-widget{ 
+.login-widget{
 margin-top: 30px;
 margin-right: 10px;
 float: right;
 color: #fff;
 }
-.login-widget a { 
-	color: #fff;
-	}
-	
-table 
+.login-widget a {
+  color: #fff;
+  }
+
+table
 /* UTILITY CLASSES */
 
 .selfclear:after {
@@ -621,7 +665,7 @@ display: inline-block; /* IE 7 */
 display: block;
 }
 
-.login-widget a { 
+.login-widget a {
 color: #fff;
 }
 
@@ -709,11 +753,11 @@ cursor: pointer;
 }
 
 .x-grid3-col .data-type.layer {
-    background-image: url(img/silk/page_green.png); 
+    background-image: url(img/silk/page_green.png);
 }
 
 .x-grid3-col .data-type.map {
-    background-image: url(img/silk/map.png); 
+    background-image: url(img/silk/map.png);
 }
 
 .x-grid3-col .data-edit {
@@ -750,3 +794,29 @@ cursor: pointer;
      float: right;
      padding-top: 3px;
 }
+
+/*** elements ***/
+.threecol h3 {
+  margin-bottom:6px;
+}
+
+.threecol h3 span {
+  font-weight:normal;
+  font-size:14px;
+}
+
+/*** group detail ***/
+img.group-logo {
+  width:52px;
+  margin:10px 15px 15px 0;
+  float:left;
+}
+
+.member-list {
+  margin-bottom:15px;
+}
+
+.member-list img {
+  margin:0 2px 2px 0;
+}
+

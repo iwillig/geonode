@@ -7,6 +7,7 @@ from geoserver.catalog import Catalog
 from geonode.core.models import PermissionLevelMixin
 from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.geonetwork import Catalog as GeoNetwork
+from geonode.groups.models import Group
 from django.db.models import signals
 from django.utils.html import escape
 import httplib2
@@ -18,6 +19,8 @@ from datetime import datetime
 from django.contrib.auth.models import User, Permission
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
 from string import lower
 from StringIO import StringIO
 from xml.etree.ElementTree import parse, XML
@@ -1656,6 +1659,34 @@ class ContactRole(models.Model):
 
     class Meta:
         unique_together = (("contact", "layer", "role"),)
+
+
+class GroupLayer(models.Model):
+    
+    group = models.ForeignKey(Group)
+    layer = models.ForeignKey(Layer)
+
+    @classmethod
+    def layers_for_group(cls, group_id):
+        layer_ids = cls.objects.filter(group=group_id).values_list('layer', flat=True)
+        return Layer.objects.filter(id__in=layer_ids)
+
+    class Meta:
+        unique_together = (("group", "layer"),)
+
+
+class GroupMap(models.Model):
+    group = models.ForeignKey(Group)
+    map = models.ForeignKey(Map)
+
+    @classmethod
+    def maps_for_group(cls, group_id):
+        map_ids = cls.objects.filter(group=group_id).values_list('map', flat=True)
+        return Map.objects.filter(id__in=map_ids)
+
+    class Meta:
+        unique_together = (("group", "map"),)
+
 
 def delete_layer(instance, sender, **kwargs): 
     """

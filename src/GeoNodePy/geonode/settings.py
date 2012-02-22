@@ -230,9 +230,12 @@ INSTALLED_APPS = (
     'profiles',
     'avatar',
     'south',
+    'taggit',
+    'crispy_forms',
     'geonode.core',
     'geonode.maps',
     'geonode.proxy',
+    'geonode.groups',
     'geonode'
 )
 

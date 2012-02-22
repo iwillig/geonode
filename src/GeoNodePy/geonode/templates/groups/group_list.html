@@ -1,0 +1,15 @@
+{% extends "groups/base.html" %}
+{% load avatar_tags %}
+
+{% block content %}
+<div class="onecol">
+<ul>
+  <li><a href="{% url group_create %}">Create a new group</a></li>
+</ul>
+{% for group in object_list %}
+   <ul>
+     <li><a href="{% url group_detail group.slug %}">{{ group.title }}</a></li>
+   </ul>
+{% endfor %}
+</div>
+{% endblock %}
