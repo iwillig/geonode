@@ -157,6 +157,7 @@ def maps(request, mapid=None):
             transaction.commit()
             return response
         except Exception, e:
+            logger.exception('error saving map')
             transaction.rollback()
             return HttpResponse(
                 "The server could not understand your request." + str(e),
@@ -1875,7 +1876,7 @@ def _create_layer(user = None, **kwargs):
         logger.exception('Error creating layer in geoserver')
         errors.append(str(ex))
 
-    if not errors:
+    if not errors and not kwargs.get('skip_style',False):
         try:
             logging.info('Creating style %s',gs_ftype.name)
             sld = get_sld_for(gslayer)
