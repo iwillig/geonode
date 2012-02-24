@@ -586,6 +586,13 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 if (source.store && source instanceof gxp.plugins.WMSSource &&
                                 source.url.indexOf("/geoserver/wms" === 0)) {
                     startSourceId = id;
+                    source.store.on("load", function() {
+                        source.store.filterBy(function(rec) {
+                            var name = rec.get('name');
+                            return !(new RegExp("geonode:_map_[0-9]+_annotations").test(name) ||
+                                new RegExp("geonode:annotations_[0-9]+").test(name));
+                        }, this);
+                    }, this);
                 }
             }
             // find the add layers plugin
