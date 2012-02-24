@@ -53,7 +53,10 @@ Ext.onReady(function() {
                       setLeft(this.getLeft()).fadeIn();
             }
         }).on('mouseout',function() {
-             Ext.get('thumbHover').slideOut();
+            var hover = Ext.get('thumbHover');
+            if (hover.dom.src == this.dom.src || hover.isVisible()) {
+                Ext.get('thumbHover').slideOut();
+            }
         });
     }
 
