@@ -47,7 +47,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
             xtype : 'checkbox',
             ref : '../playbackCheck',
             boxLabel : this.layerPlaybackFieldText,
-            //checked: true,
+            checked: this.checkLayerPlaybackMode(),
             listeners : {
                 check : this.toggleLayerPlaybackMode,
                 scope : this
@@ -57,7 +57,8 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
             xtype : 'gxp_playbackmodecombo',
             ref : '../playbackModeCombo',
             anchor : '-5',
-            disabled : true,
+            disabled : !this.checkLayerPlaybackMode(),
+            value: this.getLayerPlaybackMode(),
             listeners : {
                 'modechange' : this.setPlaybackMode,
                 scope : this
@@ -100,6 +101,48 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
         var newAgent = timeManager.buildTimeAgents([layer])[0];
         timeManager.timeAgents.push(newAgent);
         return newAgent;
+    },
+    
+    getLayerPlaybackMode : function(){
+        if(!this._agent){
+            this.getLayerAgent();
+        }
+        var agent = this._agent;
+        return agent && agent.rangeMode;
+    },
+    
+    checkLayerPlaybackMode : function(){
+        if(!this._agent){
+            this.getLayerAgent();
+        }
+        var agent = this._agent;
+        var playbackCmp = this.playbackToolbar;
+        var altMode = false;
+        if(agent && playbackCmp){
+            switch(agent.rangeMode){
+                case 'range':
+                    altMode = playbackCmp.playbackMode != 'ranged';
+                    break;
+                case 'cumulative':
+                    altMode = playbackCmp.playbackMode != 'cumulative';
+                    break;
+                default:
+                    altMode = playbackCmp.playbackMode != 'track';
+            }
+        }
+        return altMode;
+    },
+    
+    getLayerAgent : function(layer,manager){
+        layer = layer || this.layerRecord.getLayer();
+        var agents = (manager && manager.timeAgents) || this.timeManager.timeAgents || [];
+        for(var i=0;i<agents.length;i++){
+            if(agents[i].layers.indexOf(layer)>-1){
+                this._agent = agents[i];
+                return agents[i];
+            }
+        }
+        return null;
     }
 
 });
