@@ -10,11 +10,15 @@
     </form>
     
     {% if maps_added %}
-        <p>Added map(s) 
+        <p>
+        {% blocktrans with title=object.title %}
+        Added map(s) to group {{ title }}:
+        {% endblocktrans %}
+        <ul>
         {% for map in maps_added %}
-        {{ map.title }} 
+        <li> {{ map.title }} </li>
         {% endfor %}
-        to group {{ object.title }}.
+        </ul>
         </p>
     {% endif %}
 </div>

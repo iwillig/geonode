@@ -2,7 +2,7 @@
 
 {% block sidebar %}
 <div class="twocol">
-    <h2>Share layers to group</h2>
+    <h2>{% trans "Share layers to group" %}</h2>
     <form method="POST" action="">
     {% csrf_token %}
     {{ form }}
@@ -10,11 +10,15 @@
     </form>
     
     {% if layers_added %}
-        <p>Added layer(s) 
+        <p>
+        {% blocktrans with title=object.title %}
+        Added layer(s) to group {{ title }}:
+        {% endblocktrans %}
+        <ul>
         {% for layer in layers_added %}
-        {{ layer.title }} 
+        <li> {{ layer.title }} </li>
         {% endfor %}
-        to group {{ object.title }}.
+        </ul>
         </p>
     {% endif %}
 </div>
