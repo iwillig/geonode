@@ -20,9 +20,9 @@ class Group(models.Model):
     description = models.TextField()
     keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
     access = models.CharField(max_length=15, choices=[
-        ("public", "Public"),
-        ("public-invite", "Public (invite-only)"),
-        ("private", "Private"),
+        ("public", _("Public")),
+        ("public-invite", _("Public (invite-only)")),
+        ("private", _("Private")),
     ])
     
     def member_queryset(self):
@@ -75,8 +75,8 @@ class GroupMember(models.Model):
     group = models.ForeignKey(Group)
     user = models.ForeignKey(User)
     role = models.CharField(max_length=10, choices=[
-        ("manager", "Manager"),
-        ("member", "Member"),
+        ("manager", _("Manager")),
+        ("member", _("Member")),
     ])
     joined = models.DateTimeField(default=datetime.datetime.now)
 
@@ -89,15 +89,15 @@ class GroupInvitation(models.Model):
     user = models.ForeignKey(User, null=True, related_name="pg_invitations_received")
     from_user = models.ForeignKey(User, related_name="pg_invitations_sent")
     role = models.CharField(max_length=10, choices=[
-        ("manager", "Manager"),
-        ("member", "Member"),
+        ("manager", _("Manager")),
+        ("member", _("Member")),
     ])
     state = models.CharField(
         max_length = 10,
-        choices = zip(*itertools.tee([
-            "sent",
-            "accepted",
-            "declined",
+        choices = [(
+            ("sent", _("Sent")),
+            ("accepted", _("Accepted")),
+            ("declined", _("Declined")),
         ])),
         default = "sent",
     )
