@@ -855,9 +855,9 @@ def layerController(request, layername):
 	    }))
 
 def _handleThumbNail(req, obj):
-    if not req.user.has_perm('maps.change_maps', obj=obj) and not request.user.has_perm('maps.change_layer', obj=obj):
+    if not req.user.has_perm('maps.change_maps', obj=obj) and not req.user.has_perm('maps.change_layer', obj=obj):
         return HttpResponse(loader.render_to_string('401.html',
-            RequestContext(request, {'error_message':
+            RequestContext(req, {'error_message':
                 _("You are not permitted to modify this layer")})), status=401)
     if req.method == 'GET':
         thumb = Thumbnail.objects.get_thumbnail(obj,allow_null=False)
@@ -1033,11 +1033,13 @@ def json_response(body=None, errors=None, redirect_to=None, exception=None):
             'errors' : [ body ]
         }
     elif body:
-        if not isinstance(body, basestring):
-            body = json.dumps(body)
+        pass
     else:
         raise Exception("must call with body, errors or redirect_to")
-    return HttpResponse(json.dumps(body), mimetype = "application/json")
+
+    if not isinstance(body, basestring):
+        body = json.dumps(body)
+    return HttpResponse(body, mimetype = "application/json")
         
 @login_required
 def view_layer_permissions(request, layername):
