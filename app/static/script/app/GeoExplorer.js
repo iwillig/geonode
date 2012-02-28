@@ -355,6 +355,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         });
         function createToolCfg(config, toggleGroup) {
             return (config.tools || []).concat({
+                ptype: "gxp_mapproperties",
+                actionTarget: {target: "paneltbar", index: 0}
+            }, {
                 ptype: "gxp_zoom",
                 actionTarget: {target: "paneltbar", index: 4}
             }, {
