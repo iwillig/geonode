@@ -252,13 +252,24 @@ class Session(_UploadBase):
                 self.tasks = self._build(json['tasks'],Task)
                 
 
-    def upload_task(self,files):
-        """create a task with the provided files"""
+    def upload_task(self,files, use_url = False):
+        """create a task with the provided files
+        files - collection of files to upload or zip file
+        use_url - if true, post a URL to the uploader
+        """
         # @todo getting the task response updates the session tasks, but
         # neglects to retreive the overall session status field
         fname = os.path.basename(files[0])
         _,ext = os.path.splitext(fname)
-        if ext == '.zip':
+        if use_url:
+            if ext == '.zip':
+                upload_url = files[0]
+            else:
+                upload_url = os.path.dirname(files[0])
+            url = self._url("imports/%s/tasks" % self.id)
+            upload_url = "file://%s" % os.path.abspath(upload_url)
+            resp = self._client().post_upload_url(url, upload_url)
+        elif ext == '.zip':
             url = self._url("imports/%s/tasks/%s" % (self.id,fname))
             resp = self._client().put_zip(url, files[0])
         else:
@@ -279,5 +290,12 @@ class Session(_UploadBase):
         resp, content = self._client().post(url)
         if resp['status'] != '204':
             raise Exception("expected 204 response code, got %s" % resp['status'],content)
+        
+    def delete(self):
+        """Delete the upload"""
+        url = self._url("imports/%s",self.id)
+        resp, content = self._client.delete(url)
+        if resp['status'] != '204':
+            raise Exception('expected 204 response code, got %s' % resp['status'],content)
     
 
