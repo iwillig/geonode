@@ -15,7 +15,7 @@ from geonode.maps.models import Layer, Map, GroupLayer, GroupMap
 
 def group_list(request):
     ctx = {
-        "object_list": Group.objects.all(),
+        "object_list": Group.objects.all()
     }
     ctx = RequestContext(request, ctx)
     return render_to_response("groups/group_list.html", ctx)

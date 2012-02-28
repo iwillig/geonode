@@ -34,7 +34,7 @@ class Group(models.Model):
         return user.id in self.member_queryset().values_list("user", flat=True)
     
     def user_is_role(self, user, role):
-        return self.member_queryset().filter(user=user, role=role).exists()
+        return user.is_authenticated() and self.member_queryset().filter(user=user, role=role).exists()
     
     def can_view(self, user):
         if self.access == "private":
@@ -94,11 +94,11 @@ class GroupInvitation(models.Model):
     ])
     state = models.CharField(
         max_length = 10,
-        choices = [(
+        choices = (
             ("sent", _("Sent")),
             ("accepted", _("Accepted")),
             ("declined", _("Declined")),
-        ])),
+        ),
         default = "sent",
     )
     created = models.DateTimeField(default=datetime.datetime.now)

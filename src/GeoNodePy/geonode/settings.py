@@ -52,13 +52,13 @@ SITE_ID = 1
 TEST_RUNNER='django_nose.NoseTestSuiteRunner'
 
 NOSE_ARGS = [
-      '--verbosity=2',
-      '--cover-erase',
+#      '--verbosity=2',
+#      '--cover-erase',
       '--nocapture',
-      '--with-coverage',
-      '--cover-package=geonode',
-      '--cover-inclusive',
-      '--cover-tests',
+#      '--with-coverage',
+#      '--cover-package=geonode',
+#      '--cover-inclusive',
+#      '--cover-tests',
       '--detailed-errors',
       '--with-xunit',
 
@@ -84,7 +84,7 @@ MEDIA_ROOT = os.path.join(PROJECT_ROOT, "site_media", "media")
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = "/site_media/media/"
+MEDIA_URL = "/site_media/"
 
 # Absolute path to the directory that holds static files like app media.
 # Example: "/home/media/media.lawrence.com/apps/"

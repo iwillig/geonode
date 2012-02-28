@@ -1,8 +1,9 @@
 {% extends "groups/group_base.html" %}
+{% load i18n %}
 
 {% block sidebar %}
 <div class="twocol">
-    <h2>Share maps to group</h2>
+    <h2>{% trans "Share maps to group" %}</h2>
     <form method="POST" action="">
     {% csrf_token %}
     {{ form }}
@@ -11,7 +12,7 @@
     
     {% if maps_added %}
         <p>
-        {% blocktrans with title=object.title %}
+        {% blocktrans with object.title as title %}
         Added map(s) to group {{ title }}:
         {% endblocktrans %}
         <ul>
