@@ -1,4 +1,4 @@
-from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole, Role
+from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole, Role, Upload
 from django.contrib.contenttypes.models import ContentType
 from django.contrib import admin
 from django.http import HttpResponseRedirect
@@ -39,7 +39,17 @@ class LayerAdmin(admin.ModelAdmin):
         selected = request.POST.getlist(admin.ACTION_CHECKBOX_NAME)
         return HttpResponseRedirect(reverse('change_poc', kwargs={"ids": "_".join(selected)}))
     change_poc.short_description = "Change the point of contact for the selected layers"
+    
 
+def import_link(obj):
+        return "<a href='%s'>Geoserver Importer Link</a>" % obj.get_import_url()
+import_link.short_description = 'Link'
+import_link.allow_tags = True
+class UploadAdmin(admin.ModelAdmin):
+    list_display = ('user', 'state', import_link)
+    
+    
+admin.site.register(Upload, UploadAdmin)
 admin.site.register(Map, MapAdmin)
 admin.site.register(Contact, ContactAdmin)
 admin.site.register(Layer, LayerAdmin)

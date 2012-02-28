@@ -106,7 +106,7 @@ def upload(name, base_file, user=None, time_attribute=None, time_transform_type=
         
     s = UploaderSession()
     s.target = 'foo'
-    import_session = save_step(name, base_file)
+    import_session = save_step(user, name, base_file)
     upload_session = UploaderSession(
         base_file = base_file,
         name = name,
@@ -139,7 +139,7 @@ def save_step_view(req, session):
     if form.is_valid():
         tempdir, base_file = form.write_files()
         name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
-        import_session = save_step(name, base_file, overwrite=False) 
+        import_session = save_step(req.user, name, base_file, overwrite=False) 
         req.session[_SESSION_KEY] = UploaderSession(
             tempdir = tempdir,
             base_file = base_file,
@@ -156,7 +156,7 @@ def save_step_view(req, session):
             errors.extend([escape(v) for v in e])
         return json_response(errors = errors)
 
-def save_step(layer, base_file, overwrite = True):
+def save_step(user, layer, base_file, overwrite = True):
     
     _log('Uploading layer: [%s], base file [%s]', layer, base_file)
     
@@ -204,14 +204,19 @@ def save_step(layer, base_file, overwrite = True):
 
     error_msg = None
     try:
-        import_session = Layer.objects.gs_uploader.upload(base_file)
+        # @todo settings for use_url or auto detection if geoserver is on same host
+        import_session = Layer.objects.gs_uploader.upload(base_file, use_url = True)
         if not import_session.tasks:
             error_msg = 'No upload tasks were created'
         elif not import_session.tasks[0].items:
             error_msg = 'No upload items found for task'
+        else:
+            # save record of this
+            Upload.objects.create_from_session(user, import_session)
         # @todo once the random tmp9723481758915 type of name is not around, need to track the name
         # computed above, for now, the target store name can be used
     except Exception, e:
+        logger.exception('Error creating import session')
         error_msg = str(e)
         
     if error_msg:
