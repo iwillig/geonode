@@ -11,7 +11,7 @@ from mock import Mock, patch
 class SmokeTest(TestCase):
     "Basic checks to make sure pages load, etc."
 
-    fixtures = ["test_data"]
+    fixtures = ["group_test_data"]
 
     def test_public_pages_render(self):
         "Verify pages that do not require login load without internal error"
@@ -90,10 +90,10 @@ class SmokeTest(TestCase):
 class MembershipTest(TestCase):
     "Tests membership logic in the geonode.groups models"
 
-    fixtures = ["test_data"]
+    fixtures = ["group_test_data"]
 
     def test_group_is_member(self):
-        "Test geonode.groups.models.Group::is_member"
+        "Test checking group membership"
 
         anon = AnonymousUser()
         normal = User.objects.get(username="norman")
@@ -103,7 +103,7 @@ class MembershipTest(TestCase):
         self.assert_(not group.user_is_member(normal))
 
     def test_group_add_member(self):
-        "Test geonode.groups.models.Group::is_member when adding a user to a group"
+        "Test adding a user to a group"
 
         anon = AnonymousUser()
         normal = User.objects.get(username="norman")
@@ -112,4 +112,68 @@ class MembershipTest(TestCase):
         self.assert_(group.user_is_member(normal))
         self.assertRaises(ValueError, lambda: group.join(anon))
 
-class Membe
+class InvitationTest(TestCase):
+    "Tests invitation logic in geonode.groups models"
+
+    fixtures = ["group_test_data"]
+
+    def test_invite_user(self):
+        "Test inviting a registered user"
+
+        anon = AnonymousUser()
+        normal = User.objects.get(username="norman")
+        admin = User.objects.get(username="admin")
+        group = geonode.groups.models.Group.objects.get(slug="bar")
+        group.invite(normal, admin, role="member", send=False)
+
+        self.assert_(
+            geonode.groups.models.GroupInvitation.objects.filter(
+                user=normal,
+                from_user=admin,
+                group=group
+            ).exists()
+        )
+
+    def test_accept_invitation(self):
+        "Test accepting an invitation"
+
+        anon = AnonymousUser()
+        normal = User.objects.get(username="norman")
+        admin = User.objects.get(username="admin")
+        group = geonode.groups.models.Group.objects.get(slug="bar")
+        group.invite(normal, admin, role="member", send=False)
+
+        invitation = geonode.groups.models.GroupInvitation.objects.get(
+            user = normal,
+            from_user = admin,
+            group = group
+        )
+
+        self.assertRaises(ValueError, lambda: invitation.accept(anon))
+        self.assertRaises(ValueError, lambda: invitation.accept(admin))
+        invitation.accept(normal) 
+
+        self.assert_(group.user_is_member(normal))
+        self.assert_(invitation.state == "accepted")
+
+    def test_decline_invitation(self):
+        "Test declining an invitation"
+
+        anon = AnonymousUser()
+        normal = User.objects.get(username="norman")
+        admin = User.objects.get(username="admin")
+        group = geonode.groups.models.Group.objects.get(slug="bar")
+        group.invite(normal, admin, role="member", send=False)
+
+        invitation = geonode.groups.models.GroupInvitation.objects.get(
+            user = normal,
+            from_user = admin,
+            group = group
+        )
+
+        self.assertRaises(ValueError, lambda: invitation.decline(anon))
+        self.assertRaises(ValueError, lambda: invitation.decline(admin))
+        invitation.decline(normal) 
+
+        self.assert_(not group.user_is_member(normal))
+        self.assert_(invitation.state == "declined")

@@ -124,7 +124,7 @@ def group_invite_response(request, token):
             invite.accept(request.user)
         
         if "decline" in request.POST:
-            invite.decline()
+            invite.decline(request.user)
         
         return redirect("group_detail", slug=invite.group.slug)
     else:

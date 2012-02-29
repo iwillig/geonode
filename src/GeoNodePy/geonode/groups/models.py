@@ -117,11 +117,19 @@ class GroupInvitation(models.Model):
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [self.email])
     
     def accept(self, user):
+        if not user.is_authenticated():
+            raise ValueError("You must log in to accept invitations")
+        if not user.email == self.email:
+            raise ValueError("You can't accept an invitation that wasn't for you")
         self.group.join(user, role=self.role)
         self.state = "accepted"
         self.user = user
         self.save()
     
-    def decline(self):
+    def decline(self, user):
+        if not user.is_authenticated():
+            raise ValueError("You must log in to decline invitations")
+        if not user.email == self.email:
+            raise ValueError("You can't decline an invitation that wasn't for you")
         self.state = "declined"
         self.save()
