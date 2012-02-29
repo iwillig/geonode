@@ -33,6 +33,7 @@ from django.template import RequestContext
 import shutil
 import json
 import os.path
+from zipfile import ZipFile
 
 
 
@@ -96,7 +97,7 @@ class UploaderSession(object):
 def upload(name, base_file, user=None, time_attribute=None, time_transform_type=None,
     end_time_attribute=None, end_time_transform_type=None,
     presentation_strategy=None, precision_value=None, precision_step=None,
-    use_big_date=False):
+    use_big_date=False, overwrite = False):
         
     
     if user is None:
@@ -106,7 +107,7 @@ def upload(name, base_file, user=None, time_attribute=None, time_transform_type=
         
     s = UploaderSession()
     s.target = 'foo'
-    import_session = save_step(user, name, base_file)
+    import_session = save_step(user, name, base_file, overwrite)
     upload_session = UploaderSession(
         base_file = base_file,
         name = name,
@@ -130,7 +131,45 @@ def _log(msg, *args):
     
 def _redirect(step):
     return json_response(redirect_to=reverse('data_upload', args=[step]))
-    
+
+def _rename_and_prepare(base_file):
+    """ensure the file(s) have a proper name
+    @hack this should be done in a nicer way, but needs fixing now
+    To fix longer term: if geonode computes a name, the uploader should respect it
+    As it is/was, geonode will compute a name based on the zipfile but the importer
+    will use names as it unpacks the zipfile. Renaming all the various pieces
+    seems a burden on the client
+    """
+    name,ext = os.path.splitext( os.path.basename(base_file) )
+    xml_unsafe = re.compile(r"(^[^a-zA-Z\._]+)|([^a-zA-Z\._0-9]+)")
+    dirname = os.path.dirname(base_file)
+    if ext == ".zip":
+        zf = ZipFile(base_file,'r')
+        rename = False
+        main_file = None
+        for f in zf.namelist():
+            name, ext = os.path.splitext( os.path.basename(f) )
+            if xml_unsafe.search(name):
+                rename = True
+            # @todo other files - need to unify extension handling somewhere
+            if ext.lower() == '.shp':
+                main_file = f
+        if not main_file: raise Exception('Could not locate a shapefile')
+        if rename:
+            # dang, have to unpack and rename
+            zf.extractall(dirname)
+        zf.close()
+        if rename:
+            os.unlink(base_file)
+            base_file = os.path.join(dirname, main_file)
+            
+    for f in os.listdir(dirname):
+        safe = xml_unsafe.sub("_", f)
+        if safe != f:
+            os.rename( os.path.join(dirname,f), os.path.join(dirname, safe))
+            
+    return os.path.join(dirname,xml_unsafe.sub('_', os.path.basename(base_file)))
+
 def save_step_view(req, session):
     assert session is None
     
@@ -138,7 +177,8 @@ def save_step_view(req, session):
     tempdir = None
     if form.is_valid():
         tempdir, base_file = form.write_files()
-        name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
+        base_file = _rename_and_prepare(base_file)
+        name, __ = os.path.splitext(os.path.basename(base_file))
         import_session = save_step(req.user, name, base_file, overwrite=False) 
         req.session[_SESSION_KEY] = UploaderSession(
             tempdir = tempdir,
@@ -167,7 +207,7 @@ def save_step(user, layer, base_file, overwrite = True):
 
     # Step 2. Check that it is uploading to the same resource type as the existing resource
     the_layer_type = layer_type(base_file)
-
+        
     # Check if the store exists in geoserver
     try:
         store = Layer.objects.gs_catalog.get_store(name)
