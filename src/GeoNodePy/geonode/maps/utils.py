@@ -43,7 +43,7 @@ def layer_type(filename):
         # ZipFile doesn't support with statement in 2.6, so don't do it
         try:
             for n in zf.namelist():
-                b, e = os.path.splitext(n)
+                b, e = os.path.splitext(n.lower())
                 if e in shp_exts or e in cov_exts:
                     base_name, extension = b,e
         finally:
