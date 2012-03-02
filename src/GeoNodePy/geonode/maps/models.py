@@ -1829,6 +1829,37 @@ class Thumbnail(models.Model):
 def _remove_thumb(instance, sender, **kw):
     for t in Thumbnail.objects.filter(object_id=instance.id):
         t.delete()
+        
+class UploadManager(models.Manager):
+    def __init__(self):
+        models.Manager.__init__(self)
+    def create_from_session(self, user, import_session):
+        return self.create(
+            user = user, 
+            id = import_session.id, 
+            state= import_session.state)
+        
+class Upload(models.Model):
+    objects = UploadManager()
+    
+    id = models.BigIntegerField(primary_key = True)
+    user = models.ForeignKey(User, blank=True, null=True)
+    state = models.CharField(max_length=16)
+    
+    def update_from_session(self, import_session):
+        self.state = import_session.state
+        self.save()
+    def get_import_url(self):
+        return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.id)
+    def delete(self):
+        models.Model.delete(self)
+        session = self.gs_uploader.get_session(self.id)
+        if session:
+            try:
+                session.delete()
+            except:
+                logging.exception('error deleting upload session')
+        
 
 signals.pre_delete.connect(_remove_thumb, sender=Layer)
 signals.pre_delete.connect(_remove_thumb, sender=Map)

@@ -2,12 +2,12 @@ import httplib2
 import logging
 from gsuploader.api import parse_response
 from urlparse import urlparse
+from urllib import urlencode
 import os
 import _util
 import pprint
 import json
 import mimetypes
-import codecs
 
 _logger = logging.getLogger("gsuploader")
 
@@ -39,7 +39,7 @@ class Uploader(object):
         """
         return self._call(self.client.start_import)
         
-    def upload(self,fpath):
+    def upload(self,fpath,use_url=False):
         """Try a complete import - create a session and upload the provided file.
         fpath can be a path to a zip file or the 'main' file if a shapefile or a tiff
         returns a gsuploader.api.Session object
@@ -49,7 +49,7 @@ class Uploader(object):
             files = _util.shp_files(fpath)
             
         session = self.start_import()
-        session.upload_task(files)
+        session.upload_task(files, use_url)
 
         return session
         
@@ -109,6 +109,15 @@ class _Client(object):
         if resp.status < 200 or resp.status > 299:
             raise RequestFailed('Server error',resp.status,content)
         return resp, content
+    
+    def post_upload_url(self, url, upload_url):
+        data = urlencode({
+            'url' : upload_url
+        })
+        return self._request(url, "POST", data, {
+            # importer very picky
+            'Content-type' : "application/x-www-form-urlencoded"
+        })
         
     def put_zip(self,url,payload):
         message = open(payload)
