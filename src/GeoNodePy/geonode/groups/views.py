@@ -28,6 +28,7 @@ def group_create(request):
         if form.is_valid():
             group = form.save(commit=False)
             group.save()
+            form.save_m2m()
             group.join(request.user, role="manager")
             return redirect("group_detail", group.slug)
     else:
@@ -49,6 +50,7 @@ def group_update(request, slug):
         if form.is_valid():
             group = form.save(commit=False)
             group.save()
+            form.save_m2m()
             return redirect("group_detail", group.slug)
     else:
         form = GroupForm(instance=group)
