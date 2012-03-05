@@ -26,13 +26,13 @@
 Ext.onReady(function() {
     var groupMembers = [];
     {% for member in members %}
-      groupMembers.push(["{{ member.role|escapejs }}", "{{ member.user|escapejs }}", "{{ member.joined|escapejs }}"]);
+      groupMembers.push(["{{ member.id }}", "{{ member.role|escapejs }}", "{{ member.user|escapejs }}", "{{ member.joined|escapejs }}"]);
     {% endfor %}
 
     var assets = new Ext.data.Store({
         reader: new Ext.data.ArrayReader({
             idIndex: 0,
-            fields: ["role", "user", "joined"]
+            fields: ["id", "role", "user", "joined"]
         }),
         data: groupMembers
     });
