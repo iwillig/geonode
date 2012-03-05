@@ -26,7 +26,16 @@ class Group(models.Model):
         ("public-invite", "Public (invite-only)"),
         ("private", "Private"),
     ])
-
+    
+    @classmethod
+    def groups_for_user(cls, user):
+        if user.is_authenticated():
+            if user.is_superuser:
+                return cls.objects.all()
+            return cls.objects.exclude(access="private") | cls.objects.filter(groupmember__user=user)
+        else:
+            return cls.objects.exclude(access="private")
+    
     def __unicode__(self):
         return self.title
     
