@@ -42,6 +42,7 @@ LANGUAGES = (
     ('it', 'Italiano'),
     ('fr', 'Français'),
     ('el', 'Ελληνικά'),
+    ('id', 'Bahasa Indonesia'),
 )
 
 SITE_ID = 1
@@ -234,6 +235,7 @@ INSTALLED_APPS = (
     'registration',
     'profiles',
     'avatar',
+    'south',
     'geonode.core',
     'geonode.maps',
     'geonode.proxy',
@@ -268,6 +270,11 @@ DB_DATASTORE_PASSWORD = ''
 DB_DATASTORE_HOST = ''
 DB_DATASTORE_PORT = ''
 DB_DATASTORE_TYPE=''
+
+SOUTH_MIGRATION_MODULES = {
+    'registration': 'geonode.migrations.registration',
+    'avatar': 'geonode.migrations.avatar',
+}
 
 try:
     from local_settings import *

@@ -61,7 +61,7 @@
             Ext.get(Ext.DomQuery.select("select[@name='default-style']")).on("change", function(evt, elem) {
                 Ext.Ajax.request({
                     method: "post",
-                    url: "?style",
+                    url: "{% url layer_style layer.typename %}",
                     params: {"defaultStyle" : elem.value}
                 });
             });
@@ -93,7 +93,7 @@
             });
 {% endif %}
             var hasThumb = {% if layer.get_thumbnail %}true{% else %}false{% endif %};
-            var thumbURL = "{% url geonode.maps.views.layerController layer.typename %}?thumbnail";
+            var thumbURL = "{% url layer_thumbnail layer.typename %}";
             {% include "maps/thumbnail_help.js" %}
         });
 
@@ -179,7 +179,7 @@
 {% endif %}
 
 {% if layer.geographic_bounding_box %}<p> <strong>{% trans "Bounding Box" %}:</strong> {{ layer.geographic_bounding_box }} </p>{% endif %}
-{% if layer.metadata.crsOptions %}<p> <strong>{% trans "Native SRS" %}:</strong> {{ layer.metadata.crsOptions.0|default:_("No SRS specified.") }} </p>{% endif %}
+{% if layer.resource.projection %}<p> <strong>{% trans "Native SRS" %}:</strong> {{ layer.resource.projection|default:_("No SRS specified.") }} </p>{% endif %}
 
 </div>
 {% endblock %}
@@ -257,13 +257,17 @@
             	<li><a id="set_thumbnail" href="?thumbnail">{% trans "Set thumbnail" %}</a></li>
         {% endif %}
         {% if can_change_permissions %}
-        <li><a href="{% url edit_layer_permissions layer.typename %}">{% trans "Edit Permissions" %}</a></li>
+        <li><a href="{% url edit_layer_permissions layer.typename %}">
+            {% trans "Edit Permissions" %}
+        </a></li>
         {% endif %}
             {% if can_delete %}
-				<li><a href="?remove">{% trans "Remove" %}</a></li>
+            <li><a href="{% url layer_remove layer.typename %}">
+                {% trans "Remove" %}
+            </a></li>
 			{% endif %}
 			{% else %}
-				<li>Please authenticate to update or remove layers</li>
+            <li>{% trans "Please authenticate to update or remove layers" %}</li>
 			{% endif %}
         </ul>
     {% endif %}

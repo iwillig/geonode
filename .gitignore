@@ -5,6 +5,7 @@ build
 target
 docs/_build
 man
+*.mo
 
 # virtualenv stuff
 /bin

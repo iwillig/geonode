@@ -20,5 +20,23 @@ urlpatterns = patterns('geonode.maps.views',
     url(r'^(?P<mapid>\d+)/ajax-permissions$', 'ajax_map_permissions', name='ajax_map_permissions'),
     url(r'^change-poc/(?P<ids>\w+)$', 'change_poc', name="change_poc"),
     url(r'^time_info.json$', 'time_info', name="time_info"), # Temp for tschaub
+)
 
+datapatterns = patterns('geonode.maps.views',
+  url(r'^$', 'browse_data', name='data'),
+  url(r'^acls/?$', 'layer_acls', name='layer_acls'),
+  url(r'^search/?$', 'search_page', name='search'),
+  url(r'^search/api/?$', 'metadata_search', name='search_api'),
+  url(r'^search/detail/?$', 'search_result_detail', name='search_result_detail'),
+  url(r'^api/batch_permissions/?$', 'batch_permissions'),
+  url(r'^api/batch_delete/?$', 'batch_delete'),
+  url(r'^upload$', 'upload_layer', name='data_upload'),
+  (r'^download$', 'batch_layer_download'),
+  url(r'^(?P<layername>[^/]*)$', 'layer_detail', name="layer_detail"),
+  url(r'^(?P<layername>[^/]*)/metadata$', 'layer_metadata', name="layer_metadata"),
+  url(r'^(?P<layername>[^/]*)/remove$', 'layer_remove', name="layer_remove"),
+  url(r'^(?P<layername>[^/]*)/replace$', 'layer_replace', name="layer_replace"),
+  url(r'^(?P<layername>[^/]*)/style$', 'layer_style', name="layer_style"),
+  url(r'^(?P<layername>[^/]*)/thumbnail$', 'layer_thumbnail', name="layer_thumbnail"),
+  (r'^(?P<layername>[^/]*)/ajax-permissions$', 'ajax_layer_permissions'),
 )
