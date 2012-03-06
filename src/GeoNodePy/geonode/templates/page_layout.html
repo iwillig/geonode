@@ -28,8 +28,9 @@
     </div><!-- /.wrap -->
   </div><!-- /#header -->
   <div id="crossbar">
-    <div class="wrap selfclear">             
-      {% block nav %}
+   <!-- Only show the language form if the csrf_token is present -->
+   {% if csrf_token != "NOTPROVIDED" %}
+
    {% get_current_language as LANGUAGE %}
     <form class="langbar" id="target" action="/i18n/setlang/" method="post">
       {% csrf_token %}
@@ -45,6 +46,9 @@
        </div>
      </form>
 
+   {% endif %}
+    <div class="wrap selfclear">             
+      {% block nav %}
     <ul id="sitenav" class="selfclear">
         <li class="home"><a href="{% url geonode.views.index %}">{% trans "Home" %}</a></li> 
         <li class=""><a class="" id="dataLink" href="{% url geonode.maps.views.browse_data %}">{% trans "Data" %}</a></li>
@@ -56,8 +60,10 @@
     {% endif %}
 
     {% endif %}
+
     </ul>
-      {% endblock %}
+   {% endblock %}
+
 
     </div><!-- /.wrap -->
   </div><!-- /#crossbar -->
