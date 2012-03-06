@@ -1385,6 +1385,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
             'defaultSourceType': "gxp_wmscsource",
             'sources': sources,
             'map': {
+                'wrapDateLine' : False,
                 'layers': [layer_config(l) for l in layers],
                 'center': [self.center_x, self.center_y],
                 'projection': self.projection,
