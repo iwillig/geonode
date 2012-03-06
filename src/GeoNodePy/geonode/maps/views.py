@@ -905,30 +905,26 @@ def _old_upload(request):
         try:
             tempdir, base_file = form.write_files()
             name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
-            if settings.USE_UPLOADER:
-                from geonode.maps.upload import save
-                if 'import_session' in request.session:
-                    del request.session['import_session']
-
             saved_layer = save(name, base_file, request.user, 
                     overwrite = False,
                     abstract = form.cleaned_data["abstract"],
                     title = form.cleaned_data["layer_title"],
                     permissions = form.cleaned_data["permissions"]
                     )
-
-            if settings.USE_UPLOADER:
-                return _uploader(request,saved_layer,form,base_file)
-
             return HttpResponse(json.dumps({
                 "success": True,
-                "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
+                "redirect_to": reverse('layer_metadata', args=[saved_layer.typename])}))
+        except Exception, e:
+            logger.exception("Unexpected error during upload.")
+            return HttpResponse(json.dumps({
+                "success": False,
+                "errors": ["Unexpected error during upload: " + escape(str(e))]}))
         finally:
-            try:
-                if tempdir is not None:
+            if tempdir is not None:
+                try:
                     shutil.rmtree(tempdir)
-            except:
-                logger.exception('Error cleaning up tempdir %s' % tempdir)
+                except:
+                    logger.exception('Error cleaning up tempdir %s' % tempdir)
     else:
         errors = []
         for e in form.errors.values():
@@ -976,7 +972,7 @@ def layer_replace(request, layername):
 
                 return HttpResponse(json.dumps({
                     "success": True,
-                    "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
+                    "redirect_to": reverse('layer_metadata', args=[saved_layer.typename])}))
             except Exception, e:
                 logger.exception("Unexpected error during upload.")
                 return HttpResponse(json.dumps({

@@ -1,5 +1,4 @@
-import os.path
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 from django.conf import settings
 from django.db import models
 from owslib.wms import WebMapService
@@ -786,7 +785,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                     'typename': self.typename,
                     'outputFormat': mime
                 }
-                params.extend(extra_params)
+                params.update(extra_params)
                 return settings.GEOSERVER_BASE_URL + "wfs?" + urllib.urlencode(params)
 
             types = [
