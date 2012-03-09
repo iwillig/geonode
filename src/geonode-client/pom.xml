@@ -53,17 +53,15 @@
     </build>
     <profiles>
       <profile>
-          <id>tools.jar</id>
-          <activation>
-              <property>
-                  <name>java.vendor</name>
-                  <value>Sun Microsystems Inc.</value>
-              </property>
-          </activation>
-          <build>
-            <plugins>
+        <id>find-jvm-for-antrun</id>
+        <activation>
+          <os>
+            <name>!mac os x</name>
+          </os>
+        </activation>
+        <build>
+          <plugins>
             <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-antrun-plugin</artifactId>
               <dependencies>
                 <dependency>
@@ -75,8 +73,8 @@
                 </dependency>
               </dependencies>
             </plugin>
-            </plugins>
-          </build>
+          </plugins>
+        </build>
       </profile>
     </profiles>
 </project>

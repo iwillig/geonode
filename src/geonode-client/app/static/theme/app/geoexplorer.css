@@ -1,3 +1,6 @@
+.optional-form-label {
+    color: #736F6E;
+}
 /* don't wrap lines on any tooltips */
 .x-tip {
     white-space: nowrap;
@@ -376,4 +379,20 @@ float:right;
 }
 .olLayerGoogleV3.olLayerGooglePoweredBy {
     bottom: 2em !important;
+}
+
+/* native openlayers map controls fade-in / fade-out */
+#FadeControlContainer div, .gxp-fade-control{
+    opacity:0.5; 
+    -webkit-transition: opacity 3s linear;
+    -moz-transition: opacity 3s linear;
+    -o-transition: opacity 3s linear;
+    transition: opacity 3s linear;
+}
+#FadeControlContainer:hover div, .gxp-fade-control:hover{
+    opacity:1;
+    -webkit-transition: opacity 0.03s linear;
+    -moz-transition: opacity 0.03s linear;
+    -o-transition: opacity 0.03s linear;
+    transition: opacity 0.03s linear;
 }

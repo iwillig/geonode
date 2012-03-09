@@ -68,11 +68,6 @@ GeoExplorer.Viewer = Ext.extend(GeoExplorer, {
      */
     initPortal: function() {
 
-        // TODO: make a proper component out of this
-        if (this.useMapOverlay !== false) {
-            this.mapPanel.add(this.createMapOverlay());
-        }
-
         if(this.useToolbar !== false) {
             this.toolbar = new Ext.Toolbar({
                 xtype: "toolbar",
@@ -134,29 +129,12 @@ GeoExplorer.Viewer = Ext.extend(GeoExplorer, {
      * Create the various parts that compose the layout.
      */
     createTools: function() {
-        var tools = GeoExplorer.Viewer.superclass.createTools.apply(this, arguments);
-
-        var layerChooser = new Ext.Button({
+        return [new Ext.Button({
             tooltip: 'Layer Switcher',
             iconCls: 'icon-layer-switcher',
             menu: new gxp.menu.LayerMenu({
                 layers: this.mapPanel.layers
             })
-        });
-
-        tools.unshift("-");
-        tools.unshift(layerChooser);
-
-        var aboutButton = new Ext.Button({
-            tooltip: "About this map",
-            iconCls: "icon-about",
-            handler: this.displayAppInfo,
-            scope: this
-        });
-
-        tools.push("->");
-        tools.push(aboutButton);
-
-        return tools;
+        })];
     }
 });
