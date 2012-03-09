@@ -10,6 +10,9 @@
 [submodule "app/static/externals/PrintPreview"]
 	path = app/static/externals/PrintPreview
 	url = git://github.com/GeoNode/PrintPreview.git
+[submodule "externals/stick"]
+	path = externals/stick
+	url = git://github.com/hns/stick.git
 [submodule "externals/ringo"]
 	path = externals/ringo
 	url = git://github.com/ringo/ringojs.git
@@ -19,6 +22,3 @@
 [submodule "app/static/externals/TimeManager"]
 	path = app/static/externals/TimeManager
 	url = git://github.com/mpriour/TimeManager_OpenLayers-Addin.git
-[submodule "externals/stick"]
-	path = externals/stick
-	url = https://github.com/hns/stick.git
