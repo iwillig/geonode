@@ -540,8 +540,13 @@ def _get_viewer_projection_info(srid):
 _csw = None
 _user, _password = settings.GEOSERVER_CREDENTIALS
 
-def _get_wms():
-    wms_url = settings.GEOSERVER_BASE_URL + "wms?request=GetCapabilities&version=1.1.0"
+def _get_wms(typename=None):
+    '''Get a WMS instance. If the typename is provided, use the geoserver
+    virtual service for that layer, otherwise use the main WMS'''
+    base_url = settings.GEOSERVER_BASE_URL
+    if typename:
+        base_url = base_url + "%s/%s/" % tuple(typename.split(':'))
+    wms_url = base_url + "wms?request=GetCapabilities&version=1.1.0"
     netloc = urlparse(wms_url).netloc
     http = httplib2.Http()
     http.add_credentials(_user, _password)
@@ -872,13 +877,12 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     def verify(self):
         """Makes sure the state of the layer is consistent in GeoServer and GeoNetwork.
         """
-        http = httplib2.Http() # Do we need to add authentication?
         
-        # Check the layer is in the wms get capabilities record
-        wms = Layer.objects.get_wms(self.typename)
         try:
-            wms_layer = wms[self.typename]
+            body = self.describe_layer()
+            body.index(self.typename)
         except:
+            logger.exception('Error finding layer "%s" using describeLayer' % self.typename)
             msg = "WMS Record missing for layer [%s]" % self.typename 
             raise GeoNodeException(msg)
         
@@ -925,8 +929,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name=self.typename).select_related()])
 
     def metadata(self):
-        wms = Layer.objects.get_wms(self.typename)
-        return wms[self.typename]
+        return _get_wms(self.typename)[self.typename]
 
     def metadata_csw(self):
         global _csw
@@ -1170,13 +1173,11 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         self.geographic_bounding_box = bbox_to_wkt(box[0], box[1], box[2], box[3], srid=srid )
         
     def get_time_extent(self):
-        """Return tuple of min/max datetime or None if not available. This
-        uses the WMS and will most likely be slow"""
-        wms = Layer.objects.get_wms(self.typename)
+        """Return tuple of min/max string datetime or None if not available."""
+        wms = _get_wms(self.typename)
         # times is a list of time specs already split by comma
         times = wms[self.typename].timepositions
         result = None
-        parse = lambda s: datetime.strptime(s, "%Y-%m-%dT%H:%M:%S.%fZ")
         # from the spec - possible encodings:
         # 1 value A single value.
         # 2 value1,value2,value3,... a A list of multiple values.
@@ -1187,12 +1188,21 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
             # not sure what multiple resolutions implies when in comes to computing total extent
             if len(times) > 0 and times[0].find('/') >= 0:
                 times = times[0].split('/')
-                result = parse(times[0]), parse(times[1])
+                result = times[0], times[1]
             # case 1 and 2
             elif len(times) > 0:
                 times.sort()
-                result = parse(times[0]), parse(times[-1])
+                result = times[0], times[-1]
         return result
+    
+    def describe_layer(self):
+        http = httplib2.Http()
+        http.add_credentials(_user, _password)
+        url = settings.GEOSERVER_BASE_URL + "wms?request=describelayer&layers=%s&version=1.1.1" % self.typename
+        response, body = http.request(url)
+        if response['status'] != '200':
+            raise Exception('Non OK response from describeLayer',body)
+        return body
 
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)
@@ -1408,7 +1418,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
             'defaultSourceType': "gxp_wmscsource",
             'sources': sources,
             'map': {
-                'wrapDateLine' : False,
+                #'wrapDateLine' : False,
                 'layers': [layer_config(l) for l in layers],
                 'center': [self.center_x, self.center_y],
                 'projection': self.projection,

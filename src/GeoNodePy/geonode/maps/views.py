@@ -827,7 +827,8 @@ def layer_detail(request, layername):
     
     metadata = layer.metadata_csw()
 
-    maplayer = MapLayer(name = layer.typename, ows_url = settings.GEOSERVER_BASE_URL + "wms")
+    vs_url = settings.GEOSERVER_BASE_URL + '%s/%s/wms' % tuple(layer.typename.split(':'))
+    maplayer = MapLayer(name = layer.typename, ows_url=vs_url)
 
     # center/zoom don't matter; the viewer will center on the layer bounds
     map = Map(projection="EPSG:900913")
