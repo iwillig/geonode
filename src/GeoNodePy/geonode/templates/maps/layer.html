@@ -48,7 +48,9 @@
             };
 
             config = Ext.apply(config, {{ viewer|safe }});
-
+            if (config.map.zoom === null) {
+                config.map.zoom = 1;
+            }
             app = new GeoExplorer.Viewer(config);
             
             Ext.get(Ext.DomQuery.select("input[@name='style']")).on("click", function(evt, elem) {
