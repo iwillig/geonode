@@ -69,6 +69,10 @@ class Group(models.Model):
             invitation.send(from_user)
         return invitation
 
+    @models.permalink
+    def get_absolute_url(self):
+        return ('group_detail', (), { 'slug': self.slug })
+
 
 class GroupMember(models.Model):
     

@@ -14,7 +14,7 @@
             url below is wrong
         {% endcomment %}
         <img src="{{ object.logo.url }}" alt="{{ object.title }}" class="group-logo" />
-        <h2>{{ object.title }}</h2>
+        <h2><a href="{{ object.get_absolute_url }}">{{ object.title }}</a></h2>
         {% if object.access == "public" and not is_member %}
           {% if user.is_authenticated %}
               <form method="POST" action="">
