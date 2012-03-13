@@ -14,6 +14,7 @@ target
 
 # supporting stuff pulled in by paver script
 /src/GeoNodePy/geonode/media/static/
+/src/GeoNodePy/geonode/site_media/
 /geoserver_token
 /development.db
 /django.log
