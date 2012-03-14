@@ -245,7 +245,7 @@ def save_step(user, layer, base_file, overwrite = True):
     error_msg = None
     try:
         # @todo settings for use_url or auto detection if geoserver is on same host
-        import_session = Layer.objects.gs_uploader.upload(base_file, use_url = True)
+        import_session = Layer.objects.gs_uploader.upload(base_file, use_url = False)
         if not import_session.tasks:
             error_msg = 'No upload tasks were created'
         elif not import_session.tasks[0].items:
