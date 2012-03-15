@@ -527,9 +527,13 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             success: function(response) {
                 var loadedConfig = Ext.decode(response.responseText, true);
                 Ext.apply(config, loadedConfig);
-                if(!loadedConfig.tools){
-                    config.tools = createToolCfg(config, this.toggleGroup);
-                }
+                var ptypes = Ext.pluck(config,ptype);
+                var defaultTools = createToolCfg(config, this.toggleGroup);
+                Ext.each(defaultTools,function(cfg){
+                    if(ptypes.indexOf(cfg.ptype)==-1){
+                        config.push(cfg);
+                    }
+                });
                 this.mapID = config.id;
                 callback.call(this, config);
             },
