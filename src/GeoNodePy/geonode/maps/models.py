@@ -879,7 +879,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         """
         
         try:
-            body = self.describe_layer()
+            body = describe_layer(self.typename)
             body.index(self.typename)
         except:
             logger.exception('Error finding layer "%s" using describeLayer' % self.typename)
@@ -1195,15 +1195,6 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 result = times[0], times[-1]
         return result
     
-    def describe_layer(self):
-        http = httplib2.Http()
-        http.add_credentials(_user, _password)
-        url = settings.GEOSERVER_BASE_URL + "wms?request=describelayer&layers=%s&version=1.1.1" % self.typename
-        response, body = http.request(url)
-        if response['status'] != '200':
-            raise Exception('Non OK response from describeLayer',body)
-        return body
-
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)
 
@@ -1236,6 +1227,14 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         if self.owner:
             self.set_user_level(self.owner, self.LEVEL_ADMIN)
 
+def describe_layer(typename):
+    http = httplib2.Http()
+    http.add_credentials(_user, _password)
+    url = settings.GEOSERVER_BASE_URL + "wms?request=describelayer&layers=%s&version=1.1.1" % typename
+    response, body = http.request(url)
+    if response['status'] != '200':
+        raise Exception('Non OK response from describeLayer',body)
+    return body
 
 class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """

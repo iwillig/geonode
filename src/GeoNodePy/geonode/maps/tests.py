@@ -698,12 +698,12 @@ community."
         c = Client()
 
         # Test redirection to login form when not logged in
-        response = c.get("/data/upload")
+        response = c.get("/data/upload/")
         self.assertEquals(response.status_code,302)
 
         # Test return of upload form when logged in
         c.login(username="bobby", password="bob")
-        response = c.get("/data/upload")
+        response = c.get("/data/upload/")
         self.assertEquals(response.status_code,200)
 
 #    def test_handle_layer_upload(self):
@@ -1331,13 +1331,15 @@ class UtilsTest(TestCase):
 
                 def __getitem__(self, idx):
                     return self.contents[idx]
-
+                
             with nested(
-                    patch.object(geonode.maps.models, '_wms', new=MockWMS()),
+                    patch('geonode.maps.models.describe_layer'),
+                    patch.object(geonode.maps.models.Layer.objects, '_wms', new=MockWMS()),
                     patch('geonode.maps.models.Layer.objects.gs_catalog'),
                     patch('geonode.maps.models.Layer.objects.geonetwork')
-                ) as (mock_wms, mock_gs, mock_gn):
+                ) as (mock_describe_layer, mock_wms, mock_gs, mock_gn):
                     # Setup
+                    mock_describe_layer.return_value = 'geonode:a_layer'
                     mock_gs.get_store.return_value.get_resources.return_value = []
                     mock_resource = mock_gs.get_resource.return_value
                     mock_resource.name = 'a_layer'

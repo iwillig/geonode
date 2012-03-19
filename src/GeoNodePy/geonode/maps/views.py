@@ -873,7 +873,6 @@ def upload_layer(request, step=None):
     The step is managed by the uploader and since it is part of a sequence,
     shouldn't be used by other code (so it's not in urls).
     """
-    
     if settings.USE_UPLOADER:
         from geonode.maps.upload import view
         
