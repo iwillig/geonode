@@ -640,6 +640,17 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             if (urlParts.length > 1) {
                 fromLayer = Ext.urlDecode(urlParts[1]).layer;
                 if (fromLayer) {
+                    //if the startSource is lazy then
+                    //change the url to use virtual services
+                    var source = this.layerSources[startSourceId];
+                    if(source.lazy){
+                        lyrParts = fromLayer.split(':');
+                        source.store.url = 
+                            source.store.url.replace(/(geoserver)(\/.*?)(wms)/,
+                                function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}
+                            );
+                        source.store.proxy.setUrl(source.store.url);
+                    }
                     this.createLayerRecord({
                         source: startSourceId,
                         name: fromLayer
