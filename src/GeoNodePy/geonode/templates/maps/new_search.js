@@ -315,27 +315,28 @@ Ext.onReady(function() {
         reset();
     });
 
-    // hacking
-    selModel = new SelectionModel();
-    dataCartStore = new GeoNode.DataCartStore({
-        selModel : selModel
-    })
-    var bbox = new GeoNode.BoundingBoxWidget({
-        proxy: "/proxy/?url=",
-        viewerConfig: viewer_config,
-        renderTo: 'refine'
-    });
-    var dataCart = new GeoNode.DataCart({
-        store: dataCartStore,
-        renderTo: 'data_cart'
-    });
-    var dataOps = new GeoNode.DataCartOps({
-        cart: dataCart,
-        renderTo: 'data_ops',
+    if (Ext.get('data_ops')) {
+        // hacking
+        selModel = new SelectionModel();
+        dataCartStore = new GeoNode.DataCartStore({
+            selModel : selModel
+        })
+        var bbox = new GeoNode.BoundingBoxWidget({
+            proxy: "/proxy/?url=",
+            viewerConfig: viewer_config,
+            renderTo: 'refine'
+        });
+        var dataCart = new GeoNode.DataCart({
+            store: dataCartStore,
+            renderTo: 'data_cart'
+        });
+        var dataOps = new GeoNode.DataCartOps({
+            cart: dataCart,
+            renderTo: 'data_ops',
 
-        begin_download_url: '{% url geonode.maps.views.batch_layer_download %}',
-        stop_download_url: '{{site}}geoserver/rest/process/batchDownload/kill/',
-        download_url: '{{site}}geoserver/rest/process/batchDownload/download/'
-    });
-
+            begin_download_url: '{% url geonode.maps.views.batch_layer_download %}',
+            stop_download_url: '{{site}}geoserver/rest/process/batchDownload/kill/',
+            download_url: '{{site}}geoserver/rest/process/batchDownload/download/'
+        });
+    }
 });
