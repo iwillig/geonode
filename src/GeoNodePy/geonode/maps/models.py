@@ -576,6 +576,9 @@ def get_csw():
     return _csw
 
 class ThumbnailMixin:
+    def get_thumbnail_url(self):
+        thumb = self.get_thumbnail()
+        return thumb == None and settings.DEFAULT_MAP_THUMBNAIL or thumb.get_thumbnail_url()
     def get_thumbnail(self):
         """Obtain the thumbnail, if one exists for this object"""
         return Thumbnail.objects.get_thumbnail(self)
