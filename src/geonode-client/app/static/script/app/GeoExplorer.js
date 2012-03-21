@@ -231,6 +231,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             form.getForm().submit({
                                 waitMsg: "Logging in...",
                                 success: function(form, action) {
+                                    this.setAuthorizedRoles(["ROLE_ADMINISTRATOR"]);
                                     win.close();
                                     document.cookie = action.response.getResponseHeader("Set-Cookie");
                                     // resend the original request
@@ -433,13 +434,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: {target: "paneltbar", index: 3}
             }, {
                 ptype: "gxp_googleearth",
-                actionTarget: {target: "paneltbar", index: 4},
-                apiKeys: {
-                    "localhost": "ABQIAAAAeDjUod8ItM9dBg5_lz0esxTnme5EwnLVtEDGnh-lFVzRJhbdQhQBX5VH8Rb3adNACjSR5kaCLQuBmw",
-                    "localhost:8080": "ABQIAAAAeDjUod8ItM9dBg5_lz0esxTnme5EwnLVtEDGnh-lFVzRJhbdQhQBX5VH8Rb3adNACjSR5kaCLQuBmw",
-                    "localhost:8000": "ABQIAAAAeDjUod8ItM9dBg5_lz0esxTnme5EwnLVtEDGnh-lFVzRJhbdQhQBX5VH8Rb3adNACjSR5kaCLQuBmw",
-                    "example.com": "-your-api-key-here-"
-                }
+                actionTarget: {target: "paneltbar", index: 4}
             }, {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
@@ -640,6 +635,17 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             if (urlParts.length > 1) {
                 fromLayer = Ext.urlDecode(urlParts[1]).layer;
                 if (fromLayer) {
+                    //if the startSource is lazy then
+                    //change the url to use virtual services
+                    var source = this.layerSources[startSourceId];
+                    if(source.lazy){
+                        lyrParts = fromLayer.split(':');
+                        source.store.url = 
+                            source.store.url.replace(/(geoserver)(\/.*?)(wms)/,
+                                function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}
+                            );
+                        source.store.proxy.setUrl(source.store.url);
+                    }
                     this.createLayerRecord({
                         source: startSourceId,
                         name: fromLayer
