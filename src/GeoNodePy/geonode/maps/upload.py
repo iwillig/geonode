@@ -534,8 +534,7 @@ def time_step(upload_session, time_attribute, time_transform_type,
         upload_session.import_session.tasks[0].items[0].save()
         
     if srs:
-        srs = cleaned['srs'].strip()
-        srs = srs.upper()
+        srs = srs.strip().upper()
         if not srs.startswith("EPSG:"):
             srs = "EPSG:%s" % srs
         logger.info('Setting SRS to %s',srs)
