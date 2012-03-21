@@ -231,6 +231,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             form.getForm().submit({
                                 waitMsg: "Logging in...",
                                 success: function(form, action) {
+                                    this.setAuthorizedRoles(["ROLE_ADMINISTRATOR"]);
                                     win.close();
                                     document.cookie = action.response.getResponseHeader("Set-Cookie");
                                     // resend the original request
