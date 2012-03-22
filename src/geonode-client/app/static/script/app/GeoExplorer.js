@@ -515,6 +515,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             success: function(response) {
                 var loadedConfig = Ext.decode(response.responseText, true);
                 Ext.apply(config, loadedConfig);
+                config.tools = config.tools || [];
                 var ptypes = Ext.pluck(config.tools,'ptype');
                 var defaultTools = createToolCfg(config, this.toggleGroup);
                 Ext.each(defaultTools,function(cfg){
