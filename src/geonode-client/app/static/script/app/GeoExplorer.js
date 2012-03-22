@@ -429,9 +429,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 printCapabilities: window.printCapabilities,
                 actionTarget: {target: "paneltbar", index: 3}
             }, {
-                ptype: "gxp_googleearth",
-                actionTarget: {target: "paneltbar", index: 4}
-            }, {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
                 outputTarget: "timeline-container",
@@ -556,6 +553,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         else {
             this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
             {}, {
+                region: 'center',
                 bbar: {
                     id: 'map-bbar',
                     height:55,
@@ -684,23 +682,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             });
         }, this);
         
-        this.mapPanelContainer = new Ext.Panel({
-            layout: "card", 
-            region: "center",
-            defaults: {
-                // applied to each contained panel
-                border:false
-            },
-            items: [
-                this.mapPanel,
-                {
-                    xtype: 'gxp_googleearthpanel', 
-                    mapPanel: this.mapPanel
-                }
-            ],
-            activeItem: 0
-        });
-
         var header = new Ext.Panel({
             region: "north",
             autoHeight: true,
@@ -721,7 +702,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     deferredRender: false,
                     tbar: this.toolbar,
                     items: [
-                        this.mapPanelContainer,
+                        this.mapPanel,
                         westPanel, {
                             region: "south",
                             height: 175,
