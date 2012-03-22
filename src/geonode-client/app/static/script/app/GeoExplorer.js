@@ -555,6 +555,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
             {}, {
                 region: 'center',
+                ref: "../main",
                 bbar: {
                     id: 'map-bbar',
                     height:55,
