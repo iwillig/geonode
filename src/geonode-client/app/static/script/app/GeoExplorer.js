@@ -174,7 +174,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_playback",
                 id: "playback-tool",
-                outputTarget: "map-bbar"
+                outputTarget: "map-bbar",
+                looped: true,
+                outputConfig:{
+                    defaults: {scale: 'large'},
+                    playbackActions: ["play","slider","loop","fastforward","next", {xtype:'tbspacer',width:48},"settings"]  
+                }
             });
         }
 
