@@ -519,10 +519,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             url: window.location.href.split("?")[0].replace(/\/view|\/embed|(\/new)|([0-9])$/, "$1$2/data"),
             success: function(response) {
                 var loadedConfig = Ext.decode(response.responseText, true);
+                var defaultTools = createToolCfg(config, this.toggleGroup);
                 Ext.apply(config, loadedConfig);
                 config.tools = config.tools || [];
                 var ptypes = Ext.pluck(config.tools,'ptype');
-                var defaultTools = createToolCfg(config, this.toggleGroup);
                 Ext.each(defaultTools,function(cfg){
                     if(ptypes.indexOf(cfg.ptype)==-1){
                         config.tools.push(cfg);
