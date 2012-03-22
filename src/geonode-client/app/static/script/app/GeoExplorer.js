@@ -166,8 +166,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         if (config.useToolbar !== false) {
             config.tools = (config.tools || []).concat({
                 ptype: "gxp_wmsgetfeatureinfo",
-                // uncomment the line below if you want feature info in a grid
-                //format: "grid",
+                format: "grid",
                 actionTarget: "main.tbar",
                 toggleGroup: this.toggleGroup,
                 layerParams: ['TIME'],
