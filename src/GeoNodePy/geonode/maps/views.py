@@ -848,7 +848,8 @@ def layer_thumbnail(req, layername):
     return _handleThumbNail(req, get_object_or_404(Layer, typename=layername))
 
 def _handleThumbNail(req, obj):
-    if not req.user.has_perm('maps.change_maps', obj=obj) and not req.user.has_perm('maps.change_layer', obj=obj):
+    # object will either be a map or a layer, one or the other permission must apply
+    if not req.user.has_perm('maps.change_maps', obj=obj) or not req.user.has_perm('maps.change_layer', obj=obj):
         return HttpResponse(loader.render_to_string('401.html',
             RequestContext(req, {'error_message':
                 _("You are not permitted to modify this layer")})), status=401)
