@@ -79,35 +79,8 @@ GeoExplorer.Viewer = Ext.extend(GeoExplorer, {
             this.on("ready", function() {this.toolbar.enable();}, this);
         }
 
-        this.mapPanelContainer = new Ext.Panel({
-            layout: "card",
-            region: "center",
-            ref: "../main",
-            tbar: this.toolbar,
-            defaults: {
-                border: false
-            },
-            items: [
-                this.mapPanel
-            ],
-            ref: "../main",
-            activeItem: 0
-        });
-        if (window.google && google.earth) {
-            this.mapPanelContainer.add(
-                new gxp.GoogleEarthPanel({
-                    mapPanel: this.mapPanel,
-                    listeners: {
-                        beforeadd: function(record) {
-                            return record.get("group") !== "background";
-                        }
-                    }
-                })
-            );
-        }
-
         this.portalItems = [
-            this.mapPanelContainer
+            this.mapPanel
         ];
         
         GeoExplorer.superclass.initPortal.apply(this, arguments);        

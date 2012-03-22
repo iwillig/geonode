@@ -166,8 +166,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         if (config.useToolbar !== false) {
             config.tools = (config.tools || []).concat({
                 ptype: "gxp_wmsgetfeatureinfo",
-                // uncomment the line below if you want feature info in a grid
-                //format: "grid",
+                format: "grid",
                 actionTarget: "main.tbar",
                 toggleGroup: this.toggleGroup,
                 layerParams: ['TIME'],
@@ -393,9 +392,13 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_zoomtoextent",
                 actionTarget: {target: "paneltbar", index: 8}
             }, {
-                ptype: "gxp_layertree",
-                outputConfig: {id: "treecontent"},
-                outputTarget: "layertree"
+                ptype: "gxp_layermanager",
+                outputConfig: {
+                    id: "treecontent",
+                    autoScroll: true,
+                    tbar: {id: 'treetbar'}
+                },
+                outputTarget: "westpanel"
             }, {
                 ptype: "gxp_zoomtolayerextent",
                 actionTarget: "treecontent.contextMenu"
@@ -421,20 +424,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 rasterStyling: true,
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             }, {
-                ptype: "gxp_legend",
-                outputTarget: 'legend',
-                outputConfig: {
-                    autoScroll: true,
-                    title: null
-                }
-            }, {
                 ptype: "gxp_print",
                 includeLegend: true,
                 printCapabilities: window.printCapabilities,
                 actionTarget: {target: "paneltbar", index: 3}
-            }, {
-                ptype: "gxp_googleearth",
-                actionTarget: {target: "paneltbar", index: 4}
             }, {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
@@ -522,6 +515,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             success: function(response) {
                 var loadedConfig = Ext.decode(response.responseText, true);
                 Ext.apply(config, loadedConfig);
+                config.tools = config.tools || [];
                 var ptypes = Ext.pluck(config.tools,'ptype');
                 var defaultTools = createToolCfg(config, this.toggleGroup);
                 Ext.each(defaultTools,function(cfg){
@@ -560,6 +554,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         else {
             this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
             {}, {
+                region: 'center',
+                ref: "../main",
                 bbar: {
                     id: 'map-bbar',
                     height:55,
@@ -595,17 +591,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             });
         });
 
-       var layersContainer = new Ext.Panel({
-            id: "layertree",
-            autoScroll: true,
-            border: false,
-            title: this.layersContainerText,
-            tbar: {
-                id: 'treetbar'
-            }
-        });
-
-        var layerTree;
         this.on("ready", function(){
             var startSourceId = null;
             for (var id in this.layerSources) {
@@ -661,8 +646,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 }
             }
 
-            // add custom tree contextmenu items
-            layerTree = Ext.getCmp("treecontent");
         }, this);
         
         //give the native map nav controls a common container
@@ -671,28 +654,15 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             ctEl.appendChild(Ext.select('.olControlPanPanel, .olControlZoomPanel'));
         },this);
 
-        var layersTabPanel = new Ext.TabPanel({
-            border: false,
-            deferredRender: false,
-            items: [
-                layersContainer, {
-                xtype: 'panel',
-                title: this.legendPanelText,
-                layout: 'fit', 
-                id: 'legend', 
-                split: true
-            }],
-            activeTab: 0
-        });
-
         //needed for Safari
         var westPanel = new Ext.Panel({
+            id: "westpanel",
             layout: "fit",
             collapseMode: "mini",
+            border: false,
             collapsed:true,
             header: false,
             split: true,
-            items: [layersTabPanel],
             region: "west",
             width: 250
         });
@@ -714,23 +684,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             });
         }, this);
         
-        this.mapPanelContainer = new Ext.Panel({
-            layout: "card", 
-            region: "center",
-            defaults: {
-                // applied to each contained panel
-                border:false
-            },
-            items: [
-                this.mapPanel,
-                {
-                    xtype: 'gxp_googleearthpanel', 
-                    mapPanel: this.mapPanel
-                }
-            ],
-            activeItem: 0
-        });
-
         var header = new Ext.Panel({
             region: "north",
             autoHeight: true,
@@ -751,7 +704,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     deferredRender: false,
                     tbar: this.toolbar,
                     items: [
-                        this.mapPanelContainer,
+                        this.mapPanel,
                         westPanel, {
                             region: "south",
                             height: 175,
