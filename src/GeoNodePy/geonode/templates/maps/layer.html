@@ -359,7 +359,7 @@
 
 {% block end_body_js %}
 {% if user.is_authenticated %}
-	{% request.user_rating_js user layer "layer" %}
+	{% user_rating_js user layer "layer" %}
 {% else %}
 	<script src="{{ STATIC_URL }}agon_ratings/js/jquery.raty.js"></script>
 {% endif %}
