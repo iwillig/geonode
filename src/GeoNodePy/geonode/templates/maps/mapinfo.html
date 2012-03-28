@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load geonode_auth %}
 {% load dialogos_tags %}
+{% load agon_ratings_tags %}
 
 {% block extra_head %}
 {% include "geonode/ext_header.html" %}
@@ -54,7 +55,12 @@ Ext.onReady(function() {
 
 {% block main %}
 <div class="twocol">
-  <h3>{{map.title}}</h3>
+	{% overall_rating map "map" as map_rating %}
+	<h3>{{map.title}}</h3>
+	<div class="overall_rating" data-rating="{{ map_rating }}"></div>
+
+
+
   <p><strong>{% trans "Abstract:" %}</strong> {{map.abstract}}</p>
 
   <div id="embedded_map">
@@ -95,6 +101,13 @@ Ext.onReady(function() {
             <p><a href="{% url auth_login %}">{% trans "Login to add a comment" %}</a></p>
         {% endif %}
     </div>
+	{% if request.user.is_authenticated %}
+		<h3>{% trans "Rate this map" %}</h3>
+		{% user_rating request.user map "map" as user_map_rating %}
+		<div id="user_rating" class="category-map"></div>
+	{% endif %}
+
+
 </div>
 {% endblock %}
 {% block sidebar %}
@@ -135,4 +148,22 @@ Ext.onReady(function() {
     <div id="permissions_form"></div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block end_body_js %}
+{% if request.user.is_authenticated %}
+	{% user_rating_js request.user map "map" %}
+{% else %}
+	<script src="{{ STATIC_URL }}agon_ratings/js/jquery.raty.js"></script>
+{% endif %}
+<script>
+	$(function() {
+		$('div.overall_rating').raty({
+			half: true,
+			readOnly: true,
+			start: $('div.overall_rating').data('rating'),
+			path: "{{ STATIC_URL }}agon_ratings/img/"
+		});
+	});
+</script>
 {% endblock %}
