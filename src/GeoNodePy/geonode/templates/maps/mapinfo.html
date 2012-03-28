@@ -53,6 +53,17 @@ Ext.onReady(function() {
 </script>
 {% endblock %}
 
+{% block start_body_js %}
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+{% endblock %}
+
 {% block main %}
 <div class="twocol">
 	{% overall_rating map "map" as map_rating %}
@@ -61,6 +72,9 @@ Ext.onReady(function() {
 
 
 
+  <h3>{{map.title}}</h3>
+  <g:plusone size="small" href="http://{{ request.get_host }}{{ request.get_full_path }}"></g:plusone>
+  <div class="fb-like" data-href="http://{{ request.get_host }}{{ request.get_full_path }}" data-send="false" data-width="50" data-layout="button_count" data-show-faces="false"></div>
   <p><strong>{% trans "Abstract:" %}</strong> {{map.abstract}}</p>
 
   <div id="embedded_map">
@@ -108,6 +122,9 @@ Ext.onReady(function() {
 	{% endif %}
 
 
+=======
+  <h3>Social</h3>
+>>>>>>> 8211953377229cb55e9536d85ff7fe01e825ef4f
 </div>
 {% endblock %}
 {% block sidebar %}
@@ -165,5 +182,12 @@ Ext.onReady(function() {
 			path: "{{ STATIC_URL }}agon_ratings/img/"
 		});
 	});
+<script type="text/javascript">
+	(function() {
+		var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+		po.src = 'https://apis.google.com/js/plusone.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+	})();
+>>>>>>> 8211953377229cb55e9536d85ff7fe01e825ef4f
 </script>
 {% endblock %}
