@@ -133,7 +133,6 @@
 
 {% block main %}
 <div class="twocol">
-<div id="description"> <h3> {{ layer.resource.title|default:layer.typename }} </h3> </div>
 {% overall_rating layer "layer" as layer_rating %}
 <div class="overall_rating" data-rating="{{ layer_rating }}"></div>
 
@@ -359,8 +358,8 @@
 {% endblock %}
 
 {% block end_body_js %}
-{% if request.user.is_authenticated %}
-	{% user_rating_js request.user layer "layer" %}
+{% if user.is_authenticated %}
+	{% request.user_rating_js user layer "layer" %}
 {% else %}
 	<script src="{{ STATIC_URL }}agon_ratings/js/jquery.raty.js"></script>
 {% endif %}
@@ -373,12 +372,11 @@
 			path: "{{ STATIC_URL }}agon_ratings/img/"
 		});
 	});
-<script type="text/javascript">
+
 	(function() {
 		var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
 		po.src = 'https://apis.google.com/js/plusone.js';
 		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 	})();
->>>>>>> 8211953377229cb55e9536d85ff7fe01e825ef4f
 </script>
 {% endblock %}
