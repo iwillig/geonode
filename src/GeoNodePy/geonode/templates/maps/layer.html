@@ -3,6 +3,7 @@
 {% load i18n %}
 {% load dialogos_tags %}
 {% load agon_ratings_tags %}
+{% load phileo_tags %}
 
 {% block title %} {{ layer.resource.title|default:layer.typename }} - {{ block.super }} {% endblock %}
 
@@ -12,7 +13,7 @@
 {% include "geonode/geo_header.html" %}
 
 <link rel="stylesheet" type="text/css" href="{{ GEONODE_CLIENT_LOCATION }}theme/ux/colorpicker/color-picker.ux.css" />
-
+{% phileo_css %}
 {{ block.super }}
 
     <script type="text/javascript">
@@ -117,6 +118,7 @@
         }
 {% endautoescape %}
     </script>
+{% phileo_js %}
 {% endblock %}
 
 {% block start_body_js %}
@@ -140,6 +142,7 @@
 		<h3>{{ layer.resource.title|default:layer.typename }}</h3>
 		<g:plusone size="small" href="http://{{ request.get_host }}{{ request.get_full_path }}"></g:plusone>
 		<div class="fb-like" data-href="http://{{ request.get_host }}{{ request.get_full_path }}" data-send="false" data-width="50" data-layout="button_count" data-show-faces="false"></div>
+{% phileo_widget request.user layer %}
 	</div>
 <p> <strong>{% trans "Abstract" %}:</strong> {{ layer.abstract|default:_("No abstract for this layer.") }} </p>
 
