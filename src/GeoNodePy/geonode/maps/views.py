@@ -595,7 +595,7 @@ def mapdetail(request,mapid):
                 _("You are not allowed to view this map.")})), status=401)
      
     config = map.viewer_json(authenticated=request.user.is_authenticated())
-    config["tools"] = False;
+    #config["tools"] = False;
     config = json.dumps(config)
     layers = MapLayer.objects.filter(map=map.id) 
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
