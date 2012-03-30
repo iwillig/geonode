@@ -488,6 +488,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
                         bodyStyle: "padding: 5px 5px 0",
+                        autoScroll: true,
                         fieldConfig: {
                             'title': {fieldLabel: "Title", allowBlank: false},
                             'content': {fieldLabel: "Description", xtype: "textarea"},
