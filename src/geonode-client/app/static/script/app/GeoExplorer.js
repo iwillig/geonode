@@ -177,8 +177,11 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 outputTarget: "map-bbar",
                 looped: true,
                 outputConfig:{
+                    //xtype: 'app_playbacktoolbar',
+                    
                     defaults: {scale: 'large'},
-                    playbackActions: ["play","slider","loop","fastforward","next", {xtype:'tbspacer',width:48},"settings"]  
+                    playbackActions: ["play","slider","loop","fastforward","next", {xtype:'tbspacer',width:48},"settings"]
+                      
                 }
             });
         }
@@ -476,6 +479,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_featureeditor",
                 id: "annotations_editor",
+                closeOnSave: true,
                 toggleGroup: toggleGroup,
                 supportAbstractGeometry: true,
                 showSelectedOnly: false,
@@ -485,13 +489,15 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
                         bodyStyle: "padding: 5px 5px 0",
+                        autoScroll: true,
                         fieldConfig: {
                             'title': {fieldLabel: "Title", allowBlank: false},
+                            'content': {fieldLabel: "Description", xtype: "textarea"},
                             'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false},
                             'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
                             'in_timeline': {boxLabel: "Include in timeline"},
                             'in_map': {boxLabel: "Include in map"},
-                            'appearance': {xtype: "combo", fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
+                            'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
                                 ['tl-tl?', 'Top left'], 
                                 ['t-t?', 'Top center'],
                                 ['tr-tr?', 'Top right'],
