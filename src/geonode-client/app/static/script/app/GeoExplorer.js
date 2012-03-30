@@ -479,6 +479,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_featureeditor",
                 id: "annotations_editor",
+                closeOnSave: true,
                 toggleGroup: toggleGroup,
                 supportAbstractGeometry: true,
                 showSelectedOnly: false,
