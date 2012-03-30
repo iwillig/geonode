@@ -818,6 +818,20 @@ def layer_style(request, layername):
             return HttpResponse("Not allowed",status=403)
     else:  
         return HttpResponse("Not allowed",status=403)
+    
+def layer_data(req, layername):
+    if req.method != 'POST':
+        return HttpResponse('Invalid Request', status = 400)
+    layer = get_object_or_404(Layer, typename=layername)
+    if not req.user.has_perm('maps.change_layer', obj=layer):
+        return HttpResponse(loader.render_to_string('401.html',
+            RequestContext(req, {'error_message':
+                _("You are not permitted to modify this layer")})), status=401)
+    json.loads(req.POST.raw_post_data)
+    layer.map_config = req.POST.raw_post_data
+    layer.save()
+    return HttpResponse(status=204)
+                
 
 @csrf_exempt
 def layer_detail(request, layername):
@@ -828,18 +842,23 @@ def layer_detail(request, layername):
                 _("You are not permitted to view this layer")})), status=401)
     
     metadata = layer.metadata_csw()
+    
+    map_config = layer.map_config
+    
+    if not map_config:
+        vs_url = settings.GEOSERVER_BASE_URL + '%s/%s/wms' % tuple(layer.typename.split(':'))
+        maplayer = MapLayer(name = layer.typename, ows_url=vs_url)
 
-    vs_url = settings.GEOSERVER_BASE_URL + '%s/%s/wms' % tuple(layer.typename.split(':'))
-    maplayer = MapLayer(name = layer.typename, ows_url=vs_url)
-
-    # center/zoom don't matter; the viewer will center on the layer bounds
-    map = Map(projection="EPSG:900913")
-    DEFAULT_BASE_LAYERS = default_map_config(request)[1]
+        # center/zoom don't matter; the viewer will center on the layer bounds
+        map = Map(projection="EPSG:900913")
+        DEFAULT_BASE_LAYERS = default_map_config(request)[1]
+        map_config = json.dumps(map.viewer_json(added_layers=(DEFAULT_BASE_LAYERS + [maplayer])))
+        # we could save the config, but for now...
 
     return render_to_response('maps/layer.html', RequestContext(request, {
         "layer": layer,
         "metadata": metadata,
-        "viewer": json.dumps(map.viewer_json(added_layers=(DEFAULT_BASE_LAYERS + [maplayer]))),
+        "viewer": map_config,
         "permissions_json": _perms_info_json(layer, LAYER_LEV_NAMES),
         "GEOSERVER_BASE_URL": settings.GEOSERVER_BASE_URL
     }))
