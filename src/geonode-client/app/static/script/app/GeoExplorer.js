@@ -493,7 +493,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                 var form = panel.getForm();
                                 form.items.each(function(f) {
                                     if (f.name === 'title' || f.name === 'content') {
-                                        f.setWidth(w-125);
+                                        f.setWidth(w-150);
                                     }
                                 });
                             }
