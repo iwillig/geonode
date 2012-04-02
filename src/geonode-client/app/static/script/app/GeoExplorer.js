@@ -488,11 +488,21 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     width: 325,
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
+                        listeners: {
+                            'bodyresize': function(panel, w, h) {
+                                var form = panel.getForm();
+                                form.items.each(function(f) {
+                                    if (f.name === 'title' || f.name === 'content') {
+                                        f.setWidth(w-150);
+                                    }
+                                });
+                            }
+                        },
                         bodyStyle: "padding: 5px 5px 0",
                         autoScroll: true,
                         fieldConfig: {
-                            'title': {fieldLabel: "Title", allowBlank: false},
-                            'content': {fieldLabel: "Description", xtype: "textarea"},
+                            'title': {fieldLabel: "Title", allowBlank: false, width: 177},
+                            'content': {fieldLabel: "Description", xtype: "textarea", width: 177, grow: true},
                             'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false},
                             'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
                             'in_timeline': {boxLabel: "Include in timeline"},
