@@ -1887,14 +1887,15 @@ class Upload(models.Model):
         self.save()
     def get_import_url(self):
         return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.id)
-    def delete(self):
+    def delete(self, cascade=True):
         models.Model.delete(self)
-        session = self.gs_uploader.get_session(self.id)
-        if session:
-            try:
-                session.delete()
-            except:
-                logging.exception('error deleting upload session')
+        if cascade:
+            session = Layer.objects.gs_uploader.get_session(self.id)
+            if session:
+                try:
+                    session.delete()
+                except:
+                    logging.exception('error deleting upload session')
         
 
 signals.pre_delete.connect(_remove_thumb, sender=Layer)
