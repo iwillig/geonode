@@ -506,14 +506,15 @@ def time_step(upload_session, time_attribute, time_transform_type,
         except:
             use_big_date = False
     if time_attribute:
-        if use_big_date:
-            transforms.append(build_att_remap_transform(time_attribute))
-            if end_time_attribute:
-                transforms.append(build_att_remap_transform(end_time_attribute))
         if time_transform_type:
             transforms.append(build_time_transform(time_attribute, time_transform_type, time_format))
         if end_time_attribute and end_time_transform_type:
             transforms.append(build_time_transform(end_time_attribute, end_time_transform_type, end_time_format))
+        # this must go after the remapping transform to ensure the type change is applied
+        if use_big_date:
+            transforms.append(build_att_remap_transform(time_attribute))
+            if end_time_attribute:
+                transforms.append(build_att_remap_transform(end_time_attribute))
         transforms.append({
             'type' : 'CreateIndexTransform',
             'field' : time_attribute

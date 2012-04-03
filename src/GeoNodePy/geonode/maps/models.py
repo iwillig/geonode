@@ -1652,7 +1652,8 @@ class MapLayer(models.Model):
         paired with the GeoNode site.  Currently this is based on heuristics,
         but we try to err on the side of false negatives.
         """
-        if self.ows_url == (settings.GEOSERVER_BASE_URL + "wms"):
+        url = self.ows_url or  ' '
+        if url[0] == '/' or url == (settings.GEOSERVER_BASE_URL + "wms"):
             return Layer.objects.filter(typename=self.name).count() != 0
         else: 
             return False
@@ -1887,14 +1888,15 @@ class Upload(models.Model):
         self.save()
     def get_import_url(self):
         return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.id)
-    def delete(self):
+    def delete(self, cascade=True):
         models.Model.delete(self)
-        session = self.gs_uploader.get_session(self.id)
-        if session:
-            try:
-                session.delete()
-            except:
-                logging.exception('error deleting upload session')
+        if cascade:
+            session = Layer.objects.gs_uploader.get_session(self.id)
+            if session:
+                try:
+                    session.delete()
+                except:
+                    logging.exception('error deleting upload session')
         
 
 signals.pre_delete.connect(_remove_thumb, sender=Layer)

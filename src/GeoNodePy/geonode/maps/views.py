@@ -110,7 +110,7 @@ class PocForm(forms.Form):
 class MapForm(forms.ModelForm):
     class Meta:
         model = Map
-        exclude = ('contact', 'zoom', 'projection', 'center_x', 'center_y', 'owner')
+        exclude = ('contact', 'zoom', 'projection', 'center_x', 'center_y', 'owner', 'portal_params', 'tools_params')
         widgets = {
             'abstract': forms.Textarea(attrs={'cols': 40, 'rows': 10}),
         }
@@ -595,7 +595,7 @@ def mapdetail(request,mapid):
                 _("You are not allowed to view this map.")})), status=401)
      
     config = map.viewer_json(authenticated=request.user.is_authenticated())
-    config["tools"] = False;
+    #config["tools"] = False;
     config = json.dumps(config)
     layers = MapLayer.objects.filter(map=map.id) 
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
