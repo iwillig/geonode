@@ -719,6 +719,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     uuid = models.CharField(max_length=36)
     typename = models.CharField(max_length=128, unique=True)
     owner = models.ForeignKey(User, blank=True, null=True)
+    map_config = models.TextField(null=True)
 
     contacts = models.ManyToManyField(Contact, through='ContactRole')
 
