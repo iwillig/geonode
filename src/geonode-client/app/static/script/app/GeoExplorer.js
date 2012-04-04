@@ -384,6 +384,16 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             rest: "/maps/"
         });
         function createToolCfg(config, toggleGroup) {
+            var checkListener = function(field, check) {
+                if (check === false) {
+                    var form = field.ownerCt.getForm();
+                    var inMap = form.findField('in_map').getValue(),
+                        inTimeline = form.findField('in_timeline').getValue();
+                    if (inMap === false && inTimeline === false) {
+                        field.setValue(true);
+                    }
+                }
+            };
             return (config.tools || []).concat({
                 ptype: "gxp_mapproperties",
                 actionTarget: {target: "paneltbar", index: 0}
@@ -502,8 +512,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             'content': {fieldLabel: "Description", xtype: "textarea", width: 177, grow: true},
                             'start_time': {xtype: 'gxp_datetimefield', fieldLabel: "Start time", allowBlank: false},
                             'end_time': {xtype: 'gxp_datetimefield', fieldLabel: "End time <span class='optional-form-label'>(optional)</span>"},
-                            'in_timeline': {boxLabel: "Include in timeline"},
-                            'in_map': {boxLabel: "Include in map"},
+                            'in_timeline': {value: true, boxLabel: "Include in timeline", listeners: {'check': checkListener}},
+                            'in_map': {value: true, boxLabel: "Include in map", listeners: {'check': checkListener}},
                             'appearance': {xtype: "combo", value: 'c-c?', fieldLabel: "Position", emptyText: "Only needed for Events", comboStoreData: [
                                 ['tl-tl?', 'Top left'], 
                                 ['t-t?', 'Top center'],
