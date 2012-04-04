@@ -1,5 +1,5 @@
-.gx-popup {
-    z-index: 25000 !important;
+.gxp-annotations-tip {
+    z-index: 9011;
 }
 .optional-form-label {
     color: #736F6E;
