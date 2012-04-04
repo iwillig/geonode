@@ -177,11 +177,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 outputTarget: "map-bbar",
                 looped: true,
                 outputConfig:{
-                    //xtype: 'app_playbacktoolbar',
-                    
-                    defaults: {scale: 'large'},
-                    playbackActions: ["play","slider","loop","fastforward","next", {xtype:'tbspacer',width:48},"settings"]
-                      
+                    xtype: 'app_playbacktoolbar',
+                    defaults: {scale: 'medium'}
                 }
             });
         }
@@ -579,7 +576,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ref: "../main",
                 bbar: {
                     id: 'map-bbar',
-                    height:55,
+                    height:40,
                     items: []
                 }
             });

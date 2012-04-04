@@ -26,19 +26,15 @@ mapstory.Viewer = Ext.extend(GeonodeViewer, {
     
     getDefaultTools: function(config, toggleGroup){
         var tools = [{
-                ptype: "gxp_wmsgetfeatureinfo",
-                format: "grid",
-                actionTarget: 'map',
-                layerParams: ['TIME'],
-                outputConfig: {width: 400, height: 300}
-            }, {
                 ptype: "gxp_playback",
                 id: "playback-tool",
-                width: 580,
-                outputTarget: "map-bbar",
+                //outputTarget: "map-bbar",
+                outputTarget: "map",
                 looped: true,
                 outputConfig:{
-                    xtype: 'app_playbacktoolbar'
+                    xtype: 'app_playbacktoolbar',
+                    width: 570,
+                    defaults:{scale:'medium'}
                 }
         }];
         return tools;
@@ -47,12 +43,7 @@ mapstory.Viewer = Ext.extend(GeonodeViewer, {
         this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
             {}, {
                 region: 'center',
-                ref: "../main",
-                bbar: {
-                    id: 'map-bbar',
-                    height:55,
-                    items: []
-                }
+                ref: "../main"
             });
         mapstory.Viewer.superclass.initMapPanel.call(this);
     },
