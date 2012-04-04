@@ -1,3 +1,6 @@
+.gx-popup {
+    z-index: 25000 !important;
+}
 .optional-form-label {
     color: #736F6E;
 }
