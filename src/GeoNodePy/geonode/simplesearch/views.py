@@ -40,7 +40,7 @@ def new_search_page(request, **kw):
     topic_cnts = {}
     for t in topics: topic_cnts[t] = topic_cnts.get(t,0) + 1
      
-    return render_to_response('maps/new_search.html', RequestContext(request, {
+    return render_to_response('simplesearch/search.html', RequestContext(request, {
         'init_search': json.dumps(params or {}),
         'viewer_config': json.dumps(map.viewer_json(added_layers=DEFAULT_BASE_LAYERS, authenticated=request.user.is_authenticated())),
         'GOOGLE_API_KEY' : settings.GOOGLE_API_KEY,
