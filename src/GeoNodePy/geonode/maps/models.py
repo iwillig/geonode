@@ -1871,28 +1871,31 @@ def _remove_thumb(instance, sender, **kw):
 class UploadManager(models.Manager):
     def __init__(self):
         models.Manager.__init__(self)
+    def update_from_session(self, import_session):
+        self.get(import_id = import_session.id).update_from_session(import_session)
     def create_from_session(self, user, import_session):
         return self.create(
             user = user, 
-            id = import_session.id, 
+            import_id = import_session.id, 
             state= import_session.state)
         
 class Upload(models.Model):
     objects = UploadManager()
     
-    id = models.BigIntegerField(primary_key = True)
+    import_id = models.BigIntegerField()
     user = models.ForeignKey(User, blank=True, null=True)
     state = models.CharField(max_length=16)
+    date = models.DateTimeField('date', default = datetime.now)
     
     def update_from_session(self, import_session):
         self.state = import_session.state
         self.save()
     def get_import_url(self):
-        return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.id)
+        return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.import_id)
     def delete(self, cascade=True):
         models.Model.delete(self)
         if cascade:
-            session = Layer.objects.gs_uploader.get_session(self.id)
+            session = Layer.objects.gs_uploader.get_session(self.import_id)
             if session:
                 try:
                     session.delete()

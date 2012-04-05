@@ -560,6 +560,7 @@ def final_step(upload_session, user):
     
     _log('Reloading session %s to check validity',import_session.id)
     import_session = Layer.objects.gs_uploader.get_session(import_session.id)
+    upload_session.import_session = import_session
     
     # @todo the importer chooses an available featuretype name late in the game
     # need to verify the resource.name otherwise things will fail.
@@ -716,6 +717,7 @@ def view(req, step):
         resp = _steps[step](req, upload_session)
         if upload_session:
             req.session[_SESSION_KEY] = upload_session
+            Upload.objects.update_from_session(upload_session.import_session)
         return resp
     except Exception,e:
         if upload_session:
