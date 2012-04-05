@@ -551,20 +551,17 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     },
     
     initMapPanel: function() {
-        this.mapItems = [{
-            xtype: "gx_zoomslider",
-            vertical: true,
-            cls:'gxp-fade-control',
-            height: 100,
-            plugins: new GeoExt.ZoomSliderTip({
-                template: "<div>"+this.zoomSliderTipText+": {zoom}<div>"
-            })
-        }];
-        
         this.mapPlugins = [{
             ptype: "gxp_loadingindicator", 
             onlyShowOnFirstLoad: true
         }];
+
+        var defaultControls = [new OpenLayers.Control.Zoom(),new OpenLayers.Control.Navigation()];
+        if(!this.initialConfig.map){
+            this.initialConfig.map = {controls:defaultControls};
+        } else {
+            this.initialConfig.map.controls = (this.initialConfig.map.controls || []).concat(defaultControls);
+        }
         
         //ensure map has a bbar with our prefered id
         if (this.initialConfig.map && this.initialConfig.map.bbar) {
