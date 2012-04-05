@@ -171,11 +171,21 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
     },
     applyConfig: function(config){
         var defaultTools = this.getDefaultTools(config, this.toggleGroup);
-        config.tools = config.tools || [];
+        var origTools = config.tools || [];
         var ptypes = Ext.pluck(config.tools, 'ptype');
+        config.tools = [];
         Ext.each(defaultTools, function(cfg){
-            if (ptypes.indexOf(cfg.ptype) == -1) {
+            var toolIndex = ptypes.indexOf(cfg.ptype);
+            if (toolIndex == -1) {
+                //default tool was not included in the original config
                 config.tools.push(cfg);
+            } else {
+                //default tool was included in the original config
+                var savedConfig = origTools[toolIndex];
+                //always get outputTarget from default tool
+                delete savedConfig.outputTarget;
+                var appliedConfig = Ext.apply(cfg,savedConfig);
+                config.tools.push(appliedConfig);
             }
         });
         GeonodeViewer.superclass.applyConfig.call(this, config);
