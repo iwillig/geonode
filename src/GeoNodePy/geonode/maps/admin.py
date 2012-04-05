@@ -46,7 +46,7 @@ def import_link(obj):
 import_link.short_description = 'Link'
 import_link.allow_tags = True
 class UploadAdmin(admin.ModelAdmin):
-    list_display = ('user', 'state', import_link)
+    list_display = ('user','date', 'state', import_link)
     
     
 admin.site.register(Upload, UploadAdmin)
