@@ -556,7 +556,13 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             onlyShowOnFirstLoad: true
         }];
 
-        var defaultControls = [new OpenLayers.Control.Zoom(),new OpenLayers.Control.Navigation()];
+        var defaultControls = [
+            new OpenLayers.Control.Zoom(),
+            new OpenLayers.Control.Navigation({
+                zoomWheelOptions: {interval: 250},
+                dragPanOptions: {enableKinetic: true}
+            })
+        ];
         if(!this.initialConfig.map){
             this.initialConfig.map = {controls:defaultControls};
         } else {
@@ -583,6 +589,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         }
          
         GeoExplorer.superclass.initMapPanel.apply(this, arguments);
+        // there are serialization issues with controls, delete them
+        delete this.initialConfig.map.controls;
     },
     
     /**
