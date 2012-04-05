@@ -56,13 +56,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     localGeoServerBaseUrl: "",
 
     /**
-     * api: config[useMapOverlay]
-     * ``Boolean`` Should we add a scale overlay to the map? Set to false
-     * to not add a scale overlay.
-     */
-    useMapOverlay: null,
-
-    /**
      * private: property[toggleGroup]
      * ``String``
      */
@@ -535,9 +528,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 createFeatureActionText: "Add note",
                 iconClsAdd: 'gxp-icon-addnote',
                 editFeatureActionText: "Edit note"
-            },{
-                ptype: 'app_scaleoverlay',
-                outputTarget:'map-bbar'
             });
 	    }
         Ext.Ajax.request({
@@ -561,20 +551,23 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     },
     
     initMapPanel: function() {
-        this.mapItems = [{
-            xtype: "gx_zoomslider",
-            vertical: true,
-            cls:'gxp-fade-control',
-            height: 100,
-            plugins: new GeoExt.ZoomSliderTip({
-                template: "<div>"+this.zoomSliderTipText+": {zoom}<div>"
-            })
-        }];
-        
         this.mapPlugins = [{
             ptype: "gxp_loadingindicator", 
             onlyShowOnFirstLoad: true
         }];
+
+        var defaultControls = [
+            new OpenLayers.Control.Zoom(),
+            new OpenLayers.Control.Navigation({
+                zoomWheelOptions: {interval: 250},
+                dragPanOptions: {enableKinetic: true}
+            })
+        ];
+        if(!this.initialConfig.map){
+            this.initialConfig.map = {controls:defaultControls};
+        } else {
+            this.initialConfig.map.controls = (this.initialConfig.map.controls || []).concat(defaultControls);
+        }
         
         //ensure map has a bbar with our prefered id
         if (this.initialConfig.map && this.initialConfig.map.bbar) {
@@ -596,6 +589,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         }
          
         GeoExplorer.superclass.initMapPanel.apply(this, arguments);
+        // there are serialization issues with controls, delete them
+        delete this.initialConfig.map.controls;
     },
     
     /**

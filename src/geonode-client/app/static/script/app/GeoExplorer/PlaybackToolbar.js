@@ -12,12 +12,13 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     fullSizeTooltip: 'Fullscreen',
     smallSizeTooltip: 'Back to Smaller Size',
     legendTooltip: 'Show Map Legend',
+    editTooltip: 'Edit This Map',
     initComponent: function() {
         if(!this.playbackActions){
             this.playbackActions = [
                 "play","slider","loop","fastforward","prev","next",
                 {xtype: "tbspacer"},"legend",{xtype:"tbfill"},
-                "settings",{xtype: "tbspacer"},"togglesize"]; 
+                "settings",{xtype: "tbspacer"},"togglesize","edit"]; 
         }
         this.defaults = Ext.applyIf(this.defaults || {},{
             scale: 'large'
@@ -62,6 +63,13 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 handler: this.reverseStep,
                 scope: this,
                 tooltip: this.prevTooltip
+            },
+            'edit' : {
+                iconCls: 'gxp-icon-editMap',
+                handler: this.loadComposser,
+                scope: this,
+                tooltip: this.editTooltip,
+                disabled: window.location.href.indexOf('view')>-1
             }
         });
 
@@ -83,6 +91,9 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         timeManager.step *= -1;
         timeManager.tick();
         timeManager.step *= -1;
+    },
+    loadComposser: function(btn){
+        window.location.href += '/view';
     }
 });
 
