@@ -8,4 +8,5 @@ def resource_urls(request):
         GOOGLE_API_KEY = settings.GOOGLE_API_KEY,
         SITENAME = settings.SITENAME,
         REGISTRATION_OPEN = settings.REGISTRATION_OPEN,
+        request = request,
     )

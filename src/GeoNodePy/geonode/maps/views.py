@@ -833,7 +833,6 @@ def layer_data(req, layername):
     return HttpResponse(status=204)
                 
 
-@csrf_exempt
 def layer_detail(request, layername):
     layer = get_object_or_404(Layer, typename=layername)
     if not request.user.has_perm('maps.view_layer', obj=layer):
