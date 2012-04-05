@@ -56,13 +56,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     localGeoServerBaseUrl: "",
 
     /**
-     * api: config[useMapOverlay]
-     * ``Boolean`` Should we add a scale overlay to the map? Set to false
-     * to not add a scale overlay.
-     */
-    useMapOverlay: null,
-
-    /**
      * private: property[toggleGroup]
      * ``String``
      */
@@ -535,9 +528,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 createFeatureActionText: "Add note",
                 iconClsAdd: 'gxp-icon-addnote',
                 editFeatureActionText: "Edit note"
-            },{
-                ptype: 'app_scaleoverlay',
-                outputTarget:'map-bbar'
             });
 	    }
         Ext.Ajax.request({
