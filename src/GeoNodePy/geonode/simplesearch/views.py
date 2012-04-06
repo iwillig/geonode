@@ -7,6 +7,9 @@ from geonode.maps.views import default_map_config
 from geonode.maps.models import *
 from geonode.simplesearch.search import combined_search_results
 
+# @hack - fix dependency by allowing injection
+from mapstory.models import Section
+
 import json
 
 DEFAULT_MAPS_SEARCH_BATCH_SIZE = 10
@@ -40,7 +43,7 @@ def new_search_page(request, **kw):
     topic_cnts = {}
     for t in topics: topic_cnts[t] = topic_cnts.get(t,0) + 1
      
-    return render_to_response('maps/new_search.html', RequestContext(request, {
+    return render_to_response('simplesearch/search.html', RequestContext(request, {
         'init_search': json.dumps(params or {}),
         'viewer_config': json.dumps(map.viewer_json(added_layers=DEFAULT_BASE_LAYERS, authenticated=request.user.is_authenticated())),
         'GOOGLE_API_KEY' : settings.GOOGLE_API_KEY,
@@ -48,10 +51,39 @@ def new_search_page(request, **kw):
         'counts' : counts,
         'users' : User.objects.all(),
         'topics' : topic_cnts,
+        'sections' : Section.objects.all(),
         'keywords' : Layer.objects.gn_catalog.get_all_keywords()
     }))
 
 def new_search_api(request):
+    from time import time
+    
+    ts = time()
+    params = _search_params(request)
+    start = params[1]
+    total, items = _new_search(*params)
+    ts = time() - ts
+    logger.info('generated combined search results in %s',ts)
+
+    return _search_json(items, total, start, ts)
+
+def new_search_api_reduced(request):
+    from time import time
+
+    ts = time()
+    params = _search_params(request)
+    total, items = _new_search(*params)
+    ts = time() - ts
+    logger.info('generated combined search results in %s',ts)
+    idfun = lambda o: (isinstance(o, Map) and 'm%s' or 'l%s') % o.o.pk
+    results = {
+        "_time" : ts,
+        "rows" : [ idfun(i) for i in items ],
+        "total" : total
+    }
+    return HttpResponse(json.dumps(results), mimetype="application/json")
+
+def _search_params(request):
     if request.method == 'GET':
         params = request.GET
     elif request.method == 'POST':
@@ -86,41 +118,15 @@ def new_search_api(request):
         }[params.get('sort','newest')]
 
     filters = {}
-    for k in ('bytype','bytopic','bykw'):
+    for k in ('bytype','bytopic','bykw','bysection'):
         if k in params:
             if params[k]:
                 filters[k] = params[k]
 
-    result = _new_search(query, start, limit, sort_field, sort_asc, filters)
-
-    result['success'] = True
-    return HttpResponse(json.dumps(result), mimetype="application/json")
-
-
-
-def _new_search(query, start, limit, sort_field, sort_asc, filters):
-    from time import time
+    return query, start, limit, sort_field, sort_asc, filters
     
-    ts = time()
-
-    results = combined_search_results(query, filters)
-
-    filter_fun = []
-    # careful when creating lambda or function filters inline like this
-    # as multiple filters cannot use the same local variable or they
-    # will overwrite each other
-    if 'kw' in filters:
-        kw = filters['kw']
-        filter_fun.append(lambda r: 'keywords' in r and kw in r['keywords'])
     
-    for fun in filter_fun:
-        results = filter(fun,results)
-
-    # default sort order by id (could be last_modified when external layers are dealt with)
-    results.sort(key=lambda r: getattr(r,sort_field),reverse=not sort_asc)
-
-    totalQueryCount = len(results)
-    results = results[start:start+limit]
+def _search_json(results, total, start, time):
     # unique item id for ext store (this could be done client side)
     iid = start
     for r in results:
@@ -129,10 +135,31 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
         
     results = map(lambda r: r.as_dict(),results)
         
-    ts = time() - ts
-    logger.info('generated combined search results in %s',ts)
-    return {
-        '_time' : ts,
+    results = {
+        '_time' : time,
         'rows' : results,
-        'total' : totalQueryCount
+        'total' :  total
     }
+    results['success'] = True
+    return HttpResponse(json.dumps(results), mimetype="application/json")
+
+def _new_search(query, start, limit, sort_field, sort_asc, filters):
+
+    results = combined_search_results(query, filters)
+
+    filter_fun = []
+    # careful when creating lambda or function filters inline like this
+    # as multiple filters cannot use the same local variable or they
+    # will overwrite each other
+    if 'bykw' in filters:
+        kw = filters['bykw']
+        filter_fun.append(lambda r: 'keywords' in r.as_dict() and kw in r.as_dict()['keywords'])
+    
+    for fun in filter_fun:
+        results = filter(fun,results)
+
+    # default sort order by id (could be last_modified when external layers are dealt with)
+    results.sort(key=lambda r: getattr(r,sort_field),reverse=not sort_asc)
+
+    return len(results), results[start:start+limit]
+    

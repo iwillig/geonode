@@ -7,6 +7,9 @@ from geonode.maps.models import *
 from geonode.maps.views import _metadata_search
 from geonode.maps.views import _split_query
 
+# @hack - fix dependency by allowing injection
+from mapstory.models import Section
+
 import re
 
 _exclude_patterns = []
@@ -30,6 +33,7 @@ class Normalizer:
         self.dict = None
         self.title = o.title
         self.last_modified = self.last_modified(o)
+        self.iid = None
     def last_modified(self,o):
         abstract
     def as_dict(self):
@@ -47,7 +51,6 @@ class MapNormalizer(Normalizer):
             owner_name = Contact.objects.get(user=map.owner).name
         except:
             owner_name = map.owner.first_name + " " + map.owner.last_name
-        thumb = Thumbnail.objects.get_thumbnail(map)
         # resolve any local layers and their keywords
         local_kw = [ l.keywords.split(' ') for l in map.local_layers if l.keywords]
         keywords = local_kw and list(set( reduce(lambda a,b: a+b, local_kw))) or []
@@ -62,7 +65,7 @@ class MapNormalizer(Normalizer):
             'last_modified' : map.last_modified.isoformat(),
             '_type' : 'map',
             '_display_type' : 'Map',
-            'thumb' : thumb and thumb.get_thumbnail_url() or None,
+            'thumb' : map.get_thumbnail_url(),
             'keywords' : keywords
         }
         
@@ -71,9 +74,8 @@ class LayerNormalizer(Normalizer):
         return layer.date.isoformat()
     def populate(self, doc):
         layer = self.o
-        thumb = Thumbnail.objects.get_thumbnail(layer)
         doc['owner'] = layer.metadata_author.name
-        doc['thumb'] = thumb and thumb.get_thumbnail_url() or None
+        doc['thumb'] = layer.get_thumbnail_url()
         doc['last_modified'] = layer.date.isoformat()
         doc['id'] = layer.id
         doc['_type'] = 'layer'
@@ -86,7 +88,17 @@ class LayerNormalizer(Normalizer):
         return doc
         
 def _get_map_results(results, query, kw):
-    map_query = Map.objects.all()
+    bysection = kw.get('bysection', None)
+    if bysection:
+        section = Section.objects.get(pk=bysection)
+        mapids = set()
+        for t in section.topics.all():
+            for l in t.maps.all():
+                mapids.add( l.pk )
+        print mapids
+        map_query = Map.objects.filter(pk__in=mapids)
+    else:
+        map_query = Map.objects.all()
 
     if query:
         keywords = _split_query(query)
@@ -108,9 +120,19 @@ def _get_layer_results(results, query, kw):
         layer_results = filter(_filter_results, layer_results)
         # @todo search cache timeout in settings?
         cache.set(cache_key, layer_results, timeout=300)
-    
-    #build our Layer query, first by uuids
-    Q = Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ])
+        
+    bysection = kw.get('bysection', None)
+    if bysection:
+        section = Section.objects.get(pk=bysection)
+        layerids = set()
+        for t in section.topics.all():
+            for l in t.layers.all():
+                layerids.add( l.pk )
+        print layerids
+        Q = Layer.objects.filter(pk__in=layerids)
+    else:
+        #build our Layer query, first by uuids
+        Q = Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ])
     
     bytype = kw.get('bytype', None)
     if bytype and bytype != 'layer':
