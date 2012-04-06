@@ -95,7 +95,6 @@ def _get_map_results(results, query, kw):
         for t in section.topics.all():
             for l in t.maps.all():
                 mapids.add( l.pk )
-        print mapids
         map_query = Map.objects.filter(pk__in=mapids)
     else:
         map_query = Map.objects.all()
@@ -128,7 +127,6 @@ def _get_layer_results(results, query, kw):
         for t in section.topics.all():
             for l in t.layers.all():
                 layerids.add( l.pk )
-        print layerids
         Q = Layer.objects.filter(pk__in=layerids)
     else:
         #build our Layer query, first by uuids
