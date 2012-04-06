@@ -929,8 +929,9 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
     def maps(self):
         """Return a list of all the maps that use this layer"""
-        local_wms = "%swms" % settings.GEOSERVER_BASE_URL
-        return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name=self.typename).select_related()])
+        # @todo revist this - ows_url is not anything close to GEOSERVER_BASE_URL
+        local_wms = "/geoserver/wms"
+        return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name__endswith=self.name).select_related()])
 
     def metadata(self):
         return _get_wms(self.typename)[self.typename]
