@@ -597,7 +597,7 @@ def mapdetail(request,mapid):
     config = map.viewer_json(authenticated=request.user.is_authenticated())
     #config["tools"] = False;
     config = json.dumps(config)
-    layers = MapLayer.objects.filter(map=map.id) 
+    layers = set(MapLayer.objects.filter(map=map.id))
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
         'config': config, 
         'map': map,
