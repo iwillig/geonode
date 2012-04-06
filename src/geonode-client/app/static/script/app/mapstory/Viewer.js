@@ -36,7 +36,7 @@ mapstory.Viewer = Ext.extend(GeonodeViewer, {
                     width: 570,
                     defaults:{scale:'medium'}
                 }
-        }];
+            }];
         return tools;
     },
     initMapPanel: function(){
