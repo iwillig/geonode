@@ -33,7 +33,7 @@ function updateThumbnail(interactive) {
           if (interactive) {
             Ext.MessageBox.show({
                 title : "Thumbnail Updated",
-                msg : '<img src="' + thumbURL + "'?_='" + Math.random() + '">',
+                msg : '<img src="' + thumbURL + "?_=" + Math.random() + '">',
                 buttons: Ext.MessageBox.OK
             });
           }
