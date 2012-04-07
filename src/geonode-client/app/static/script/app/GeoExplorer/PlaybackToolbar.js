@@ -23,6 +23,9 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         this.defaults = Ext.applyIf(this.defaults || {},{
             scale: 'large'
         });
+        if(this.playbackActions.indexOf('legend')>-1){
+            this.layerManager = this.addLayerManager();    
+        }
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
     getAvailableTools:function(){
@@ -49,14 +52,18 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             },
             'togglesize' : {
                 iconCls:'gxp-icon-fullScreen',
-                handler: this.toggleMapSize,
-                disabled: true
+                toggleHandler: this.toggleMapSize,
+                enableToggle: true,
+                allowDepress: true,
+                disabled: true,
+                scope: this
             },
             'legend' : {
                 iconCls:'gxp-icon-legend',
-                handler: this.toggleLegend,
+                toggleHandler: this.toggleLegend,
                 tooltip: this.legendTooltip,
-                disabled: true
+                enableToggle: true,
+                scope: this
             },
             'prev' : {
                 iconCls: 'gxp-icon-prev',
@@ -69,7 +76,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 handler: this.loadComposser,
                 scope: this,
                 tooltip: this.editTooltip,
-                disabled: window.location.href.indexOf('view')>-1
+                disabled: window.location.href.match(/view|new/)!=null
             }
         });
 
@@ -83,7 +90,15 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         
     },
     toggleLegend:function(btn,pressed){
-        
+        if(!btn.layerPanel){
+            btn.layerPanel = this.buildLayerPanel();
+        }
+        if(pressed){
+            btn.layerPanel.show();
+            btn.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-5,30]);
+        }else{
+            btn.layerPanel.hide();
+        }
     },
     reverseStep:function(btn,pressed){
         var timeManager = this.control;
@@ -94,6 +109,29 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
     loadComposser: function(btn){
         window.location.href += '/view';
+    },
+    buildLayerPanel: function(btn, pressed){
+        var layerPanel = this.layerManager.output[0];
+        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-5,30]);
+        return layerPanel  
+    },
+    addLayerManager: function(){
+        var layerManager = new gxp.plugins.LayerManager({
+            id:'layermanager-tool',
+            outputTarget:'map',
+            outputConfig: {
+                hidden:true,
+                boxMaxWidth: 300,
+                plain: true,
+                border: false,
+                floating: true,
+                padding: 5,
+                shadow: false
+            }
+        });
+        layerManager.init(app);
+        layerManager.addOutput();
+        return layerManager;
     }
 });
 
