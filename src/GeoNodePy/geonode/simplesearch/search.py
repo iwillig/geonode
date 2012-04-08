@@ -74,7 +74,7 @@ class LayerNormalizer(Normalizer):
         return layer.date.isoformat()
     def populate(self, doc):
         layer = self.o
-        doc['owner'] = layer.metadata_author.name
+        doc['owner'] = layer.owner.username
         doc['thumb'] = layer.get_thumbnail_url()
         doc['last_modified'] = layer.date.isoformat()
         doc['id'] = layer.id
