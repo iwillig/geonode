@@ -597,11 +597,15 @@ def mapdetail(request,mapid):
     config = map.viewer_json(authenticated=request.user.is_authenticated())
     #config["tools"] = False;
     config = json.dumps(config)
-    layers = set(MapLayer.objects.filter(map=map.id))
+    # build unique set based on name and ows_url
+    layers = {}
+    for layer in MapLayer.objects.filter(map=map.id):
+        layers[(layer.ows_url,layer.name)] = layer
+    
     return render_to_response("maps/mapinfo.html", RequestContext(request, {
         'config': config, 
         'map': map,
-        'layers': layers,
+        'layers': layers.values(),
         'permissions_json': json.dumps(_perms_info(map, MAP_LEV_NAMES))
     }))
 
