@@ -1,6 +1,6 @@
 var set_thumbnail = Ext.get("set_thumbnail");
 function promptThumbnail() {
-    var img = '<img src="' + thumbURL + '">';
+    var img = '<img src="' + randURL() + '">';
     Ext.MessageBox.show({
        title:'Generate Thumbnail?',
        msg: 'This will generate a new thumbnail. The existing one is shown below.<div>' + img + '</div>',
@@ -14,8 +14,20 @@ function promptThumbnail() {
     });
 }
 
+function randURL() {
+   if (thumbURL.indexOf('?') >= 0) {
+       return thumbURL + "&_=" + Math.random();
+   }
+   return thumbURL + "?_=" + Math.random();
+}
+
 function updateThumbnail(interactive) {
     var map = Ext.get(Ext.query(".olMapViewport")[0]);
+    map = new Ext.Element(map.dom.cloneNode(true));
+    // walk through and strip controls
+    map.select('*').each(function(e,i) {
+        e.getAttribute('class').indexOf('olControl') >= 0 && e.remove();
+    });
     var html = Ext.DomHelper.markup({
         style: {
             width: map.getWidth(), height:map.getHeight()
@@ -33,7 +45,7 @@ function updateThumbnail(interactive) {
           if (interactive) {
             Ext.MessageBox.show({
                 title : "Thumbnail Updated",
-                msg : '<img src="' + thumbURL + "?_=" + Math.random() + '">',
+                msg : '<img src="' + randURL() + '">',
                 buttons: Ext.MessageBox.OK
             });
           }
