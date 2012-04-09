@@ -47,10 +47,6 @@ class MapNormalizer(Normalizer):
         return map.last_modified.isoformat()
     def populate(self, dict):
         map = self.o
-        try:
-            owner_name = Contact.objects.get(user=map.owner).name
-        except:
-            owner_name = map.owner.first_name + " " + map.owner.last_name
         # resolve any local layers and their keywords
         local_kw = [ l.keywords.split(' ') for l in map.local_layers if l.keywords]
         keywords = local_kw and list(set( reduce(lambda a,b: a+b, local_kw))) or []
@@ -60,11 +56,11 @@ class MapNormalizer(Normalizer):
             'abstract' : map.abstract,
             'topic' : '', # @todo
             'detail' : reverse('geonode.maps.views.map_controller', args=(map.id,)),
-            'owner' : owner_name,
+            'owner' : map.owner.username,
             'owner_detail' : reverse('profiles.views.profile_detail', args=(map.owner.username,)),
             'last_modified' : map.last_modified.isoformat(),
             '_type' : 'map',
-            '_display_type' : 'Map',
+            '_display_type' : 'MapStory',
             'thumb' : map.get_thumbnail_url(),
             'keywords' : keywords
         }
@@ -81,7 +77,7 @@ class LayerNormalizer(Normalizer):
         doc['_type'] = 'layer'
         doc['topic'] = layer.topic_category
         doc['storeType'] = layer.storeType
-        doc['_display_type'] = layer.display_type
+        doc['_display_type'] = 'StoryLayer'
         owner = layer.owner
         if owner:
             doc['owner_detail'] = reverse('profiles.views.profile_detail', args=(layer.owner.username,))
