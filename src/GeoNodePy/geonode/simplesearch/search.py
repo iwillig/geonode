@@ -10,6 +10,10 @@ from geonode.maps.views import _split_query
 # @hack - fix dependency by allowing injection
 from mapstory.models import Section
 
+# ugh - another dependency
+from agon_ratings.categories import category_value
+from agon_ratings.models import OverallRating
+
 import re
 
 _exclude_patterns = []
@@ -42,6 +46,18 @@ class Normalizer:
             self.dict['iid'] = self.iid
         return self.dict
     
+def rating(obj, category):
+    try:
+        ct = ContentType.objects.get_for_model(obj)
+        rating = OverallRating.objects.get(
+            object_id = obj.pk,
+            content_type = ct,
+            category = category_value(obj, category)
+        ).rating or 0
+    except OverallRating.DoesNotExist:
+        rating = 0
+    return str(rating)
+    
 class MapNormalizer(Normalizer):
     def last_modified(self,map):
         return map.last_modified.isoformat()
@@ -62,7 +78,8 @@ class MapNormalizer(Normalizer):
             '_type' : 'map',
             '_display_type' : 'MapStory',
             'thumb' : map.get_thumbnail_url(),
-            'keywords' : keywords
+            'keywords' : keywords,
+            'rating' : rating(map,'map')
         }
         
 class LayerNormalizer(Normalizer):
@@ -78,6 +95,8 @@ class LayerNormalizer(Normalizer):
         doc['topic'] = layer.topic_category
         doc['storeType'] = layer.storeType
         doc['_display_type'] = 'StoryLayer'
+        doc['rating'] = rating(layer,'layer')
+
         owner = layer.owner
         if owner:
             doc['owner_detail'] = reverse('profiles.views.profile_detail', args=(layer.owner.username,))
