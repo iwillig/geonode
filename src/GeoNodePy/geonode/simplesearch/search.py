@@ -16,6 +16,8 @@ from agon_ratings.models import OverallRating
 
 import re
 
+_date_fmt = lambda dt: dt.strftime('%b %d %Y')
+
 _exclude_patterns = []
 '''Settings API - allow regular expressions to filter our layer name results'''
 if hasattr(settings,'SIMPLE_SEARCH_EXCLUSIONS'):
@@ -74,7 +76,7 @@ class MapNormalizer(Normalizer):
             'detail' : reverse('geonode.maps.views.map_controller', args=(map.id,)),
             'owner' : map.owner.username,
             'owner_detail' : reverse('profiles.views.profile_detail', args=(map.owner.username,)),
-            'last_modified' : map.last_modified.isoformat(),
+            'last_modified' : _date_fmt(map.last_modified),
             '_type' : 'map',
             '_display_type' : 'MapStory',
             'thumb' : map.get_thumbnail_url(),
@@ -89,7 +91,7 @@ class LayerNormalizer(Normalizer):
         layer = self.o
         doc['owner'] = layer.owner.username
         doc['thumb'] = layer.get_thumbnail_url()
-        doc['last_modified'] = layer.date.isoformat()
+        doc['last_modified'] = _date_fmt(layer.date)
         doc['id'] = layer.id
         doc['_type'] = 'layer'
         doc['topic'] = layer.topic_category
