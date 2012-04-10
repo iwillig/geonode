@@ -486,7 +486,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 supportNoGeometry: true,
                 outputConfig: {
                     allowDelete: true,
-                    showDeleteAfterEdit: true,
                     width: 325,
                     editorPluginConfig: {
                         ptype: "gxp_editorform",
