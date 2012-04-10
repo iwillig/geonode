@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db.models import Q
+from django.template import defaultfilters
 
 from geonode.maps.models import *
 from geonode.maps.views import _metadata_search
@@ -71,7 +72,7 @@ class MapNormalizer(Normalizer):
         return {
             'id' : map.id,
             'title' : map.title,
-            'abstract' : map.abstract,
+            'abstract' : defaultfilters.linebreaks(map.abstract),
             'topic' : '', # @todo
             'detail' : reverse('geonode.maps.views.map_controller', args=(map.id,)),
             'owner' : map.owner.username,
@@ -95,6 +96,7 @@ class LayerNormalizer(Normalizer):
         doc['id'] = layer.id
         doc['_type'] = 'layer'
         doc['topic'] = layer.topic_category
+        doc['abstract'] = defaultfilters.linebreaks(layer.abstract)
         doc['storeType'] = layer.storeType
         doc['_display_type'] = 'StoryLayer'
         doc['rating'] = rating(layer,'layer')
