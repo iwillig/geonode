@@ -659,7 +659,7 @@ def view(request, mapid):
     The view that returns the map composer opened to
     the map with the given map ID.
     """
-    map = Map.objects.get(pk=mapid)
+    map = get_object_or_404(Map, pk=mapid)
     if not request.user.has_perm('maps.view_map', obj=map):
         return HttpResponse(loader.render_to_string('401.html', 
             RequestContext(request, {'error_message': 
