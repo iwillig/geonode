@@ -76,7 +76,7 @@ class MapNormalizer(Normalizer):
             'topic' : '', # @todo
             'detail' : reverse('geonode.maps.views.map_controller', args=(map.id,)),
             'owner' : map.owner.username,
-            'owner_detail' : reverse('profiles.views.profile_detail', args=(map.owner.username,)),
+            'owner_detail' : reverse('about_storyteller', args=(map.owner.username,)),
             'last_modified' : _date_fmt(map.last_modified),
             '_type' : 'map',
             '_display_type' : 'MapStory',
@@ -103,7 +103,7 @@ class LayerNormalizer(Normalizer):
 
         owner = layer.owner
         if owner:
-            doc['owner_detail'] = reverse('profiles.views.profile_detail', args=(layer.owner.username,))
+            doc['owner_detail'] = reverse('about_storyteller', args=(layer.owner.username,))
         return doc
         
 def _get_map_results(results, query, kw):
