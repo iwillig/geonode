@@ -163,6 +163,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: "main.tbar",
                 toggleGroup: this.toggleGroup,
                 layerParams: ['TIME'],
+                controlOptions: {
+                    hover: true
+                },
                 outputConfig: {width: 400, height: 300}
             }, {
                 ptype: "gxp_playback",
