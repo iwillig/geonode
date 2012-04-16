@@ -53,6 +53,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             'togglesize' : {
                 iconCls:'gxp-icon-fullScreen',
                 toggleHandler: this.toggleMapSize,
+                hidden: this.layerManager == null,
                 enableToggle: true,
                 allowDepress: true,
                 disabled: true,
@@ -60,6 +61,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             },
             'legend' : {
                 iconCls:'gxp-icon-legend',
+                hidden: this.layerManager == null,
                 toggleHandler: this.toggleLegend,
                 tooltip: this.legendTooltip,
                 enableToggle: true,
@@ -74,6 +76,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             'edit' : {
                 iconCls: 'gxp-icon-editMap',
                 handler: this.loadComposser,
+                hidden: this.layerManager == null,
                 scope: this,
                 tooltip: this.editTooltip,
                 disabled: window.location.href.match(/view|new/)!=null
@@ -119,7 +122,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         for (var key in app.tools) {
             var tool = app.tools[key];
             if (tool.ptype === "gxp_layermanager") {
-                return tool;
+                return null;
             }
         }
         var layerManager = new gxp.plugins.LayerManager({
