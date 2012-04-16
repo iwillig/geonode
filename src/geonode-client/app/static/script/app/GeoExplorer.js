@@ -533,6 +533,14 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 Ext.each(defaultTools,function(cfg){
                     if(ptypes.indexOf(cfg.ptype)==-1){
                         config.tools.push(cfg);
+                    } else {
+                        for (var key in config.tools) {
+                            var tool = config.tools[key];
+                            if (tool.ptype === cfg.ptype) {
+                                Ext.applyIf(tool, cfg);
+                                break;
+                            }
+                        }
                     }
                 });
                 this.mapID = config.id;
