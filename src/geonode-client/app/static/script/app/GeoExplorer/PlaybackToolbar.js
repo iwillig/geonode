@@ -113,9 +113,15 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     buildLayerPanel: function(btn, pressed){
         var layerPanel = this.layerManager.output[0];
         layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-5,30]);
-        return layerPanel  
+        return layerPanel;
     },
     addLayerManager: function(){
+        for (var key in app.tools) {
+            var tool = app.tools[key];
+            if (tool.ptype === "gxp_layermanager") {
+                return tool;
+            }
+        }
         var layerManager = new gxp.plugins.LayerManager({
             id:'layermanager-tool',
             outputTarget:'map',
