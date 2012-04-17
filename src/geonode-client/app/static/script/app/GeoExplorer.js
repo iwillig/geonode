@@ -2,6 +2,9 @@
  * Copyright (c) 2009 The Open Planning Project
  */
 
+// Allow negative dates before BC
+OpenLayers.Date.dateRegEx = /^(?:(-?\d{4})(?:-(\d{2})(?:-(\d{2}))?)?)?(?:(?:T(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)(Z|(?:[+-]\d{1,2}(?::(\d{2}))?)))|Z)?$/;
+
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
