@@ -55,7 +55,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 toggleHandler: this.toggleMapSize,
                 enableToggle: true,
                 allowDepress: true,
-                disabled: true,
+                disabled: window.location.href.match(/view|new/)!=null,
                 scope: this
             },
             'legend' : {
@@ -87,7 +87,36 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         return items;
     },
     toggleMapSize: function(btn,pressed){
-        
+        var main = Ext.get('main');
+        if(pressed){
+            if (!app.portal.originalSize) {
+                app.portal.originalSize = app.portal.getSize();
+                app.portal.originalXY = app.portal.getPosition();
+                app.portal.on({'resize':function(cmp,w,h){
+                    this.el.alignTo(app.mapPanel.el, 'bl-bl', [0,-50]);
+                },scope:this, delay:250});
+                app.portal.el.setStyle({'z-index':1000});
+            }
+            var headerHeight = Ext.get('header').getHeight() + Ext.get('top-crossbar').getHeight() + Ext.get('crossbar').getHeight();
+            var fullBox = {
+                width: screen.availWidth,
+                height: (screen.availHeight - headerHeight)
+            };
+            app.portal.setSize(fullBox.width, fullBox.height);
+            app.portal.el.alignTo(main,'tl-tl');
+            app.mapPanel.addClass('full-mapview');
+            btn.btnEl.removeClass('gxp-icon-fullScreen');
+            btn.btnEl.addClass('gxp-icon-smallScreen');
+            btn.setTooltip(this.smallSizeTooltip);   
+        } else {
+            app.portal.setSize(app.portal.originalSize);
+            app.portal.setPosition(app.portal.originalXY[0],app.portal.originalXY[1]);
+            app.mapPanel.removeClass('full-mapview');
+            btn.btnEl.removeClass('gxp-icon-smallScreen');
+            btn.btnEl.addClass('gxp-icon-fullScreen');
+            btn.setTooltip(this.fullSizeTooltip);
+        }
+        btn.el.removeClass('x-btn-pressed');
     },
     toggleLegend:function(btn,pressed){
         if(!btn.layerPanel){
