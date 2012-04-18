@@ -6,13 +6,18 @@
 Ext.ns("GeoExplorer");
 
 GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
-    playbackMode: 'ranged',
+    playbackMode: 'ranged',    
     /* i18n */
     prevTooltip: 'Reverse One Frame',
+    
     fullSizeTooltip: 'Fullscreen',
+    
     smallSizeTooltip: 'Back to Smaller Size',
+    
     legendTooltip: 'Show Map Legend',
+    
     editTooltip: 'Edit This Map',
+    
     initComponent: function() {
         if(!this.playbackActions){
             this.playbackActions = [
@@ -28,6 +33,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         }
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
+    
     getAvailableTools:function(){
         var tools = GeoExplorer.PlaybackToolbar.superclass.getAvailableTools.call(this);        
         Ext.apply(tools, {
@@ -56,7 +62,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 hidden: this.layerManager == null,
                 enableToggle: true,
                 allowDepress: true,
-                disabled: window.location.href.match(/view|new/)!=null,
+                //disabled: true,
                 scope: this
             },
             'legend' : {
@@ -85,42 +91,53 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
 
         return tools;
     },
+    
     buildPlaybackItems:function(){
         var items = GeoExplorer.PlaybackToolbar.superclass.buildPlaybackItems.call(this);
         return items;
     },
+    
     toggleMapSize: function(btn,pressed){
         var main = Ext.get('main');
-        if(pressed){
-            if (!app.portal.originalSize) {
+        if(pressed) {
+            if(!app.portal.originalSize) {
                 app.portal.originalSize = app.portal.getSize();
-                app.portal.originalXY = app.portal.getPosition();
-                app.portal.on({'resize':function(cmp,w,h){
-                    this.el.alignTo(app.mapPanel.el, 'bl-bl', [0,-50]);
-                },scope:this, delay:250});
-                app.portal.el.setStyle({'z-index':1000});
+                var relpos = this.getPosition(true);
+                this.offsets = [relpos[0], relpos[1] + this.getHeight() - app.mapPanel.getHeight()];
+                app.portal.on({
+                    'resize' : function(cmp, w, h) {
+                        this.el.alignTo(app.mapPanel.el, 'bl-bl', this.offsets);
+                    },
+                    scope : this,
+                    delay : 250
+                });
+                app.portal.el.setStyle({'z-index' : 1000});
+                this.el.setStyle({'z-index' : 1050});
             }
             var headerHeight = Ext.get('header').getHeight() + Ext.get('top-crossbar').getHeight() + Ext.get('crossbar').getHeight();
             var fullBox = {
-                width: screen.availWidth,
-                height: (screen.availHeight - headerHeight)
+                width : window.innerWidth * 0.98,
+                height : window.innerHeight - headerHeight + this.offsets[1]
             };
             app.portal.setSize(fullBox.width, fullBox.height);
-            app.portal.el.alignTo(main,'tl-tl');
+            app.portal.el.alignTo(main, 'tl-tl');
             app.mapPanel.addClass('full-mapview');
             btn.btnEl.removeClass('gxp-icon-fullScreen');
             btn.btnEl.addClass('gxp-icon-smallScreen');
-            btn.setTooltip(this.smallSizeTooltip);   
-        } else {
+            btn.setTooltip(this.smallSizeTooltip);
+        }
+        else {
             app.portal.setSize(app.portal.originalSize);
-            app.portal.setPosition(app.portal.originalXY[0],app.portal.originalXY[1]);
+            app.portal.setPosition(0, 0);
             app.mapPanel.removeClass('full-mapview');
             btn.btnEl.removeClass('gxp-icon-smallScreen');
             btn.btnEl.addClass('gxp-icon-fullScreen');
             btn.setTooltip(this.fullSizeTooltip);
         }
         btn.el.removeClass('x-btn-pressed');
+        this.el.anchorTo(app.portal.el, 'bl-bl', this.offsets);
     },
+    
     toggleLegend:function(btn,pressed){
         if(!btn.layerPanel){
             btn.layerPanel = this.buildLayerPanel();
@@ -132,6 +149,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             btn.layerPanel.hide();
         }
     },
+    
     reverseStep:function(btn,pressed){
         var timeManager = this.control;
         timeManager.stop();
@@ -139,14 +157,17 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         timeManager.tick();
         timeManager.step *= -1;
     },
+    
     loadComposser: function(btn){
         window.location.href += '/view';
     },
+    
     buildLayerPanel: function(btn, pressed){
         var layerPanel = this.layerManager.output[0];
         layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-5,30]);
         return layerPanel;
     },
+    
     addLayerManager: function(){
         for (var key in app.tools) {
             var tool = app.tools[key];
