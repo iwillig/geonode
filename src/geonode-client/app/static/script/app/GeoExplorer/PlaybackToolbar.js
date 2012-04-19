@@ -59,7 +59,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             'togglesize' : {
                 iconCls:'gxp-icon-fullScreen',
                 toggleHandler: this.toggleMapSize,
-                hidden: this.layerManager == null,
+                hidden: this.layerManager == null || window.location.href.indexOf('data')>-1,
                 enableToggle: true,
                 allowDepress: true,
                 scope: this
@@ -84,7 +84,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 hidden: this.layerManager == null,
                 scope: this,
                 tooltip: this.editTooltip,
-                disabled: window.location.href.match(/view|new/)!=null
+                disabled: window.location.href.match(/view|new|data/)!=null
             }
         });
 
@@ -124,6 +124,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             btn.btnEl.removeClass('gxp-icon-fullScreen');
             btn.btnEl.addClass('gxp-icon-smallScreen');
             btn.setTooltip(this.smallSizeTooltip);
+            Ext.getBody().setStyle({overflow:'hidden'});
         }
         else {
             app.portal.setSize(app.portal.originalSize);
@@ -132,9 +133,11 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             btn.btnEl.removeClass('gxp-icon-smallScreen');
             btn.btnEl.addClass('gxp-icon-fullScreen');
             btn.setTooltip(this.fullSizeTooltip);
+            Ext.getBody().setStyle({overflow:''});
         }
         btn.el.removeClass('x-btn-pressed');
         this.el.anchorTo(app.portal.el, 'bl-bl', this.offsets);
+        window.scrollTo(0,0);
     },
     
     toggleLegend:function(btn,pressed){
