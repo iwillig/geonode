@@ -22,11 +22,10 @@ function randURL() {
 }
 
 function updateThumbnail(interactive) {
-    var map = Ext.get(Ext.query(".olMapViewport")[0]);
-    map = new Ext.Element(map.dom.cloneNode(true));
-    // walk through and strip controls
+    var map = new Ext.Element(Ext.query(".olMapViewport")[0]);
+    // walk through and hide controls
     map.select('*').each(function(e,i) {
-        e.getAttribute('class').indexOf('olControl') >= 0 && e.remove();
+        e.getAttribute('class').indexOf('olControl') >= 0 && e.hide();
     });
     var html = Ext.DomHelper.markup({
         style: {
@@ -50,6 +49,10 @@ function updateThumbnail(interactive) {
             });
           }
       }
+    });
+    // walk through and show controls
+    map.select('*').each(function(e,i) {
+        e.getAttribute('class').indexOf('olControl') >= 0 && e.show();
     });
 }
 if (set_thumbnail) {
