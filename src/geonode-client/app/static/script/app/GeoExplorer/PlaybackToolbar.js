@@ -62,7 +62,6 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
                 hidden: this.layerManager == null,
                 enableToggle: true,
                 allowDepress: true,
-                //disabled: true,
                 scope: this
             },
             'legend' : {
