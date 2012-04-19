@@ -18,6 +18,7 @@ from django.conf import settings
 from django.template import RequestContext, loader
 from django.utils.translation import ugettext as _
 from django.views.decorators.cache import never_cache
+from django.core.cache import cache
 import json
 import math
 import httplib2 
@@ -1205,6 +1206,10 @@ def layer_acls(request):
                                 status=401,
                                 mimetype="text/plain")
 
+    cache_key = 'layer_acls_%s' % acl_user.id
+    perms = cache.get(cache_key)
+    if perms is not None:
+        return HttpResponse(perms, mimetype="application/json")
             
     all_readable = set()
     all_writable = set()
@@ -1229,8 +1234,11 @@ def layer_acls(request):
         'is_superuser':  acl_user.is_superuser,
         'is_anonymous': acl_user.is_anonymous()
     }
+    
+    result = json.dumps(result)
+    cache.set(cache_key, result, 120)
 
-    return HttpResponse(json.dumps(result), mimetype="application/json")
+    return HttpResponse(result, mimetype="application/json")
 
 
 def _split_query(query):
