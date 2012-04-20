@@ -2,6 +2,9 @@
  * Copyright (c) 2009 The Open Planning Project
  */
 
+// Allow negative dates before BC
+OpenLayers.Date.dateRegEx = /^(?:(-?\d{4})(?:-(\d{2})(?:-(\d{2}))?)?)?(?:(?:T(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)(Z|(?:[+-]\d{1,2}(?::(\d{2}))?)))|Z)?$/;
+
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
@@ -163,6 +166,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: "main.tbar",
                 toggleGroup: this.toggleGroup,
                 layerParams: ['TIME'],
+                controlOptions: {
+                    hover: true
+                },
                 outputConfig: {width: 400, height: 300}
             }, {
                 ptype: "gxp_playback",
@@ -530,6 +536,14 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 Ext.each(defaultTools,function(cfg){
                     if(ptypes.indexOf(cfg.ptype)==-1){
                         config.tools.push(cfg);
+                    } else {
+                        for (var key in config.tools) {
+                            var tool = config.tools[key];
+                            if (tool.ptype === cfg.ptype) {
+                                Ext.applyIf(tool, cfg);
+                                break;
+                            }
+                        }
                     }
                 });
                 this.mapID = config.id;
