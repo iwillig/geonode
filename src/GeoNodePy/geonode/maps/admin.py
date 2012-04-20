@@ -1,6 +1,7 @@
 from geonode.maps.models import Map, Layer, MapLayer, Contact, ContactRole, Role, Upload
 from django.contrib.contenttypes.models import ContentType
 from django.contrib import admin
+from django import forms
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
@@ -18,16 +19,19 @@ class ContactRoleAdmin(admin.ModelAdmin):
     list_editable = ('contact', 'layer', 'role')
 
 class MapAdmin(admin.ModelAdmin):
+    list_display = ('id','title','owner')
+    list_display_links = ('id',)
+    list_editable = ('owner',)
     inlines = [MapLayerInline,]
 
 class ContactAdmin(admin.ModelAdmin):
     inlines = [ContactRoleInline]
 
 class LayerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'typename','service_type','title', 'date', 'topic_category')
+    list_display = ('id', 'typename','service_type','title', 'date', 'owner')
     list_display_links = ('id',)
-    list_editable = ('title', 'topic_category')
-    list_filter  = ('date', 'date_type', 'constraints_use', 'topic_category')
+    list_editable = ('title', 'owner')
+    list_filter  = ('date', 'date_type', 'constraints_use', 'owner')
     filter_horizontal = ('contacts',)
     date_hierarchy = 'date'
     readonly_fields = ('uuid', 'typename', 'workspace') 
