@@ -1,7 +1,10 @@
+/** 
+ * @requires GeonodeViewer.js
+ */
 Ext.ns('mapstory');
 /**
  * Constructor: mapstory.LayerViewer
- * Create a new MapStory LayerViewer application.
+ * Create a new MapStory Viewer application.
  *
  * Parameters:
  * config - {Object} Optional application configuration properties.
@@ -21,6 +24,41 @@ Ext.ns('mapstory');
  */
 mapstory.LayerViewer = Ext.extend(GeonodeViewer, {
     
+    getDefaultTools: function(config, toggleGroup){
+        var tools = [{
+                ptype: "gxp_playback",
+                id: "playback-tool",
+                //outputTarget: "map-bbar",
+                outputTarget: "map",
+                looped: true,
+                outputConfig:{
+                    xtype: 'app_playbacktoolbar',
+                    width: 570,
+                    defaults:{scale:'medium'},
+                    playbackActions: [
+                        "play","slider","loop","fastforward","prev","next",
+                        {xtype: "tbspacer"},"legend",{xtype:"tbfill"},
+                        "settings",{xtype: "tbspacer"},"togglesize"]
+                }
+            }];
+        return tools;
+    },
+    initMapPanel: function(){
+        this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
+            {}, {
+                region: 'center',
+                ref: "../main"
+            });
+        mapstory.LayerViewer.superclass.initMapPanel.call(this);
+    },
+    initPortal: function(){
+        var portalConfig = {
+            height: 450//, //512 + 55 bbar - 100 -> rounded
+            //renderTo: "embedded_map"
+        };
+        this.portalConfig = (this.portalConfig) ? Ext.applyIf(this.portalConfig,portalConfig) : portalConfig;
+        mapstory.LayerViewer.superclass.initPortal.call(this);        
+    }
 });
 
 Ext.reg('ms_layerviewer',mapstory.LayerViewer);

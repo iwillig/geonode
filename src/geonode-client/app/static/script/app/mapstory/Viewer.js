@@ -1,5 +1,5 @@
 /** 
- * @requires GeonodeViewer.js
+ * @requires mapstory/LayerViewer.js
  */
 Ext.ns('mapstory');
 /**
@@ -22,13 +22,12 @@ Ext.ns('mapstory');
  * name - {String} Required WMS layer name.
  * title - {String} Optional title to display for layer.
  */
-mapstory.Viewer = Ext.extend(GeonodeViewer, {
+mapstory.Viewer = Ext.extend(mapstory.LayerViewer, {
     
     getDefaultTools: function(config, toggleGroup){
         var tools = [{
                 ptype: "gxp_playback",
                 id: "playback-tool",
-                //outputTarget: "map-bbar",
                 outputTarget: "map",
                 looped: true,
                 outputConfig:{
@@ -40,18 +39,9 @@ mapstory.Viewer = Ext.extend(GeonodeViewer, {
         return tools;
     },
     initMapPanel: function(){
-        this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
-            {}, {
-                region: 'center',
-                ref: "../main"
-            });
         mapstory.Viewer.superclass.initMapPanel.call(this);
     },
     initPortal: function(){
-        this.portalConfig = {
-            height: 450, //512 + 55 bbar - 100 -> rounded
-            renderTo: "embedded_map"
-        };
         mapstory.Viewer.superclass.initPortal.call(this);        
     }
 });
