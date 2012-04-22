@@ -554,7 +554,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                     }
                     this.createLayerRecord({
                         source: startSourceId,
-                        name: fromLayer,
+                        name: fromLayer
                     }, function(record) {
                         this.mapPanel.layers.add([record]);
                         this.mapPanel.map.zoomToExtent(record.getLayer().maxExtent);
