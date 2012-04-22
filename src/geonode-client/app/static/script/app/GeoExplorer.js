@@ -2,9 +2,6 @@
  * Copyright (c) 2009 The Open Planning Project
  */
 
-// Allow negative dates before BC
-OpenLayers.Date.dateRegEx = /^(?:(-?\d{4})(?:-(\d{2})(?:-(\d{2}))?)?)?(?:(?:T(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)(Z|(?:[+-]\d{1,2}(?::(\d{2}))?)))|Z)?$/;
-
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
@@ -344,7 +341,19 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
         
+        //allow dynamic testing of client side techniques
+        var tests = OpenLayers.Util.getParameters(location.href).tests || [];
+        if(!Ext.isArray(tests)){
+            tests = [tests];
+        }
+        this.tests = {
+            dropFrames: tests.indexOf('1')>-1,
+            forceTiles: tests.indexOf('2')>-1,
+            delayTiles: tests.indexOf('3')>-1
+        };
+
         GeoExplorer.superclass.constructor.apply(this, [config]);
+        
     },
     
     displayXHRTrouble: function(response) {
@@ -594,6 +603,48 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         GeoExplorer.superclass.initMapPanel.apply(this, arguments);
         // there are serialization issues with controls, delete them
         delete this.initialConfig.map.controls;
+        
+        //add listeners to layer store (doesn't exist until after the superclass's function is called)
+        this.mapPanel.layers.on({
+            "add": function(store, records) {
+                var layer;
+                for (var i=records.length-1; i>= 0; i--) {
+                    layer = records[i].getLayer();
+                    if(this.tests.forceTiles && !layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
+                        layer.addOptions({
+                            singleTile: false,
+                            transitionEffect: 'resize'
+                        });
+                        if(layer.params){layer.params.TILED=true;}
+                    }
+                    if(this.tests.delayTiles && !layer.isBaseLayer){
+                        layer.events.on({
+                            'tileloaded':function(evt){
+                                var img = evt.tile.imgDiv;
+                                img.style.visibility = 'hidden';
+                                img.style.opacity = 0;
+                            },
+                            'loadend':function(evt){
+                                var grid = evt.object.grid;
+                                var layer = evt.object;
+                                for(var i = 0, rlen = grid.length;i<rlen;i++){
+                                    for(var j = 0, clen = grid[i].length; j<clen; j++){
+                                        var img = grid[i][j].imgDiv;
+                                        if(img){
+                                            img.style.visibility = 'inherit';
+                                            img.style.opacity = layer.opacity;
+                                        } 
+                                    }
+                                }
+                            },
+                            scope: layer
+                        });
+                    }
+                }
+            },
+            scope: this
+        });
+        
     },
     
     /**

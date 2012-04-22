@@ -142,7 +142,18 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
         
-        GeoExplorer.superclass.constructor.apply(this, [config]);
+        var tests = OpenLayers.Util.getParameters(location.href).tests || [];
+        if(!Ext.isArray(tests)){
+            tests = [tests];
+        }
+        
+        GeonodeViewer.superclass.constructor.apply(this, [config]);
+
+        this.tests = {
+            dropFrames: tests.indexOf('1')>-1,
+            forceTiles: tests.indexOf('2')>-1,
+            delayTiles: tests.indexOf('3')>-1
+        };
     },
     
     loadConfig: function(config, callback){
@@ -211,7 +222,50 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         } else {
             this.initialConfig.map.controls = (this.initialConfig.map.controls || []).concat(defaultControls);
         }
+        //call parent function
         GeonodeViewer.superclass.initMapPanel.call(this);
+        
+        //add listeners to layer store (doesn't exist until after the superclass's function is called)
+        this.mapPanel.layers.on({
+            "add": function(store, records) {
+                // check selected layer status
+                var layer;
+                for (var i=records.length-1; i>= 0; i--) {
+                    layer = records[i].getLayer();
+                    if(this.tests.forceTiles && !layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
+                        layer.addOptions({
+                            singleTile: false,
+                            transitionEffect: 'resize'
+                        });
+                        if(layer.params){layer.params.TILED=true;}
+                    }
+                    if(this.tests.delayTiles && !layer.isBaseLayer){
+                        layer.events.on({
+                            'tileloaded':function(evt){
+                                var img = evt.tile.imgDiv;
+                                img.style.visibility = 'hidden';
+                                img.style.opacity = 0;
+                            },
+                            'loadend':function(evt){
+                                var grid = evt.object.grid;
+                                var layer = evt.object;
+                                for(var i = 0, rlen = grid.length;i<rlen;i++){
+                                    for(var j = 0, clen = grid[i].length; j<clen; j++){
+                                        var img = grid[i][j].imgDiv;
+                                        if(img){
+                                            img.style.visibility = 'inherit';
+                                            img.style.opacity = layer.opacity;
+                                        } 
+                                    }
+                                }
+                            },
+                            scope: layer
+                        });
+                    }
+                }
+            },
+            scope: this
+        });
     },
     /**
      * Method: initPortal
@@ -500,7 +554,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                     }
                     this.createLayerRecord({
                         source: startSourceId,
-                        name: fromLayer
+                        name: fromLayer,
                     }, function(record) {
                         this.mapPanel.layers.add([record]);
                         this.mapPanel.map.zoomToExtent(record.getLayer().maxExtent);
