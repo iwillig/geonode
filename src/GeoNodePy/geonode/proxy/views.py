@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def proxy(request):
-    if 'url' not in request.GET:
+    if 'url' not in request.GET or not request.GET['url']:
         return HttpResponse(
                 "The proxy service requires a URL-encoded URL as a parameter.",
                 status=400,
