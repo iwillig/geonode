@@ -245,9 +245,12 @@ def setup_geonode_client(options):
     if not static.exists():
         static.mkdir()
 
-    src_zip = path("./src/geonode-client/build/geonode-client.zip")
-
+    with pushd("src/geonode-client/"):
+        sh("mvn clean compile")
+    
+    src_zip = "src/geonode-client/build/geonode-client.zip"
     zip_extractall(zipfile.ZipFile(src_zip), static)
+
 
 @task
 def sync_django_db(options):
