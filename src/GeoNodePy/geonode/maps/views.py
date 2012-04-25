@@ -884,7 +884,6 @@ GENERIC_UPLOAD_ERROR = _("There was an error while attempting to upload your dat
 Please try again, or contact and administrator if the problem continues.")
 
 @login_required
-@csrf_exempt
 def upload_layer(request, step=None):
     """Allow use of the old uploader and the new one. This is done by the
     USE_UPLOADER setting. The optional step will be ignored by the old uploader.
