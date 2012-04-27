@@ -674,7 +674,7 @@ def embed(request, mapid=None):
         DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
         config = DEFAULT_MAP_CONFIG
     else:
-        map = Map.objects.get(pk=mapid)
+        map = get_object_or_404(Map, pk=mapid)
         if not request.user.has_perm('maps.view_map', obj=map):
             return HttpResponse(_("Not Permitted"), status=401, mimetype="text/plain")
         
