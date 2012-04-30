@@ -610,12 +610,17 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 var layer;
                 for (var i=records.length-1; i>= 0; i--) {
                     layer = records[i].getLayer();
-                    if(this.tests.forceTiles && !layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
-                        layer.addOptions({
-                            singleTile: false,
-                            transitionEffect: 'resize'
-                        });
-                        if(layer.params){layer.params.TILED=true;}
+                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
+                        if(this.tests.forceTiles){
+                            layer.addOptions({
+                                singleTile: false,
+                                transitionEffect: 'resize'
+                            });
+                            if(layer.params){layer.params.TILED = true;}
+                        }
+                        else if(layer.params){
+                            layer.params.TILED = false;
+                        }
                     }
                     if(this.tests.delayTiles && !layer.isBaseLayer){
                         layer.events.on({
