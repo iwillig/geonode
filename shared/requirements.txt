@@ -8,8 +8,7 @@ django-extensions
 httplib2
 psycopg2
 -e git+https://github.com/opengeo/gsconfig.py.git#egg=gsconfig.py
-#django-registration
-https://bitbucket.org/ubernostrum/django-registration/get/d36a38202ee3.zip
+django-registration
 django-profiles
 -e git+https://github.com/ericflo/django-avatar.git#egg=avatar
 django-staticfiles
