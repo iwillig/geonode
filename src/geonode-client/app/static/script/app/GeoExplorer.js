@@ -709,6 +709,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     var source = this.layerSources[startSourceId];
                     if(source.lazy){
                         lyrParts = fromLayer.split(':');
+                        //fix layer name since Geoserver 2.2+ returns only local names when using virtual services
+                        fromLayer = lyrParts[1];
                         source.store.url = 
                             source.store.url.replace(/(geoserver)(\/.*?)(wms)/,
                                 function(str,gs,mid,srv){return [gs].concat(lyrParts,srv).join('/');}
