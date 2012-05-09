@@ -934,7 +934,12 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name__endswith=self.name).select_related()])
 
     def metadata(self):
-        return _get_wms(self.typename)[self.typename]
+        wms = _get_wms(self.typename)
+        # using virtual services, allow for check using missing namespace
+        try:
+            return wms[self.typename]
+        except:
+            return wms[self.name]
 
     def metadata_csw(self):
         global _csw
@@ -1181,7 +1186,10 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         """Return tuple of min/max string datetime or None if not available."""
         wms = _get_wms(self.typename)
         # times is a list of time specs already split by comma
-        times = wms[self.typename].timepositions
+        try:
+            times = wms[self.typename].timepositions
+        except:
+            times = wms[self.name].timepositions
         result = None
         # from the spec - possible encodings:
         # 1 value A single value.
