@@ -10,10 +10,14 @@ from geonode.maps.views import _split_query
 
 # @hack - fix dependency by allowing injection
 from mapstory.models import Topic
+from mapstory.models import ContactDetail
 
 # ugh - another dependency
 from agon_ratings.categories import category_value
 from agon_ratings.models import OverallRating
+
+# and another
+from avatar.util import get_default_avatar_url
 
 import re
 import operator
@@ -39,9 +43,11 @@ class Normalizer:
         self.o = o
         self.data = data
         self.dict = None
-        self.title = o.title
+        self.title = self.title(o)
         self.last_modified = self.last_modified(o)
         self.iid = None
+    def title(self,o):
+        return o.title
     def last_modified(self,o):
         abstract
     def as_dict(self):
@@ -110,6 +116,46 @@ class LayerNormalizer(Normalizer):
         if owner:
             doc['owner_detail'] = reverse('about_storyteller', args=(layer.owner.username,))
         return doc
+    
+_default_avatar_url = get_default_avatar_url()
+class OwnerNormalizer(Normalizer):
+    def title(self,contact):
+        return contact.user.username
+    def last_modified(self,contact):
+        return contact.user.date_joined
+    def populate(self, doc):
+        contact = self.o
+        user = contact.user
+        try:
+            doc['thumb'] = user.avatar_set.all()[0].avatar_url(80)
+        except IndexError:
+            doc['thumb'] = _default_avatar_url
+        doc['id'] = user.username
+        doc['title'] = user.get_full_name() or user.username
+        doc['organization'] = contact.organization
+        doc['abstract'] = contact.blurb
+        doc['last_modified'] = _date_fmt(self.last_modified)
+        doc['detail'] = reverse('about_storyteller', args=(user.username,))
+        doc['layer_cnt'] = Layer.objects.filter(owner = user).count()
+        doc['map_cnt'] = Map.objects.filter(owner = user).count()
+        doc['_type'] = 'owner'
+        doc['_display_type'] = 'StoryTeller'
+        return doc
+    
+def _get_owner_results(results, query, kw):
+    # make sure all contacts have a user attached
+    q = ContactDetail.objects.select_related().filter(user__isnull=False)
+    
+    if query:
+        q = q.filter(Q(user__username__icontains=query) |
+            Q(user__first_name__icontains=query) |
+            Q(user__last_name__icontains=query) |
+            Q(blurb__icontains=query) |
+            Q(organization__icontains=query) |
+            Q(biography__icontains=query)
+        )
+    
+    results.extend( map(OwnerNormalizer,q))
         
 def _get_map_results(results, query, kw):
     bysection = kw.get('bysection', None)
@@ -117,6 +163,10 @@ def _get_map_results(results, query, kw):
         map_query = Map.objects.filter(topic__in=Topic.objects.filter(section__id=bysection))
     else:
         map_query = Map.objects.all()
+        
+    byowner = kw.get('byowner', None)
+    if byowner:
+        map_query = map_query.filter(owner__username=byowner)
 
     if query:
         map_query = map_query.filter(_build_kw_query(query))
@@ -128,7 +178,7 @@ def _get_map_results(results, query, kw):
             layers_with_kw = Layer.objects.filter(_build_kw_only_query(bykw)).values('typename')
             map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
             map_query = map_query.filter(id__in=map_layers_with)
-
+    print map_query.query
     results.extend( map(MapNormalizer,map_query) )
     
     
@@ -173,6 +223,10 @@ def _get_layer_results(results, query, kw):
         if bykw:
             q = q.filter(_build_kw_only_query(bykw))
             
+    byowner = kw.get('byowner', None)
+    if byowner:
+        q = q.filter(owner__username=byowner)
+            
     bysection = kw.get('bysection', None)
     if bysection:
         q = q.filter(topic__in=Topic.objects.filter(section__id=bysection))
@@ -201,10 +255,15 @@ def _get_layer_results(results, query, kw):
 def combined_search_results(query, kw):
     results = []
     
-    if 'bytype' not in kw or kw['bytype'] == u'map':
+    bytype = kw.get('bytype', None)
+    
+    if bytype is None or bytype == u'map':
         _get_map_results(results, query, kw)
         
-    if 'bytype' not in kw or kw['bytype'] != u'map':
+    if bytype is None or bytype == u'layer':
         _get_layer_results(results, query, kw)
+        
+    if bytype is None or bytype == u'owner':
+        _get_owner_results(results, query, kw)
         
     return results
