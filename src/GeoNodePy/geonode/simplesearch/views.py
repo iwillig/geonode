@@ -52,8 +52,21 @@ def new_search_page(request, **kw):
         'users' : User.objects.all(),
         'topics' : topic_cnts,
         'sections' : Section.objects.all(),
-        'keywords' : Layer.objects.gn_catalog.get_all_keywords()
+        'keywords' : get_all_keywords()
     }))
+    
+def get_all_keywords():
+    if settings.USE_GEONETWORK:
+        return Layer.objects.gn_catalog.get_all_keywords()
+    allkw = {}
+    for l in Layer.objects.exclude(keywords='').exclude(keywords__isnull=True).values_list('keywords',flat=True):
+        kw = l.split()
+        for k in kw:
+            if k not in allkw:
+                allkw[k] = 1
+            else:
+                allkw[k] += 1
+    return allkw
 
 def new_search_api(request):
     from time import time
@@ -151,9 +164,12 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
     # careful when creating lambda or function filters inline like this
     # as multiple filters cannot use the same local variable or they
     # will overwrite each other
-    if 'bykw' in filters:
-        kw = filters['bykw']
-        filter_fun.append(lambda r: 'keywords' in r.as_dict() and kw in r.as_dict()['keywords'])
+    
+    # this is a cruddy, in-memory search since there is no database relationship
+    if settings.USE_GEONETWORK:
+        if 'bykw' in filters:
+            kw = filters['bykw']
+            filter_fun.append(lambda r: 'keywords' in r.as_dict() and kw in r.as_dict()['keywords'])
     
     for fun in filter_fun:
         results = filter(fun,results)

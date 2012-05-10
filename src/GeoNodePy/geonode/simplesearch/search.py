@@ -9,13 +9,14 @@ from geonode.maps.views import _metadata_search
 from geonode.maps.views import _split_query
 
 # @hack - fix dependency by allowing injection
-from mapstory.models import Section
+from mapstory.models import Topic
 
 # ugh - another dependency
 from agon_ratings.categories import category_value
 from agon_ratings.models import OverallRating
 
 import re
+import operator
 
 _date_fmt = lambda dt: dt.strftime('%b %d %Y')
 
@@ -45,7 +46,7 @@ class Normalizer:
         abstract
     def as_dict(self):
         if self.dict is None:
-            self.dict = self.populate(self.data)
+            self.dict = self.populate(self.data or {})
             self.dict['iid'] = self.iid
         return self.dict
     
@@ -63,10 +64,11 @@ def rating(obj, category):
     
 class MapNormalizer(Normalizer):
     def last_modified(self,map):
-        return map.last_modified.isoformat()
+        return map.last_modified
     def populate(self, dict):
         map = self.o
         # resolve any local layers and their keywords
+        # @todo this makes this search awful slow and these should be lazily evaluated
         local_kw = [ l.keywords.split(' ') for l in map.local_layers if l.keywords]
         keywords = local_kw and list(set( reduce(lambda a,b: a+b, local_kw))) or []
         return {
@@ -87,7 +89,7 @@ class MapNormalizer(Normalizer):
         
 class LayerNormalizer(Normalizer):
     def last_modified(self,layer):
-        return layer.date.isoformat()
+        return layer.date
     def populate(self, doc):
         layer = self.o
         doc['owner'] = layer.owner.username
@@ -100,6 +102,9 @@ class LayerNormalizer(Normalizer):
         doc['storeType'] = layer.storeType
         doc['_display_type'] = 'StoryLayer'
         doc['rating'] = rating(layer,'layer')
+        if not settings.USE_GEONETWORK:
+            doc['keywords'] = layer.keyword_list()
+            doc['title'] = layer.title
 
         owner = layer.owner
         if owner:
@@ -109,62 +114,89 @@ class LayerNormalizer(Normalizer):
 def _get_map_results(results, query, kw):
     bysection = kw.get('bysection', None)
     if bysection:
-        section = Section.objects.get(pk=bysection)
-        mapids = set()
-        for t in section.topics.all():
-            for l in t.maps.all():
-                mapids.add( l.pk )
-        map_query = Map.objects.filter(pk__in=mapids)
+        map_query = Map.objects.filter(topic__in=Topic.objects.filter(section__id=bysection))
     else:
         map_query = Map.objects.all()
 
     if query:
-        keywords = _split_query(query)
-        for keyword in keywords:
-            map_query = map_query.filter(
-                  Q(title__icontains=keyword)
-                | Q(abstract__icontains=keyword))
+        map_query = map_query.filter(_build_kw_query(query))
+        
+    if not settings.USE_GEONETWORK:
+        bykw = kw.get('bykw', None)
+        if bykw:
+            # this is a somewhat nested query but it performs way faster
+            layers_with_kw = Layer.objects.filter(_build_kw_only_query(bykw)).values('typename')
+            map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
+            map_query = map_query.filter(id__in=map_layers_with)
 
-    results.extend( [MapNormalizer(m) for m in map_query ] )
+    results.extend( map(MapNormalizer,map_query) )
+    
+    
+def _build_kw_query(query, query_keywords=False):
+    '''Build an OR query on title and abstract from provided search text.
+    if query_keywords is provided, include a query on the keywords attribute
+    return a Q object
+    '''
+    kws = _split_query(query)
+    subquery = [
+        Q(title__icontains=kw) | Q(abstract__icontains=kw) for kw in kws
+    ]
+    if query_keywords:
+        subquery = [ q | Q(keywords__icontains=kw) for q in subquery ]
+    return reduce( operator.or_, subquery)
 
+def _build_kw_only_query(query):
+    return reduce(operator.or_, [Q(keywords__contains=kw) for kw in _split_query(query)])
         
 def _get_layer_results(results, query, kw):
     
-    # cache geonetwork results
-    cache_key = query and 'search_results_%s' % query or 'search_results'
-    layer_results = cache.get(cache_key)
-    if not layer_results:
-        layer_results = _metadata_search(query, 0, 1000)['rows']
-        layer_results = filter(_filter_results, layer_results)
-        # @todo search cache timeout in settings?
-        cache.set(cache_key, layer_results, timeout=300)
-        
+    layer_results = None
+    
+    if settings.USE_GEONETWORK:
+        # cache geonetwork results
+        cache_key = query and 'search_results_%s' % query or 'search_results'
+        layer_results = cache.get(cache_key)
+        if not layer_results:
+            layer_results = _metadata_search(query, 0, 1000)['rows']
+            layer_results = filter(_filter_results, layer_results)
+            # @todo search cache timeout in settings?
+            cache.set(cache_key, layer_results, timeout=300)
+        q = Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ])
+    else:
+        q = Layer.objects.all()
+        if query:
+            q = q.filter(_build_kw_query(query,True))
+        # we can optimize kw search here
+        # maps will still be slow, but this way all the layers are filtered
+        # bybw before the cruddy in-memory filter
+        bykw = kw.get('bykw', None)
+        if bykw:
+            q = q.filter(_build_kw_only_query(bykw))
+            
     bysection = kw.get('bysection', None)
     if bysection:
-        section = Section.objects.get(pk=bysection)
-        layerids = set()
-        for t in section.topics.all():
-            for l in t.layers.all():
-                layerids.add( l.pk )
-        Q = Layer.objects.filter(pk__in=layerids)
-    else:
-        #build our Layer query, first by uuids
-        Q = Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ])
+        q = q.filter(topic__in=Topic.objects.filter(section__id=bysection))
     
     bytype = kw.get('bytype', None)
     if bytype and bytype != 'layer':
-        Q = Q.filter(storeType = bytype)
+        q = q.filter(storeType = bytype)
         
+    # @todo once supported via UI - this should be an OR with the section filter
     bytopic = kw.get('bytopic', None)
     if bytopic:
-        Q = Q.filter(topic_category = bytopic)
+        q = q.filter(topic_category = bytopic)
         
-    layers = dict([ (l.uuid,l) for l in Q])
+    # if we're using geonetwork, have to fetch the results from that
+    if layer_results:
+        layers = dict([ (l.uuid,l) for l in q])
     
-    for doc in layer_results:
-        layer = layers.get(doc['uuid'],None)
-        if layer is None: continue #@todo - remote layer (how to get last_modified?)
-        results.append(LayerNormalizer(layer,doc))
+        for doc in layer_results:
+            layer = layers.get(doc['uuid'],None)
+            if layer is None: continue #@todo - remote layer (how to get last_modified?)
+            results.append(LayerNormalizer(layer,doc))
+    else:
+        results.extend( map(LayerNormalizer, q))
+                
 
 def combined_search_results(query, kw):
     results = []
