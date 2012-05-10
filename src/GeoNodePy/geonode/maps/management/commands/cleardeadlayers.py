@@ -58,7 +58,7 @@ class Command(BaseCommand):
         if args:
             self.msg('deleting specified layers')
             map(self.delete_by_uuid,args)
-        if geonetwork:
+        if geonetwork and settings.USE_GEONETWORK:
             from xml.etree.ElementTree import XML
             self.msg('checking layers only found in geonetwork')
             uuids = set(Layer.objects.gn_catalog.get_all_layer_uuids())

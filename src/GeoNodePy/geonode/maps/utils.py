@@ -211,18 +211,19 @@ def cleanup(name, uuid):
        except:
            logger.exception("Couldn't delete GeoServer store during cleanup()")
 
-   gn = Layer.objects.geonetwork
-   csw_record = gn.get_by_uuid(uuid)
-   if csw_record is not None:
-       logger.warning('Deleting dangling GeoNetwork record for [%s] '
+   if settings.USE_GEONETWORK:
+       gn = Layer.objects.geonetwork
+       csw_record = gn.get_by_uuid(uuid)
+       if csw_record is not None:
+           logger.warning('Deleting dangling GeoNetwork record for [%s] '
                       '(no Django record to match)', name)
-       try:
+           try:
            # this is a bit hacky, delete_layer expects an instance of the layer
            # model but it just passes it to a Django template so a dict works
            # too.
-           gn.delete_layer({ "uuid": uuid })
-       except:
-           logger.exception('Couldn\'t delete GeoNetwork record '
+               gn.delete_layer({ "uuid": uuid })
+           except:
+               logger.exception('Couldn\'t delete GeoNetwork record '
                             'during cleanup()')
 
    logger.warning('Finished cleanup after failed GeoNetwork/Django '
