@@ -131,7 +131,7 @@ def _search_params(request):
         }[params.get('sort','newest')]
 
     filters = {}
-    for k in ('bytype','bytopic','bykw','bysection'):
+    for k in ('bytype','bytopic','bykw','bysection','byextent'):
         if k in params:
             if params[k]:
                 filters[k] = params[k]
