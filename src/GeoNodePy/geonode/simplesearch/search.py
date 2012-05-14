@@ -3,6 +3,7 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.template import defaultfilters
+from django.contrib.gis.gdal import Envelope
 
 from geonode.maps.models import *
 from geonode.maps.views import _metadata_search
@@ -10,6 +11,9 @@ from geonode.maps.views import _split_query
 
 # @hack - fix dependency by allowing injection
 from mapstory.models import Topic
+
+from geonode.simplesearch.models import LayerIndex
+from geonode.simplesearch.models import MapIndex
 
 # ugh - another dependency
 from agon_ratings.categories import category_value
@@ -122,6 +126,10 @@ def _get_map_results(results, query, kw):
     if query:
         map_query = map_query.filter(_build_kw_query(query))
         
+    byextent = kw.get('byextent', None)
+    if byextent:
+        map_query = _filter_by_extent(MapIndex, map_query, byextent)
+        
     if not settings.USE_GEONETWORK:
         bykw = kw.get('bykw', None)
         if bykw:
@@ -148,6 +156,17 @@ def _build_kw_query(query, query_keywords=False):
 
 def _build_kw_only_query(query):
     return reduce(operator.or_, [Q(keywords__contains=kw) for kw in _split_query(query)])
+
+def _filter_by_extent(index, q, byextent):
+    env = Envelope(map(float,byextent.split(',')))
+    # ideally, we'd do this like this, except geodjango doesn't like this
+    # it appears to be a bug in the way django/contrib/gis/db/backends/postgis/adapter.py
+    # implements __eq__ @todo see if resolved in django-1.4
+    # the difference is a full database query versus adding a round-trip
+    #    extent_ids = index.objects.filter(extent__contained=env.wkt).values('indexed')
+    #    return q.filter(id__in=extent_ids)
+    extent_ids = [ r[0] for r in index.objects.filter(extent__contained=env.wkt).values_list('indexed') ]
+    return q.filter(id__in=extent_ids)
         
 def _get_layer_results(results, query, kw):
     
@@ -186,6 +205,11 @@ def _get_layer_results(results, query, kw):
     bytopic = kw.get('bytopic', None)
     if bytopic:
         q = q.filter(topic_category = bytopic)
+        
+    byextent = kw.get('byextent', None)
+    if byextent:
+        q = _filter_by_extent(LayerIndex, q, byextent)
+        print q.query
         
     # if we're using geonetwork, have to fetch the results from that
     if layer_results:
