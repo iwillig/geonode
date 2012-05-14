@@ -105,6 +105,7 @@ class LayerNormalizer(Normalizer):
         if not settings.USE_GEONETWORK:
             doc['keywords'] = layer.keyword_list()
             doc['title'] = layer.title
+            doc['detail'] = layer.get_absolute_url()
 
         owner = layer.owner
         if owner:
