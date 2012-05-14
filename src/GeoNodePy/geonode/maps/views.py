@@ -830,7 +830,9 @@ def layer_detail(request, layername):
             RequestContext(request, {'error_message': 
                 _("You are not permitted to view this layer")})), status=401)
     
-    metadata = layer.metadata_csw()
+    metadata = None
+    if settings.USE_GEONETWORK:
+        metadata = layer.metadata_csw()
     
     map_config = layer.map_config
     
