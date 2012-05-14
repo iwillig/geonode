@@ -108,7 +108,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     layerSelectionLabel: "UT:View available data from:",
     layersContainerText: "UT:Data",
     layersPanelText: "UT:Layers",
-    legendPanelText: "UT:Legend",
     mapSizeLabel: 'UT: Map Size', 
     metadataFormCancelText : "UT:Cancel",
     metadataFormSaveAsCopyText : "UT:Save as Copy",
@@ -744,6 +743,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         var westPanel = new Ext.Panel({
             id: "westpanel",
             layout: "fit",
+            id: "westpanel",
+            border: false,
             collapseMode: "mini",
             border: false,
             collapsed:true,
