@@ -148,7 +148,10 @@ def cascading_delete(cat, resource):
         cat.delete(lyr)
         for s in styles:
             if s is not None:
-                cat.delete(s, purge=True)
+                try:
+                    cat.delete(s, purge=True)
+                except FailedRequestError:
+                    pass
         cat.delete(resource)
         if store.resource_type == 'dataStore' and 'dbtype' in store.connection_parameters and store.connection_parameters['dbtype'] == 'postgis':
             # cant delete the store, since it is a database
