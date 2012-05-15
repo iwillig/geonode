@@ -114,11 +114,10 @@ def index_map(index, obj):
             
         try:
             wms_metadata = l.metadata()
+            extent.expand_to_include(wms_metadata.boundingBoxWGS84)
         except:
             _logger.warn('could not get WMS info for %s', l.typename )
                 
-        extent.expand_to_include(wms_metadata.boundingBoxWGS84)
-        
     if time_start:
         index.time_start = time_start
     if time_end:
