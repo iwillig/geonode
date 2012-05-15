@@ -9,6 +9,7 @@ from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.geonetwork import Catalog as GeoNetwork
 from gsuploader.uploader import Uploader
 from django.db.models import signals
+from django.dispatch import Signal
 from django.utils.html import escape
 import httplib2
 import simplejson
@@ -1261,6 +1262,8 @@ def describe_layer(typename):
         raise Exception('Non OK response from describeLayer',body)
     return body
 
+map_changed_signal = Signal(providing_args=['what_changed'])
+
 class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """
     A Map aggregates several layers together and annotates them with a viewport
@@ -1491,6 +1494,8 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
         layers = [l for l in conf["map"]["layers"]]
         
+        layer_names = set([l.typename for l in self.local_layers])
+        
         for layer in self.layer_set.all():
             layer.delete()
 
@@ -1499,6 +1504,9 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 self.layer_set.from_viewer_config(
                     self, layer, source_for(layer), ordering
             ))
+            
+        if layer_names != set([l.typename for l in self.local_layers]):
+            map_changed_signal.send_robust(sender=self,what_changed='layers')
 
         if 'tools' in conf:
             self.tools_params = simplejson.dumps(conf['tools'])
