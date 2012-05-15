@@ -1674,7 +1674,7 @@ class MapLayer(models.Model):
         but we try to err on the side of false negatives.
         """
         url = self.ows_url or  ' '
-        if url[0] == '/' or url == (settings.GEOSERVER_BASE_URL + "wms"):
+        if url[0] == '/' or url.startswith(settings.GEOSERVER_BASE_URL):
             return Layer.objects.filter(typename=self.name).count() != 0
         else: 
             return False
