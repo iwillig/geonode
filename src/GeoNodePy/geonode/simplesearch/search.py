@@ -15,6 +15,7 @@ from mapstory.models import ContactDetail
 
 from geonode.simplesearch.models import LayerIndex
 from geonode.simplesearch.models import MapIndex
+from geonode.simplesearch.models import filter_by_period
 
 # ugh - another dependency
 from agon_ratings.categories import category_value
@@ -25,17 +26,21 @@ from avatar.util import get_default_avatar_url
 
 import re
 import operator
+from datetime import date
+from datetime import timedelta
 
 _date_fmt = lambda dt: dt.strftime('%b %d %Y')
 
 _exclude_patterns = []
+_exclude_regex = []
 '''Settings API - allow regular expressions to filter our layer name results'''
 if hasattr(settings,'SIMPLE_SEARCH_EXCLUSIONS'):
-    _exclude_patterns = [ re.compile(e) for e in settings.SIMPLE_SEARCH_EXCLUSIONS ]
+    _exclude_patterns = settings.SIMPLE_SEARCH_EXCLUSIONS
+    _exclude_regex = [ re.compile(e) for e in _exclude_patterns ]
     
 def _filter_results(l):
     '''If the layer name doesn't match any of the patterns, it shows in the results'''
-    return not any(p.search(l['name']) for p in _exclude_patterns)
+    return not any(p.search(l['name']) for p in _exclude_regex)
 
 class Normalizer:
     '''Base class to allow lazy normalization of Map and Layer attributes.
@@ -151,6 +156,20 @@ def _get_owner_results(results, query, kw):
     # make sure all contacts have a user attached
     q = ContactDetail.objects.select_related().filter(user__isnull=False)
     
+    byextent = kw.get('byextent')
+    if byextent:
+        # we could compute an extent for where an author's data/layers are
+        return
+    
+    byperiod = kw.get('byperiod')
+    if byperiod:
+        # we could compute a period for author's data
+        return
+    
+    byadded = parse_by_added(kw.get('byadded'))
+    if byadded:
+        q = q.filter(user__date_joined__gt = byadded)
+    
     if query:
         q = q.filter(Q(user__username__icontains=query) |
             Q(user__first_name__icontains=query) |
@@ -163,32 +182,40 @@ def _get_owner_results(results, query, kw):
     results.extend( map(OwnerNormalizer,q))
         
 def _get_map_results(results, query, kw):
-    bysection = kw.get('bysection', None)
+    q = Map.objects.filter(publish__status='Public')
+    
+    bysection = kw.get('bysection')
     if bysection:
-        map_query = Map.objects.filter(topic__in=Topic.objects.filter(section__id=bysection))
-    else:
-        map_query = Map.objects.all()
+        q = q.filter(topic__in=Topic.objects.filter(section__id=bysection))
         
-    byowner = kw.get('byowner', None)
+    byowner = kw.get('byowner')
     if byowner:
-        map_query = map_query.filter(owner__username=byowner)
+        q = q.filter(owner__username=byowner)
 
     if query:
-        map_query = map_query.filter(_build_kw_query(query))
+        q = q.filter(_build_kw_query(query))
         
-    byextent = kw.get('byextent', None)
+    byextent = kw.get('byextent')
     if byextent:
-        map_query = _filter_by_extent(MapIndex, map_query, byextent)
+        q = _filter_by_extent(MapIndex, q, byextent)
+        
+    byadded = parse_by_added(kw.get('byadded'))
+    if byadded:
+        q = q.filter(last_modified__gte=byadded)
+    
+    byperiod = kw.get('byperiod')
+    if byperiod:
+        q = _filter_by_period(MapIndex, q, byperiod)
         
     if not settings.USE_GEONETWORK:
-        bykw = kw.get('bykw', None)
+        bykw = kw.get('bykw')
         if bykw:
             # this is a somewhat nested query but it performs way faster
             layers_with_kw = Layer.objects.filter(_build_kw_only_query(bykw)).values('typename')
             map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
-            map_query = map_query.filter(id__in=map_layers_with)
-    print map_query.query
-    results.extend( map(MapNormalizer,map_query) )
+            q = q.filter(id__in=map_layers_with)
+    
+    results.extend( map(MapNormalizer,q) )
     
     
 def _build_kw_query(query, query_keywords=False):
@@ -213,10 +240,26 @@ def _filter_by_extent(index, q, byextent):
     # it appears to be a bug in the way django/contrib/gis/db/backends/postgis/adapter.py
     # implements __eq__ @todo see if resolved in django-1.4
     # the difference is a full database query versus adding a round-trip
-    #    extent_ids = index.objects.filter(extent__contained=env.wkt).values('indexed')
-    #    return q.filter(id__in=extent_ids)
-    extent_ids = [ r[0] for r in index.objects.filter(extent__contained=env.wkt).values_list('indexed') ]
+    extent_ids = index.objects.filter(extent__contained=env.wkt).values('indexed')
     return q.filter(id__in=extent_ids)
+    #extent_ids = [ r[0] for r in index.objects.filter(extent__contained=env.wkt).values_list('indexed') ]
+    #return q.filter(id__in=extent_ids)
+    
+def _filter_by_period(index, q, byperiod):
+    period_ids = filter_by_period(index, byperiod[0], byperiod[1]).values('indexed')
+    return q.filter(id__in=period_ids)
+    
+def parse_by_added(spec):
+    td = None
+    if spec == 'today':
+        td = timedelta(days=1)
+    elif spec == 'week':
+        td = timedelta(days=7)
+    elif spec == 'month':
+        td = timedelta(days=30)
+    else:
+        return None
+    return date.today() - td
         
 def _get_layer_results(results, query, kw):
     
@@ -233,37 +276,45 @@ def _get_layer_results(results, query, kw):
             cache.set(cache_key, layer_results, timeout=300)
         q = Layer.objects.filter(uuid__in=[ doc['uuid'] for doc in layer_results ])
     else:
-        q = Layer.objects.all()
+        name_filter = reduce(operator.or_,[ Q(name__regex=f) for f in _exclude_patterns])
+        q = Layer.objects.exclude(name_filter)
         if query:
             q = q.filter(_build_kw_query(query,True))
         # we can optimize kw search here
         # maps will still be slow, but this way all the layers are filtered
         # bybw before the cruddy in-memory filter
-        bykw = kw.get('bykw', None)
+        bykw = kw.get('bykw')
         if bykw:
             q = q.filter(_build_kw_only_query(bykw))
             
-    byowner = kw.get('byowner', None)
+    byowner = kw.get('byowner')
     if byowner:
         q = q.filter(owner__username=byowner)
             
-    bysection = kw.get('bysection', None)
+    bysection = kw.get('bysection')
     if bysection:
         q = q.filter(topic__in=Topic.objects.filter(section__id=bysection))
     
-    bytype = kw.get('bytype', None)
+    bytype = kw.get('bytype')
     if bytype and bytype != 'layer':
         q = q.filter(storeType = bytype)
         
     # @todo once supported via UI - this should be an OR with the section filter
-    bytopic = kw.get('bytopic', None)
+    bytopic = kw.get('bytopic')
     if bytopic:
         q = q.filter(topic_category = bytopic)
         
-    byextent = kw.get('byextent', None)
+    byextent = kw.get('byextent')
     if byextent:
         q = _filter_by_extent(LayerIndex, q, byextent)
-        print q.query
+        
+    byadded = parse_by_added(kw.get('byadded'))
+    if byadded:
+        q = q.filter(date__gte=byadded)
+        
+    byperiod = kw.get('byperiod')
+    if byperiod:
+        q = _filter_by_period(LayerIndex, q, byperiod)
         
     # if we're using geonetwork, have to fetch the results from that
     if layer_results:

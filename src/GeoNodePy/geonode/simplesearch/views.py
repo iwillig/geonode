@@ -72,13 +72,19 @@ def new_search_api(request):
     from time import time
     
     ts = time()
-    params = _search_params(request)
-    start = params[1]
-    total, items = _new_search(*params)
-    ts = time() - ts
-    logger.info('generated combined search results in %s',ts)
+    try:
+        params = _search_params(request)
+        start = params[1]
+        total, items = _new_search(*params)
+        ts = time() - ts
+        logger.info('generated combined search results in %s',ts)
 
-    return _search_json(items, total, start, ts)
+        return _search_json(items, total, start, ts)
+    except Exception, ex:
+        return HttpResponse(json.dumps({
+            'success' : False,
+            'errors' : [str(ex)]
+        }), status=400)
 
 def new_search_api_reduced(request):
     from time import time
@@ -131,10 +137,15 @@ def _search_params(request):
         }[params.get('sort','newest')]
 
     filters = {}
-    for k in ('bytype','bytopic','bykw','bysection','byowner','byextent'):
+    for k in ('bytype','bytopic','bykw','bysection','byowner','byextent','byadded','byperiod'):
         if k in params:
             if params[k]:
                 filters[k] = params[k]
+        else:
+            filters[k] = None
+                
+    if filters['byperiod']:
+        filters['byperiod'] = filters['byperiod'].split(',')
 
     return query, start, limit, sort_field, sort_asc, filters
     
@@ -155,6 +166,12 @@ def _search_json(results, total, start, time):
     }
     results['success'] = True
     return HttpResponse(json.dumps(results), mimetype="application/json")
+
+def cache_key(query,filters):
+    key = hash(query)
+    for i in filters.items():
+        key = key + hash(i)
+    return str(key)
 
 def _new_search(query, start, limit, sort_field, sort_asc, filters):
 

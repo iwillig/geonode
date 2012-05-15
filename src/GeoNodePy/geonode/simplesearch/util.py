@@ -65,6 +65,7 @@ def iso_str_to_jdate(iso_str):
         ymd = ymd[1:]
         neg = -1
     args = map(int,ymd.split('-'))
+    args = args + ([1] * (3 - len(args)))
     args[0] *= neg
     return int(julian_date(*args))
 
