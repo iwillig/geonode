@@ -234,7 +234,7 @@ def newmap_config(request):
                     
                 layer_bbox = layer.resource.latlon_bbox
                 # assert False, str(layer_bbox)
-                if bbox is None:
+                if bbox is None and latlon_bbox:
                     bbox = list(layer_bbox[0:4])
                 else:
                     bbox[0] = min(bbox[0], layer_bbox[0])
