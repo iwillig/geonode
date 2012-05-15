@@ -4,6 +4,7 @@ from geonode.maps.models import Layer
 from geonode.simplesearch.models import index_object
 import logging
 from optparse import make_option
+import traceback
 
 class Command(BaseCommand):
     help = 'Update simplesearch indices'
@@ -15,6 +16,12 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         logging.getLogger('geonode.simplesearch.models').setLevel(logging.DEBUG)
         update = opts['update']
-        index = lambda o: index_object(o, update=update)
+        def index(o):
+            try:
+                index_object(o,update=update)
+            except:
+                print 'error indexing', o
+                traceback.print_exc()
+                
         map(index,Map.objects.all())
         map(index,Layer.objects.all())
