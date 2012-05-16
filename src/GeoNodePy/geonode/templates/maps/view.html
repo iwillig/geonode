@@ -51,12 +51,6 @@ var app = new GeoExplorer();
         },
         scope: {}
     });
-    Ext.Ajax.on('beforerequest', function(conn, opts) {
-        if (typeof opts.defaultHeaders == 'undefined') {
-            opts.defaultHeaders = {};
-        }
-        opts.defaultHeaders['X-CSRFToken'] = Ext.select('[@name=csrfmiddlewaretoken]').item(0).getValue();
-    });
 })()
 
 {% endautoescape %}
