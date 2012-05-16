@@ -85,8 +85,15 @@ def index_layer(index, obj):
         return
     
     min_x, min_y, max_x, max_y = wms_metadata.boundingBoxWGS84
-    index.extent = Envelope(min_x,min_y,max_x,max_y).wkt;
-    index.save()
+    
+    if wms_metadata.boundingBoxWGS84 != (0.0,0.0,-1.0,-1.0):
+        try:
+            index.extent = Envelope(min_x,min_y,max_x,max_y).wkt;
+        except Exception,ex:
+            _logger.warn('Error computing envelope: %s, bounding box was %s', str(ex),wms_metadata.boundingBoxWGS84)
+        index.save()
+    else:
+        _logger.warn('Bounding box empty, not indexing')
     
 def index_map(index, obj):
     time_start = None
