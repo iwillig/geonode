@@ -51,6 +51,12 @@ var app = new GeoExplorer();
         },
         scope: {}
     });
+    Ext.Ajax.on('beforerequest', function(conn, opts) {
+        if (typeof opts.defaultHeaders == 'undefined') {
+            opts.defaultHeaders = {};
+        }
+        opts.defaultHeaders['X-CSRFToken'] = Ext.util.Cookies.get('csrftoken');
+    });
 })()
 
 {% endautoescape %}
@@ -61,7 +67,6 @@ var app = new GeoExplorer();
 {% block body %}
 <div id="header-wrapper">
   {{ block.super }}
-  {% csrf_token %}
   <div id="topPanel">
     <div id="more-info">&nbsp;</div>
     <span id="map-title-header"></span>
