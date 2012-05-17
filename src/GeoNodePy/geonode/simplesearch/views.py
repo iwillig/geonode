@@ -23,7 +23,6 @@ def _create_viewer_config():
     return json.dumps(_map.viewer_json(added_layers=DEFAULT_BASE_LAYERS, authenticated=False))
 _viewer_config = _create_viewer_config()
 
-@cache_page(60)
 def new_search_page(request, **kw):
     
     if request.method == 'GET':
@@ -37,6 +36,16 @@ def new_search_page(request, **kw):
         params = dict(params)
         params.update(kw)
 
+    context = _get_search_context()
+    context['init_search'] = json.dumps(params or {})
+     
+    return render_to_response('simplesearch/search.html', RequestContext(request, context))
+    
+def _get_search_context():
+    cache_key = 'simple_search_context'
+    context = cache.get(cache_key)
+    if context: return context
+    
     counts = {
         'maps' : Map.objects.count(),
         'layers' : Layer.objects.count(),
@@ -47,9 +56,7 @@ def new_search_page(request, **kw):
     topics = Layer.objects.all().values_list('topic_category',flat=True)
     topic_cnts = {}
     for t in topics: topic_cnts[t] = topic_cnts.get(t,0) + 1
-     
-    return render_to_response('simplesearch/search.html', RequestContext(request, {
-        'init_search': json.dumps(params or {}),
+    context = {
         'viewer_config': _viewer_config,
         'GOOGLE_API_KEY' : settings.GOOGLE_API_KEY,
         "site" : settings.SITEURL,
@@ -58,15 +65,12 @@ def new_search_page(request, **kw):
         'topics' : topic_cnts,
         'sections' : Section.objects.all(),
         'keywords' : _get_all_keywords()
-    }))
+    }
+    cache.set(cache_key, context, 60)
+        
+    return context
     
 def _get_all_keywords():
-    cache_key = 'simple_search_keywords'
-    allkw = cache.get(cache_key)
-    
-    if allkw: 
-        return allkw
-    
     if settings.USE_GEONETWORK:
         allkw = Layer.objects.gn_catalog.get_all_keywords()
     else:    
@@ -79,8 +83,6 @@ def _get_all_keywords():
                     allkw[k] = 1
                 else:
                     allkw[k] += 1
-    
-    cache.set(cache_key, allkw, 60)
     
     return allkw
 
