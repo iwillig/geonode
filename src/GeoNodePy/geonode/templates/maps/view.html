@@ -51,12 +51,18 @@ var app = new GeoExplorer();
         },
         scope: {}
     });
-    Ext.Ajax.on('beforerequest', function(conn, opts) {
-        if (typeof opts.defaultHeaders == 'undefined') {
-            opts.defaultHeaders = {};
-        }
-        opts.defaultHeaders['X-CSRFToken'] = Ext.util.Cookies.get('csrftoken');
-    });
+    
+    var headers = {
+        'X-CSRFToken' : Ext.util.Cookies.get('csrftoken')
+    };
+    Ext.Ajax.defaultHeaders = headers;
+    {# MONKEY PATCH #}
+    OpenLayers.Request._monkey_issue = OpenLayers.Request.issue;
+    OpenLayers.Request.issue = function(config) {
+        config.headers = config.headers || {};
+        config.headers['X-CSRFToken'] = Ext.util.Cookies.get('csrftoken');
+        return this._monkey_issue(config);
+    };
 })()
 
 {% endautoescape %}
