@@ -51,6 +51,12 @@ var app = new GeoExplorer();
         },
         scope: {}
     });
+    Ext.Ajax.on('beforerequest', function(conn, opts) {
+        if (typeof opts.defaultHeaders == 'undefined') {
+            opts.defaultHeaders = {};
+        }
+        opts.defaultHeaders['X-CSRFToken'] = Ext.util.Cookies.get('csrftoken');
+    });
 })()
 
 {% endautoescape %}
@@ -68,6 +74,6 @@ var app = new GeoExplorer();
 </div>
 <div id="templates">
   <div id="more-info-tpl"><a class='link' href='{permalink}'>{% trans "View info" %}</a></div>
-  <div id="title-tpl"><a class='maplist' href='/maps/search'>{% trans "Maps" %}</a> / <strong>{title}</strong></div>
+  <div id="title-tpl"><a class='maplist' href='{% url maps_search %}'>{% trans "Maps" %}</a> / <strong>{title}</strong></div>
 </div>
 {% endblock %}
