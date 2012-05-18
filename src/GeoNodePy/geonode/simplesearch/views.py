@@ -3,7 +3,6 @@ from django.shortcuts import render_to_response
 from django.conf import settings
 from django.template import RequestContext
 from django.core.cache import cache
-from django.views.decorators.cache import cache_page
 
 from geonode.maps.views import default_map_config
 from geonode.maps.models import *
@@ -13,6 +12,8 @@ from geonode.simplesearch.search import combined_search_results
 from mapstory.models import Section
 
 import json
+import cPickle as pickle
+import operator
 
 DEFAULT_MAPS_SEARCH_BATCH_SIZE = 10
 MAX_MAPS_SEARCH_BATCH_SIZE = 25
@@ -186,14 +187,27 @@ def _search_json(results, total, start, time):
     return HttpResponse(json.dumps(results), mimetype="application/json")
 
 def cache_key(query,filters):
-    key = hash(query)
-    for i in filters.items():
-        key = key + hash(i)
-    return str(key)
+    return str(reduce(operator.xor,map(hash,filters.items())) ^ hash(query))
 
 def _new_search(query, start, limit, sort_field, sort_asc, filters):
-
-    results = combined_search_results(query, filters)
+    # to support super fast paging results, cache the intermediates
+    use_cache = True
+    results = None
+    cache_time = 60
+    if use_cache:
+        key = cache_key(query,filters)
+        results = cache.get(key)
+        if results:
+            # put it back again - this basically extends the lease
+            cache.add(key, results, cache_time)
+        
+    if not results:
+        results = combined_search_results(query,filters)
+        if use_cache:
+            dumped = pickle.dumps(results)
+            cache.set(key, dumped, cache_time)
+    else:
+        results = pickle.loads(results)
 
     filter_fun = []
     # careful when creating lambda or function filters inline like this
@@ -210,8 +224,12 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
         results = filter(fun,results)
 
     # default sort order by id (could be last_modified when external layers are dealt with)
-    results.sort(key=lambda r: getattr(r,sort_field),reverse=not sort_asc)
-
+    if sort_field == 'title':
+        keyfunc = lambda r: r.title.lower()
+    else:
+        keyfunc = lambda r: getattr(r,sort_field)
+    results.sort(key=keyfunc,reverse=not sort_asc)
+    
     return len(results), results[start:start+limit]
 
 def author_list(req):
