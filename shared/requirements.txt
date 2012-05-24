@@ -3,7 +3,6 @@
 PIL
 OWSLib==0.4.0
 Django==1.4
-simplejson # needed for python2.5
 django-extensions
 httplib2
 psycopg2
@@ -11,6 +10,7 @@ psycopg2
 django-registration
 django-profiles
 -e git+https://github.com/ericflo/django-avatar.git#egg=avatar
+-e git://github.com/thornomad/django-hitcount.git#egg=django-hitcount
 django-staticfiles
 dialogos==0.1.dev4
 agon-ratings==0.2
