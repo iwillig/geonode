@@ -167,7 +167,7 @@ def _search_params(request):
             filters[k] = None
                 
     if filters['byperiod']:
-        filters['byperiod'] = filters['byperiod'].split(',')
+        filters['byperiod'] = tuple(filters['byperiod'].split(','))
 
     return query, start, limit, sort_field, sort_asc, filters
     
