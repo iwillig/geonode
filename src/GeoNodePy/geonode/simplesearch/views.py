@@ -14,6 +14,7 @@ from mapstory.models import Section
 import json
 import cPickle as pickle
 import operator
+import logging
 
 DEFAULT_MAPS_SEARCH_BATCH_SIZE = 10
 MAX_MAPS_SEARCH_BATCH_SIZE = 25
@@ -100,6 +101,7 @@ def new_search_api(request):
 
         return _search_json(items, total, start, ts)
     except Exception, ex:
+        logging.getLogger("").exception("error during search")
         return HttpResponse(json.dumps({
             'success' : False,
             'errors' : [str(ex)]
@@ -152,6 +154,7 @@ def _search_params(request):
             'oldest' : ('last_modified',True),
             'alphaaz' : ('title',True),
             'alphaza' : ('title',False),
+            'popularity' : ('rank',False)
 
         }[params.get('sort','newest')]
 
@@ -225,9 +228,9 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
 
     # default sort order by id (could be last_modified when external layers are dealt with)
     if sort_field == 'title':
-        keyfunc = lambda r: r.title.lower()
+        keyfunc = lambda r: r.title().lower()
     else:
-        keyfunc = lambda r: getattr(r,sort_field)
+        keyfunc = lambda r: getattr(r,sort_field)()
     results.sort(key=keyfunc,reverse=not sort_asc)
     
     return len(results), results[start:start+limit]

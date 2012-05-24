@@ -655,7 +655,9 @@ def view(request, mapid):
             RequestContext(request, {'error_message': 
                 _("You are not allowed to view this map.")})), status=401)    
     
-    return render_to_response('maps/view.html', RequestContext(request))
+    return render_to_response('maps/view.html', RequestContext(request,{
+        'map' : map
+    }))
 
 def embed(request, mapid=None):
     if mapid is None:
@@ -668,7 +670,8 @@ def embed(request, mapid=None):
         
         config = map.viewer_json(authenticated=request.user.is_authenticated())
     return render_to_response('maps/embed.html', RequestContext(request, {
-        'config': json.dumps(config)
+        'config': json.dumps(config),
+        'map' : map
     }))
 
 
