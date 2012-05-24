@@ -12,14 +12,12 @@ from geonode.maps.views import _split_query
 # @hack - fix dependency by allowing injection
 from mapstory.models import Topic
 from mapstory.models import ContactDetail
+from mapstory.models import get_view_cnts
+from mapstory.models import get_ratings
 
 from geonode.simplesearch.models import LayerIndex
 from geonode.simplesearch.models import MapIndex
 from geonode.simplesearch.models import filter_by_period
-
-# ugh - another dependency
-from agon_ratings.categories import category_value
-from agon_ratings.models import OverallRating
 
 # and another
 from avatar.util import get_default_avatar_url
@@ -45,41 +43,32 @@ def _filter_results(l):
 class Normalizer:
     '''Base class to allow lazy normalization of Map and Layer attributes.
     
-    The two fields we support sorting on are title and last_modified so these
-    must be computed up front.
+    The fields we support sorting on are rank, title, last_modified.
+    Instead of storing these (to keep pickle query size small), expose via methods.
     '''
     def __init__(self,o,data = None):
         self.o = o
         self.data = data
         self.dict = None
-        self.title = self.title(o)
-        self.last_modified = self.last_modified(o)
-        self.iid = None
-    def title(self,o):
-        return o.title
-    def last_modified(self,o):
+    def rank(self):
+        return (self.rating + 1) * (self.views + 1)
+    def title(self):
+        return self.o.title
+    def last_modified(self):
         abstract
     def as_dict(self):
         if self.dict is None:
             self.dict = self.populate(self.data or {})
             self.dict['iid'] = self.iid
+            self.dict['rating'] = self.rating
+            if hasattr(self,'views'):
+                self.dict['views'] = self.views
         return self.dict
     
-def rating(obj, category):
-    try:
-        ct = ContentType.objects.get_for_model(obj)
-        rating = OverallRating.objects.get(
-            object_id = obj.pk,
-            content_type = ct,
-            category = category_value(obj, category)
-        ).rating or 0
-    except OverallRating.DoesNotExist:
-        rating = 0
-    return str(rating)
     
 class MapNormalizer(Normalizer):
-    def last_modified(self,map):
-        return map.last_modified
+    def last_modified(self):
+        return self.o.last_modified
     def populate(self, dict):
         map = self.o
         # resolve any local layers and their keywords
@@ -99,12 +88,11 @@ class MapNormalizer(Normalizer):
             '_display_type' : 'MapStory',
             'thumb' : map.get_thumbnail_url(),
             'keywords' : keywords,
-            'rating' : rating(map,'map')
         }
         
 class LayerNormalizer(Normalizer):
-    def last_modified(self,layer):
-        return layer.date
+    def last_modified(self):
+        return self.o.date
     def populate(self, doc):
         layer = self.o
         doc['owner'] = layer.owner.username
@@ -116,7 +104,6 @@ class LayerNormalizer(Normalizer):
         doc['abstract'] = defaultfilters.linebreaks(layer.abstract)
         doc['storeType'] = layer.storeType
         doc['_display_type'] = 'StoryLayer'
-        doc['rating'] = rating(layer,'layer')
         if not settings.USE_GEONETWORK:
             doc['keywords'] = layer.keyword_list()
             doc['title'] = layer.title
@@ -127,12 +114,23 @@ class LayerNormalizer(Normalizer):
             doc['owner_detail'] = reverse('about_storyteller', args=(layer.owner.username,))
         return doc
     
+def _annotate_results(normalizers):
+    '''Generic content types are _much_ faster to deal with in bulk'''
+    if not normalizers: return normalizers
+    model = type(normalizers[0].o)
+    cnts = get_view_cnts(model)
+    ratings = get_ratings(model)
+    for n in normalizers:
+        n.views = cnts.get(n.o.id, 0)
+        n.rating = float(ratings.get(n.o.id, 0))
+    return normalizers
+    
 _default_avatar_url = get_default_avatar_url()
 class OwnerNormalizer(Normalizer):
-    def title(self,contact):
-        return contact.user.username
-    def last_modified(self,contact):
-        return contact.user.date_joined
+    def title(self):
+        return self.o.user.username
+    def last_modified(self):
+        return self.o.user.date_joined
     def populate(self, doc):
         contact = self.o
         user = contact.user
@@ -144,7 +142,7 @@ class OwnerNormalizer(Normalizer):
         doc['title'] = user.get_full_name() or user.username
         doc['organization'] = contact.organization
         doc['abstract'] = contact.blurb
-        doc['last_modified'] = _date_fmt(self.last_modified)
+        doc['last_modified'] = _date_fmt(self.last_modified())
         doc['detail'] = reverse('about_storyteller', args=(user.username,))
         doc['layer_cnt'] = Layer.objects.filter(owner = user).count()
         doc['map_cnt'] = Map.objects.filter(owner = user).count()
@@ -179,7 +177,7 @@ def _get_owner_results(results, query, kw):
             Q(biography__icontains=query)
         )
     
-    results.extend( map(OwnerNormalizer,q))
+    results.extend( _annotate_results(map(OwnerNormalizer,q)))
         
 def _get_map_results(results, query, kw):
     q = Map.objects.filter(publish__status='Public')
@@ -215,7 +213,7 @@ def _get_map_results(results, query, kw):
             map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
             q = q.filter(id__in=map_layers_with)
     
-    results.extend( map(MapNormalizer,q) )
+    results.extend( _annotate_results( map(MapNormalizer,q) ))
     
     
 def _build_kw_query(query, query_keywords=False):
@@ -318,14 +316,17 @@ def _get_layer_results(results, query, kw):
         
     # if we're using geonetwork, have to fetch the results from that
     if layer_results:
+        normalizers = []
         layers = dict([ (l.uuid,l) for l in q])
     
         for doc in layer_results:
             layer = layers.get(doc['uuid'],None)
             if layer is None: continue #@todo - remote layer (how to get last_modified?)
-            results.append(LayerNormalizer(layer,doc))
+            normalizers.append(LayerNormalizer(layer,doc))
     else:
-        results.extend( map(LayerNormalizer, q))
+        normalizers = map(LayerNormalizer, q)
+    _annotate_results(normalizers)
+    results.extend(normalizers)
                 
 
 def combined_search_results(query, kw):
