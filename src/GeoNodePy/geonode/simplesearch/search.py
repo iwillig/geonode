@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db.models import Q
+from django.db.models import F
 from django.template import defaultfilters
 from django.contrib.gis.gdal import Envelope
 
@@ -154,15 +155,19 @@ def _get_owner_results(results, query, kw):
     # make sure all contacts have a user attached
     q = ContactDetail.objects.select_related().filter(user__isnull=False)
     
+    byowner = kw.get('byowner')
+    if byowner:
+        q = q.filter(user__username__icontains = byowner)
+    
     byextent = kw.get('byextent')
     if byextent:
-        # we could compute an extent for where an author's data/layers are
-        return
+        q = _filter_by_extent(MapIndex, q, byextent, True) | \
+            _filter_by_extent(LayerIndex, q, byextent, True)
     
     byperiod = kw.get('byperiod')
     if byperiod:
-        # we could compute a period for author's data
-        return
+        q = _filter_by_period(MapIndex, q, byperiod, True) | \
+            _filter_by_period(LayerIndex, q, byperiod, True)
     
     byadded = parse_by_added(kw.get('byadded'))
     if byadded:
@@ -232,20 +237,24 @@ def _build_kw_query(query, query_keywords=False):
 def _build_kw_only_query(query):
     return reduce(operator.or_, [Q(keywords__contains=kw) for kw in _split_query(query)])
 
-def _filter_by_extent(index, q, byextent):
+def _filter_by_extent(index, q, byextent, user=False):
     env = Envelope(map(float,byextent.split(',')))
-    # ideally, we'd do this like this, except geodjango doesn't like this
-    # it appears to be a bug in the way django/contrib/gis/db/backends/postgis/adapter.py
-    # implements __eq__ @todo see if resolved in django-1.4
-    # the difference is a full database query versus adding a round-trip
-    extent_ids = index.objects.filter(extent__contained=env.wkt).values('indexed')
-    return q.filter(id__in=extent_ids)
-    #extent_ids = [ r[0] for r in index.objects.filter(extent__contained=env.wkt).values_list('indexed') ]
-    #return q.filter(id__in=extent_ids)
+    extent_ids = index.objects.filter(extent__contained=env.wkt)
+    if user:
+        extent_ids = extent_ids.values('indexed__owner')
+        return q.filter(user__in=extent_ids)
+    else:
+        extent_ids = extent_ids.values('indexed')
+        return q.filter(id__in=extent_ids)
     
-def _filter_by_period(index, q, byperiod):
-    period_ids = filter_by_period(index, byperiod[0], byperiod[1]).values('indexed')
-    return q.filter(id__in=period_ids)
+def _filter_by_period(index, q, byperiod, user=False):
+    period_ids = filter_by_period(index, byperiod[0], byperiod[1])
+    if user:
+        period_ids = period_ids.values('indexed__owner')
+        return q.filter(user__in=period_ids)
+    else:
+        period_ids = period_ids.values('indexed')
+        return q.filter(id__in=period_ids)
     
 def parse_by_added(spec):
     td = None
