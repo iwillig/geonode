@@ -290,7 +290,7 @@ def _get_layer_results(results, query, kw):
         name_filter = reduce(operator.or_,[ Q(name__regex=f) for f in _exclude_patterns])
         q = Layer.objects.exclude(name_filter).filter(publish__status='Public')
         if query:
-            q = q.filter(_build_kw_query(query,True))
+            q = q.filter(_build_kw_query(query,True)) | q.filter(name__icontains = query)
         # we can optimize kw search here
         # maps will still be slow, but this way all the layers are filtered
         # bybw before the cruddy in-memory filter
