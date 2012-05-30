@@ -225,6 +225,15 @@ def _get_map_results(results, query, kw):
     results.extend( _annotate_results( map(MapNormalizer,q) ))
     
     
+def _add_relevance(query, text, rank_rules):
+    eq = """CASE WHEN "%s" = '%s' THEN %s ELSE 0 END"""
+    frag = """CASE WHEN position(lower('%s') in lower(%s)) >= 1 THEN %s ELSE 0 END"""
+
+    sql = " + ".join([ eq % (r[0],text,r[1]) for r in rank_rules])
+    sql += " + " + " + ".join([ frag % (text,r[0],r[2]) for r in rank_rules])
+    
+    return query.extra(select={'relevance':sql})
+    
 def _build_kw_query(query, query_keywords=False):
     '''Build an OR query on title and abstract from provided search text.
     if query_keywords is provided, include a query on the keywords attribute
@@ -337,6 +346,13 @@ def _get_layer_results(results, query, kw):
             if layer is None: continue #@todo - remote layer (how to get last_modified?)
             normalizers.append(LayerNormalizer(layer,doc))
     else:
+        if query:
+            q = _add_relevance(q,query,[
+                ('title',10, 5),
+                ('abstract',5, 1),
+            ])
+        for l in q:
+            print l.relevance
         normalizers = map(LayerNormalizer, q)
     _annotate_results(normalizers)
     results.extend(normalizers)
