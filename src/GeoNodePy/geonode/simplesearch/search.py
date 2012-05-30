@@ -57,11 +57,14 @@ class Normalizer:
         return self.o.title
     def last_modified(self):
         abstract
+    def relevance(self):
+        return self.o.relevance
     def as_dict(self):
         if self.dict is None:
             self.dict = self.populate(self.data or {})
             self.dict['iid'] = self.iid
             self.dict['rating'] = self.rating
+            self.dict['relevance'] = self.o.relevance
             if hasattr(self,'views'):
                 self.dict['views'] = self.views
         return self.dict
@@ -185,6 +188,11 @@ def _get_owner_results(results, query, kw):
             Q(organization__icontains=query) |
             Q(biography__icontains=query)
         )
+        q = _add_relevance(q,query,[
+            ('blurb',10, 1),
+            ('organization',10, 5),
+            ('biography',5, 2),
+        ])
     
     results.extend( _annotate_results(map(OwnerNormalizer,q)))
         
@@ -221,6 +229,11 @@ def _get_map_results(results, query, kw):
             layers_with_kw = Layer.objects.filter(_build_kw_only_query(bykw)).values('typename')
             map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
             q = q.filter(id__in=map_layers_with)
+        if query:
+            q = _add_relevance(q,query,[
+                ('title',10, 5),
+                ('abstract',5, 2),
+            ])
     
     results.extend( _annotate_results( map(MapNormalizer,q) ))
     
@@ -348,11 +361,10 @@ def _get_layer_results(results, query, kw):
     else:
         if query:
             q = _add_relevance(q,query,[
+                ('name',10, 1),
                 ('title',10, 5),
-                ('abstract',5, 1),
+                ('abstract',5, 2),
             ])
-        for l in q:
-            print l.relevance
         normalizers = map(LayerNormalizer, q)
     _annotate_results(normalizers)
     results.extend(normalizers)
