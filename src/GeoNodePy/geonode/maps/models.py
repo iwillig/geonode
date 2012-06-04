@@ -1461,9 +1461,9 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
             },
         }
         if self.tools_params:
-            config['tools'] = simplejson.loads(self.tools_params)
+            config['tools'] = json.loads(self.tools_params)
         if self.portal_params:
-            config['portalConfig'] = simplejson.loads(self.portal_params)
+            config['portalConfig'] = json.loads(self.portal_params)
         if authenticated == True:
             config['authorizedRoles'] = ["ROLE_ADMINISTRATOR"]
         '''
@@ -1519,9 +1519,9 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
             map_changed_signal.send_robust(sender=self,what_changed='layers')
 
         if 'tools' in conf:
-            self.tools_params = simplejson.dumps(conf['tools'])
+            self.tools_params = json.dumps(conf['tools'])
         if 'portalConfig' in conf:
-            self.portal_params = simplejson.dumps(conf['portalConfig'])
+            self.portal_params = json.dumps(conf['portalConfig'])
 
         self.save()
 

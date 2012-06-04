@@ -76,10 +76,12 @@ def _get_all_keywords():
     if settings.USE_GEONETWORK:
         allkw = Layer.objects.gn_catalog.get_all_keywords()
     else:    
-
         allkw = {}
-        for l in Layer.objects.exclude(keywords='').exclude(keywords__isnull=True).values_list('keywords',flat=True):
-            kw = l.split()
+        # @todo tagging added to maps and contacts, depending upon search type,
+        # need to get these... for now it doesn't matter (in mapstory) as
+        # only layers support keywords ATM.
+        for l in Layer.objects.all().select_related().only('keywords'):
+            kw = [ k.name for k in l.keywords.all() ]
             for k in kw:
                 if k not in allkw:
                     allkw[k] = 1

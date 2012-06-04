@@ -915,8 +915,6 @@ def upload_layer(request):
             finally:
                 if tempdir is not None:
                     shutil.rmtree(tempdir)
-                except:
-                    logger.exception('Error cleaning up tempdir %s' % tempdir)
     else:
         errors = []
         for e in form.errors.values():
