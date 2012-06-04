@@ -19,51 +19,28 @@
 
 <script type="text/javascript">
 {% autoescape off %}
+    var config = Ext.apply({
+        tools: [{
+            ptype: "gxp_wmsgetfeatureinfo",
+            // comment the line below if you do not want feature info in a grid
+            format: "grid",
+            actionTarget: "main.tbar",
+            outputConfig: {width: 400, height: 300}
+        }],
+        proxy: "/proxy/?url=",
 
-var app = new GeoExplorer();
+        /* The URL to a REST map configuration service.  This service 
+         * provides listing and, with an authenticated user, saving of 
+         * maps on the server for sharing and editing.
+         */
+        rest: "/maps/",
+        homeUrl: "{% url home %}",
+        localGeoServerBaseUrl: "{{ GEOSERVER_BASE_URL }}",
+        csrfToken: "{{ csrf_token }}",
+        authorizedRoles: "{{ user.is_authenticated|yesno:"ROLE_ADMINISTRATOR,ROLE_ANONYMOUS" }}"
+    }, {{ config }});
 
-// template markup specific javascript
-(function() {
-    var titleTemplate, moreInfoTemplate, permalinkTemplate;
-    function permalink(id) {
-        return permalinkTemplate.apply({
-            protocol: window.location.protocol,
-            host: window.location.host,
-            id: id
-        }) 
-    }
-    app.on({
-        "ready": function() {
-            permalinkTemplate = new Ext.Template("{protocol}//{host}/maps/{id}");
-            moreInfoTemplate = new Ext.Template(decodeURIComponent(Ext.get("more-info-tpl").dom.innerHTML));
-            var mapInfoHtml = app.mapID ? moreInfoTemplate.apply({permalink: permalink(app.mapID)}) : "This map is currently unsaved";
-            Ext.DomHelper.overwrite(Ext.get("more-info"), mapInfoHtml)
-
-            titleTemplate = new Ext.Template(Ext.get("title-tpl").dom.innerHTML);
-            Ext.DomHelper.overwrite(Ext.get("map-title-header"), titleTemplate.apply({title: app.about.title}));
-        },
-        "saved": function(id) {
-            //reset title header
-            Ext.DomHelper.overwrite(Ext.get("map-title-header"), titleTemplate.apply({title: app.about.title}))
-
-            //reset more info link
-            Ext.DomHelper.overwrite(Ext.get("more-info"), moreInfoTemplate.apply({permalink: permalink(app.mapID)}))
-        },
-        scope: {}
-    });
-    
-    var headers = {
-        'X-CSRFToken' : Ext.util.Cookies.get('csrftoken')
-    };
-    Ext.Ajax.defaultHeaders = headers;
-    {# MONKEY PATCH #}
-    OpenLayers.Request._monkey_issue = OpenLayers.Request.issue;
-    OpenLayers.Request.issue = function(config) {
-        config.headers = config.headers || {};
-        config.headers['X-CSRFToken'] = Ext.util.Cookies.get('csrftoken');
-        return this._monkey_issue(config);
-    };
-})()
+    app = new GeoExplorer(config);
 
 {% endautoescape %}
 </script>

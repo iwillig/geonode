@@ -66,9 +66,9 @@ def layer_type(filename):
             zf.close()
 
     if extension.lower() in shp_exts:
-        return FeatureType.resource_type
+         return FeatureType.resource_type
     elif extension.lower() in cov_exts:
-        return Coverage.resource_type
+         return Coverage.resource_type
     else:
         msg = ('Saving of extension [%s] is not implemented' % extension)
         raise GeoNodeException(msg)
@@ -436,7 +436,6 @@ def save(layer, base_file, user, overwrite = True, title=None,
                     typename=typename,
                     title=title or gs_resource.title,
                     uuid=layer_uuid,
-                    keywords=' '.join(keywords),
                     abstract=abstract or gs_resource.abstract or '',
                     owner=user)
     saved_layer, created = Layer.objects.get_or_create(name=gs_resource.name,
@@ -445,6 +444,7 @@ def save(layer, base_file, user, overwrite = True, title=None,
 
     if created:
         saved_layer.set_default_permissions()
+        saved_layer.keywords.add(*keywords)
 
     # Step 9. Create the points of contact records for the layer
     # A user without a profile might be uploading this

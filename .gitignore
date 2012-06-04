@@ -31,6 +31,8 @@ man
 /src/GeoNodePy/capra/development.db
 /src/django-hitcount/
 
+# Directory created by collectstatic
+src/GeoNodePy/geonode/site_media/
 
 # OSX specific
 .Python

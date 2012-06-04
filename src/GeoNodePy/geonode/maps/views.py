@@ -18,8 +18,7 @@ from django.template import RequestContext, loader
 from django.utils.translation import ugettext as _
 from django.views.decorators.cache import never_cache
 from django.core.cache import cache
-import json
-import simplejson
+from django.utils import simplejson as json
 import math
 import httplib2 
 from owslib.csw import CswRecord, namespaces
@@ -34,7 +33,7 @@ from django.db.models import Q
 import logging
 import traceback    
 from django.utils.html import escape
-
+import taggit
 from geonode.maps.utils import forward_mercator
 
 logger = logging.getLogger("geonode.maps.views")
@@ -75,6 +74,7 @@ def default_map_config(request):
 def bbox_to_wkt(x0, x1, y0, y1, srid="4326"):
     return 'SRID='+srid+';POLYGON(('+x0+' '+y0+','+x0+' '+y1+','+x1+' '+y1+','+x1+' '+y0+','+x0+' '+y0+'))'
 class ContactForm(forms.ModelForm):
+    keywords = taggit.forms.TagField()
     class Meta:
         model = Contact
         exclude = ('user',)
@@ -93,7 +93,7 @@ class LayerForm(forms.ModelForm):
     metadata_author = forms.ModelChoiceField(empty_label = "Person outside GeoNode (fill form)",
                                              label = "Metadata Author", required=False,
                                              queryset = Contact.objects.exclude(user=None))
-
+    keywords = taggit.forms.TagField()
     class Meta:
         model = Layer
         exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename')
@@ -109,6 +109,7 @@ class PocForm(forms.Form):
 
 
 class MapForm(forms.ModelForm):
+    keywords = taggit.forms.TagField()
     class Meta:
         model = Map
         exclude = ('contact', 'zoom', 'projection', 'center_x', 'center_y', 'owner', 'portal_params', 'tools_params')
@@ -150,7 +151,7 @@ def maps(request, mapid=None):
                 response = HttpResponse('', status=201)
                 response['Location'] = map.id
                 return response
-            except simplejson.JSONDecodeError:
+            except json.JSONDecodeError:
                 return HttpResponse(status=400)
 
 def mapJSON(request, mapid):
@@ -445,20 +446,6 @@ Contents:
         resp,content = h.request(url,'GET')
         return HttpResponse(content, status=resp.status)
 
-
-
-def view_map_permissions(request, mapid):
-    map = get_object_or_404(Map,pk=mapid) 
-
-    if not request.user.has_perm('maps.change_map_permissions', obj=map):
-        return HttpResponse(loader.render_to_string('401.html', 
-            RequestContext(request, {'error_message': 
-                _("You are not permitted to view this map's permissions")})), status=401)
-
-    ctx = _view_perms_context(map, MAP_LEV_NAMES)
-    ctx['map'] = map
-    return render_to_response("maps/permissions.html", RequestContext(request, ctx))
-
 def set_layer_permissions(layer, perm_spec):
     if "authenticated" in perm_spec:
         layer.set_gen_level(AUTHENTICATED_USERS, perm_spec['authenticated'])
@@ -617,7 +604,12 @@ def describemap(request, mapid):
         # Change metadata, return to map info page
         map_form = MapForm(request.POST, instance=map, prefix="map")
         if map_form.is_valid():
-            map_form.save()
+            map = map_form.save(commit=False)
+            if map_form.cleaned_data["keywords"]:
+                map.keywords.add(*map_form.cleaned_data["keywords"])
+            else:
+                map.keywords.clear()
+            map.save()
 
             return HttpResponseRedirect(reverse('geonode.maps.views.map_controller', args=(map.id,)))
     else:
@@ -717,6 +709,7 @@ def layer_metadata(request, layername):
         if request.method == "POST" and layer_form.is_valid():
             new_poc = layer_form.cleaned_data['poc']
             new_author = layer_form.cleaned_data['metadata_author']
+            new_keywords = layer_form.cleaned_data['keywords']
 
             if new_poc is None:
                 poc_form = ContactForm(request.POST, prefix="poc")
@@ -732,6 +725,7 @@ def layer_metadata(request, layername):
                 the_layer = layer_form.save(commit=False)
                 the_layer.poc = new_poc
                 the_layer.metadata_author = new_author
+                the_layer.keywords.add(*new_keywords)
                 the_layer.save()
                 return HttpResponseRedirect("/data/" + layer.typename)
 
@@ -889,66 +883,37 @@ GENERIC_UPLOAD_ERROR = _("There was an error while attempting to upload your dat
 Please try again, or contact and administrator if the problem continues.")
 
 @login_required
-def upload_layer(request, step=None):
-    """Allow use of the old uploader and the new one. This is done by the
-    USE_UPLOADER setting. The optional step will be ignored by the old uploader.
-    The step is managed by the uploader and since it is part of a sequence,
-    shouldn't be used by other code (so it's not in urls).
-    """
-    if settings.USE_UPLOADER:
-        from geonode.maps.upload import view
-        
-    try:
-        if request.method == 'GET':
-            if step is None:
-                import os, tempfile
-                s = os.statvfs(settings.FILE_UPLOAD_TEMP_DIR or tempfile.gettempdir())
-                mb = s.f_bsize * s.f_bavail / (1024. * 1024)
-                display_storage_stats = hasattr(settings, 'DISPLAY_UPLOAD_STORAGE_STATS') and \
-                    settings.DISPLAY_UPLOAD_STORAGE_STATS or False
-                return render_to_response('maps/layer_upload.html',
-                                        RequestContext(request, {
-                                        'storage_remaining' : "%d MB" % mb,
-                                        'enough_storage' : mb > 64,
-                                        'display_storage_stats': display_storage_stats
-                                        }))
-            else:
-                return view(request, step)
-        elif request.method == 'POST':
-            if settings.USE_UPLOADER:
-                return view(request, step)
-            else:
-                return _old_upload(request)
-    except Exception, e:
-        return json_response("Unexpected error during upload: %s.", exception=e)
-        
-def _old_upload(request):
-    from geonode.maps.forms import NewLayerUploadForm
-    from geonode.maps.utils import save
-    import os, shutil
-    form = NewLayerUploadForm(request.POST, request.FILES)
-    tempdir = None
-    if form.is_valid():
-        try:
-            tempdir, base_file = form.write_files()
-            name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
-            saved_layer = save(name, base_file, request.user, 
-                    overwrite = False,
-                    abstract = form.cleaned_data["abstract"],
-                    title = form.cleaned_data["layer_title"],
-                    permissions = form.cleaned_data["permissions"]
-                    )
-            return HttpResponse(json.dumps({
-                "success": True,
-                "redirect_to": reverse('layer_metadata', args=[saved_layer.typename])}))
-        except Exception, e:
-            logger.exception("Unexpected error during upload.")
-            return HttpResponse(json.dumps({
-                "success": False,
-                "errors": ["Unexpected error during upload: " + escape(str(e))]}))
-        finally:
-            if tempdir is not None:
-                try:
+def upload_layer(request):
+    if request.method == 'GET':
+        return render_to_response('maps/layer_upload.html',
+                                  RequestContext(request, {}))
+    elif request.method == 'POST':
+        from geonode.maps.forms import NewLayerUploadForm
+        from geonode.maps.utils import save
+        from django.utils.html import escape
+        import os, shutil
+        form = NewLayerUploadForm(request.POST, request.FILES)
+        tempdir = None
+        if form.is_valid():
+            try:
+                tempdir, base_file = form.write_files()
+                name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
+                saved_layer = save(name, base_file, request.user, 
+                        overwrite = False,
+                        abstract = form.cleaned_data["abstract"],
+                        title = form.cleaned_data["layer_title"],
+                        permissions = form.cleaned_data["permissions"]
+                        )
+                return HttpResponse(json.dumps({
+                    "success": True,
+                    "redirect_to": reverse('data_metadata', args=[saved_layer.typename])}))
+            except Exception, e:
+                logger.exception("Unexpected error during upload.")
+                return HttpResponse(json.dumps({
+                    "success": False,
+                    "errors": ["Unexpected error during upload: " + escape(str(e))]}))
+            finally:
+                if tempdir is not None:
                     shutil.rmtree(tempdir)
                 except:
                     logger.exception('Error cleaning up tempdir %s' % tempdir)
@@ -998,7 +963,7 @@ def layer_replace(request, layername):
 
                 return HttpResponse(json.dumps({
                     "success": True,
-                    "redirect_to": reverse('layer_metadata', args=[saved_layer.typename])}))
+                    "redirect_to": reverse('data_metadata', args=[saved_layer.typename])}))
             except Exception, e:
                 logger.exception("Unexpected error during upload.")
                 return HttpResponse(json.dumps({
@@ -1016,55 +981,42 @@ def layer_replace(request, layername):
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
         
 def json_response(body=None, errors=None, redirect_to=None, exception=None):
-    """Create a proper JSON response. If body is provided, this is the response.
-    If errors is not None, the response is a success/errors json object.
-    If redirect_to is not None, the response is a success=True, redirect_to object
-    If the exception is provided, it will be logged. If body is a string, the
-    exception message will be used as a format option to that string and the
-    result will be a success=False, errors = body % exception
-    """
-    if errors:
-        body = {
-            'success' : False,
-            'errors' : errors
-        }
-    elif redirect_to:
-        body = {
-            'success' : True,
-            'redirect_to' : redirect_to
-        }
-    elif exception:
-        if body is None:
-            body = "Unexpected exception %s" % exception
-        else:
-            body = body % exception
-        logger.warn(body)
-        logger.warn(traceback.format_exc(exception))
-        body = {
-            'success' : False,
-            'errors' : [ body ]
-        }
-    elif body:
-        pass
-    else:
-        raise Exception("must call with body, errors or redirect_to")
-
-    if not isinstance(body, basestring):
-        body = json.dumps(body)
-    return HttpResponse(body, mimetype = "application/json")
-        
-@login_required
-def view_layer_permissions(request, layername):
-    layer = get_object_or_404(Layer,typename=layername) 
-
-    if not request.user.has_perm('maps.change_layer_permissions', obj=layer):
-        return HttpResponse(loader.render_to_string('401.html', 
-            RequestContext(request, {'error_message': 
-                _("You are not permitted to view this layer's permissions")})), status=401)
-    
-    ctx = _view_perms_context(layer, LAYER_LEV_NAMES)
-    ctx['layer'] = layer
-    return render_to_response("maps/layer_permissions.html", RequestContext(request, ctx))
+   """Create a proper JSON response. If body is provided, this is the response.
+   If errors is not None, the response is a success/errors json object.
+   If redirect_to is not None, the response is a success=True, redirect_to object
+   If the exception is provided, it will be logged. If body is a string, the
+   exception message will be used as a format option to that string and the
+   result will be a success=False, errors = body % exception
+   """
+   if errors:
+       body = {
+           'success' : False,
+           'errors' : errors
+       }
+   elif redirect_to:
+       body = {
+           'success' : True,
+           'redirect_to' : redirect_to
+       }
+   elif exception:
+       if body is None:
+           body = "Unexpected exception %s" % exception
+       else:
+           body = body % exception
+       logger.warn(body)
+       logger.warn(traceback.format_exc(exception))
+       body = {
+           'success' : False,
+           'errors' : [ body ]
+       }
+   elif body:
+       pass
+   else:
+       raise Exception("must call with body, errors or redirect_to")
+ 
+   if not isinstance(body, basestring):
+       body = json.dumps(body)
+   return HttpResponse(body, mimetype = "application/json")
 
 def _view_perms_context(obj, level_names):
 

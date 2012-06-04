@@ -24,12 +24,8 @@
       <url>http://download.osgeo.org/webdav/geotools</url>
     </repository>
     <repository>
-      <id>maven-restlet</id>
-      <name>Restlet Maven Repository</name>
-      <url>http://maven.restlet.org</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
+      <id>restlet</id>
+      <url>http://maven.restlet.org/</url>
     </repository>
   </repositories>
 
@@ -99,6 +95,25 @@
       <artifactId>gt-shapefile</artifactId>
       <version>${geotools.version}</version>
     </dependency>
+    
+    <dependency>
+        <groupId>org.opengeo.geoserver</groupId>
+        <artifactId>importer</artifactId>
+        <version>2.4-SNAPSHOT</version>
+        <scope>runtime</scope>
+        <exclusions>
+            <exclusion>
+                <groupId>*</groupId>
+                <artifactId>*</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+    <dependency>
+        <groupId>org.geotools</groupId>
+        <artifactId>gt-shapefile</artifactId>
+        <version>${geotools.version}</version>
+    </dependency>
+
     
 
     <!-- GeoJSON module dependencies -->
@@ -226,6 +241,14 @@
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+            <argLine>-XX:MaxPermSize=256m</argLine>
+        </configuration>
+      </plugin>
+      
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>

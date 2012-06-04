@@ -3,7 +3,6 @@
 {% load i18n %}
 {% load dialogos_tags %}
 {% load agon_ratings_tags %}
-{% load phileo_tags %}
 
 {% block title %} {{ layer.resource.title|default:layer.typename }} - {{ block.super }} {% endblock %}
 
@@ -66,7 +65,7 @@
             Ext.get(Ext.DomQuery.select("select[@name='default-style']")).on("change", function(evt, elem) {
                 Ext.Ajax.request({
                     method: "post",
-                    url: "{% url layer_style layer.typename %}",
+                    url: "{% url data_style layer.typename %}",
                     params: {"defaultStyle" : elem.value}
                 });
             });
@@ -81,7 +80,7 @@
 {% if can_change_permissions %}
             new GeoNode.PermissionsEditor({
                 renderTo: "permissions_form",
-                userLookup: "{% url geonode.views.ajax_lookup %}",
+                userLookup: "{% url auth_ajax_lookup %}",
                 permissions: {{ permissions_json }},
                 levels: {
                     'admin': 'layer_admin',
@@ -91,7 +90,7 @@
                 },
                 listeners: {
                     updated: function(perms) {
-                        var submitTo = "{% url geonode.maps.views.ajax_layer_permissions layer.typename %}";
+                        var submitTo = "{% url data_ajax_perm layer.typename %}";
                         Ext.Ajax.request({ url: submitTo, jsonData: perms.writePermissions() });
                     }
                 }
@@ -135,11 +134,10 @@
 
 {% block main %}
 <div class="twocol">
-{% overall_rating layer "layer" as layer_rating %}
-<div class="overall_rating" data-rating="{{ layer_rating }}"></div>
-
 	<div id="description">
 		<h3>{{ layer.resource.title|default:layer.typename }}</h3>
+        {% overall_rating layer "layer" as layer_rating %}
+        <div class="overall_rating" data-rating="{{ layer_rating }}"></div>
 		<g:plusone size="small" href="http://{{ request.get_host }}{{ request.get_full_path }}"></g:plusone>
 		<div class="fb-like" data-href="http://{{ request.get_host }}{{ request.get_full_path }}" data-send="false" data-width="50" data-layout="button_count" data-show-faces="false"></div>
 {% phileo_widget request.user layer %}
@@ -151,7 +149,7 @@
 
 <h3>{% trans "Layer Information" %}</h3>
 {% if layer.display_type %}<p> <strong>{% trans "Type" %}:</strong> {{ layer.display_type }} </p>{% endif %}
-{% if layer.keywords %}<p> <strong>{% trans "Keywords" %}:</strong> {{ layer.keywords }}</p>{% endif %}
+{% if layer.keywords %}<p> <strong>{% trans "Keywords" %}:</strong> {{ layer.keywords.all|join:", " }}</p>{% endif %}
 {% if layer.edition %}<p> <strong>{% trans "Edition" %}:</strong> {{ layer.edition }}</p>{% endif %}
 {% if layer.topic_category %}<p> <strong>{% trans "Topic Category" %}:</strong> {{ layer.topic_category }}</p>{% endif %}
 
@@ -278,7 +276,7 @@
     {% else %}
         <p> {% trans "This layer is not currently used in any maps." %} </p>
     {% endif %}
-    <p><a href="{% url geonode.maps.views.newmap %}?layer={{layer.typename}}">{% trans "Create new map" %}</a></p> 
+    <p><a href="{% url maps_new %}?layer={{layer.typename}}">{% trans "Create new map" %}</a></p> 
 
     {% has_obj_perm user layer "maps.change_layer" as can_change %}
     {% has_obj_perm user layer "maps.delete_layer" as can_delete %}
@@ -332,17 +330,15 @@
         <ul>
                         {% if user.is_authenticated %}
         {% if can_change %}
-                <li><a href="?describe">{% trans "Update the description of this data" %}</a></li>
-            	<li><a href="?update">{% trans "Upload a new version of this data" %}</a></li>
-            	<li><a id="set_thumbnail" href="?thumbnail">{% trans "Set thumbnail" %}</a></li>
-        {% endif %}
-        {% if can_change_permissions %}
-        <li><a href="{% url edit_layer_permissions layer.typename %}">
-            {% trans "Edit Permissions" %}
+        <li> <a href="{% url data_metadata layer.typename %}">
+            {% trans "Update the description of this data" %}
+        </a> </li>
+        <li> <a href="{% url data_replace layer.typename %}">
+            {% trans "Upload a new version of this data" %}
         </a></li>
         {% endif %}
             {% if can_delete %}
-            <li><a href="{% url layer_remove layer.typename %}">
+            <li><a href="{% url data_remove layer.typename %}">
                 {% trans "Remove" %}
             </a></li>
                         {% endif %}
@@ -361,12 +357,12 @@
 {% endblock %}
 
 {% block end_body_js %}
-{% if user.is_authenticated %}
-	{% user_rating_js user layer "layer" %}
+{% if request.user.is_authenticated %}
+	{% user_rating_js request.user layer "layer" %}
 {% else %}
 	<script src="{{ STATIC_URL }}agon_ratings/js/jquery.raty.js"></script>
 {% endif %}
-<script>
+<script type="text/javascript">
 	$(function() {
 		$('div.overall_rating').raty({
 			half: true,

@@ -11,14 +11,16 @@ from gsuploader.uploader import Uploader
 from django.db.models import signals
 from django.dispatch import Signal
 from django.utils.html import escape
+from taggit.managers import TaggableManager
+from django.utils import simplejson as json
+
 import httplib2
-import simplejson
 import urllib
 from urlparse import urlparse
 import uuid
 from datetime import datetime
 from django.contrib.auth.models import User, Permission
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 from string import lower
 from StringIO import StringIO
@@ -505,6 +507,8 @@ class Contact(models.Model):
     zipcode = models.CharField(_('Postal Code'), max_length=255, blank=True, null=True)
     country = models.CharField(choices=COUNTRIES, max_length=3, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
+    
+    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
 
     def clean(self):
         # the specification says that either name or organization should be provided
@@ -743,7 +747,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     # see poc property definition below
 
     # section 3
-    keywords = models.TextField(_('keywords'), blank=True, null=True)
+    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
     keywords_region = models.CharField(_('keywords region'), max_length=3, choices= COUNTRIES, default = 'USA')
     constraints_use = models.CharField(_('constraints use'), max_length=255, choices = [(x, x) for x in CONSTRAINT_OPTIONS], default='copyright')
     constraints_other = models.TextField(_('constraints other'), blank=True, null=True)
@@ -900,7 +904,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         # rather than searching for it
         #api_url = "%sdata/search/api/?q=%s" % (settings.SITEURL, self.name.replace('_', '%20'))
         #response, body = http.request(api_url)
-        #api_json = simplejson.loads(body)
+        #api_json = json.loads(body)
         #api_layer = None
         #for row in api_json['rows']:
         #    if(row['name'] == self.typename):
@@ -1171,7 +1175,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 meta.identification.keywords,
                 [])
         kw_list = filter(lambda x: x is not None, kw_list)
-        self.keywords = ' '.join(kw_list)
+        self.keywords.add(*kw_list)
         if hasattr(meta.distribution, 'online'):
             onlineresources = [r for r in meta.distribution.online if r.protocol == "WWW:LINK-1.0-http--link"]
             if len(onlineresources) == 1:
@@ -1180,10 +1184,11 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
                 self.distribution_description = res.description
 
     def keyword_list(self):
-        if self.keywords is None or len(self.keywords) == 0:
-            return []
+        keywords_qs = self.keywords.all()
+        if keywords_qs:
+            return [kw.name for kw in keywords_qs]
         else:
-            return self.keywords.split()
+            return []
 
     def set_bbox(self, box, srs=None):
         """
@@ -1326,6 +1331,9 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     A JSON-encoded dictionary of arbitrary parameters for the ...(what?)
     """
 
+    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
+
+
     def __unicode__(self):
         return '%s by %s' % (self.title, (self.owner.username if self.owner else "<Anonymous>"))
 
@@ -1378,7 +1386,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
             "layers" : [layer_json(lyr) for lyr in layers]
         }
 
-        return simplejson.dumps(map)
+        return json.dumps(map)
 
     def viewer_json(self, added_layers=[], authenticated=False):
         """
@@ -1413,7 +1421,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
         for source in uniqify(configs):
             while str(i) in sources: i = i + 1
             sources[str(i)] = source 
-            server_lookup[simplejson.dumps(source)] = str(i)
+            server_lookup[json.dumps(source)] = str(i)
 
         def source_lookup(source):
             for k, v in sources.iteritems():
@@ -1475,7 +1483,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
         This method automatically persists to the database!
         """
         if isinstance(conf, basestring):
-            conf = simplejson.loads(conf)
+            conf = json.loads(conf)
 
         self.title = conf['about']['title']
         self.abstract = conf['about']['abstract']
@@ -1498,6 +1506,8 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
         
         for layer in self.layer_set.all():
             layer.delete()
+            
+        self.keywords.add(*conf['map'].get('keywords', []))
 
         for ordering, layer in enumerate(layers):
             self.layer_set.add(
@@ -1514,6 +1524,13 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
             self.portal_params = simplejson.dumps(conf['portalConfig'])
 
         self.save()
+
+    def keyword_list(self):
+        keywords_qs = self.keywords.all()
+        if keywords_qs:
+            return [kw.name for kw in keywords_qs]
+        else:
+            return []
 
     def get_absolute_url(self):
         return '/maps/%i' % self.id
@@ -1578,8 +1595,8 @@ class MapLayerManager(models.Manager):
             group = layer.get('group', None),
             visibility = layer.get("visibility", True),
             ows_url = source.get("url", None),
-            layer_params = simplejson.dumps(layer_cfg),
-            source_params = simplejson.dumps(source_cfg)
+            layer_params = json.dumps(layer_cfg),
+            source_params = json.dumps(source_cfg)
         )
 
 class MapLayer(models.Model):
@@ -1693,7 +1710,7 @@ class MapLayer(models.Model):
         configuration suitable for loading this layer.
         """
         try:
-            cfg = simplejson.loads(self.source_params)
+            cfg = json.loads(self.source_params)
         except:
             cfg = dict(ptype="gxp_wmscsource", restUrl="/gs/rest")
 
@@ -1712,7 +1729,7 @@ class MapLayer(models.Model):
         generating a full map configuration.
         """
         try:
-            cfg = simplejson.loads(self.layer_params)
+            cfg = json.loads(self.layer_params)
         except: 
             cfg = dict()
 
@@ -1806,6 +1823,41 @@ def post_save_layer(instance, sender, **kwargs):
     if kwargs['created']:
         instance._populate_from_gn()
         instance.save(force_update=True)
+        
+class UploadManager(models.Manager):
+    def __init__(self):
+        models.Manager.__init__(self)
+    def update_from_session(self, import_session):
+        self.get(import_id = import_session.id).update_from_session(import_session)
+    def create_from_session(self, user, import_session):
+        return self.create(
+            user = user, 
+            import_id = import_session.id, 
+            state= import_session.state)
+        
+class Upload(models.Model):
+    objects = UploadManager()
+    
+    import_id = models.BigIntegerField()
+    user = models.ForeignKey(User, blank=True, null=True)
+    state = models.CharField(max_length=16)
+    date = models.DateTimeField('date', default = datetime.now)
+    
+    def update_from_session(self, import_session):
+        self.state = import_session.state
+        self.save()
+    def get_import_url(self):
+        return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.import_id)
+    def delete(self, cascade=True):
+        models.Model.delete(self)
+        if cascade:
+            session = Layer.objects.gs_uploader.get_session(self.import_id)
+            if session:
+                try:
+                    session.delete()
+                except:
+                    logging.exception('error deleting upload session')
+
 
 
 
@@ -1896,40 +1948,6 @@ class Thumbnail(models.Model):
 def _remove_thumb(instance, sender, **kw):
     for t in Thumbnail.objects.filter(object_id=instance.id):
         t.delete()
-        
-class UploadManager(models.Manager):
-    def __init__(self):
-        models.Manager.__init__(self)
-    def update_from_session(self, import_session):
-        self.get(import_id = import_session.id).update_from_session(import_session)
-    def create_from_session(self, user, import_session):
-        return self.create(
-            user = user, 
-            import_id = import_session.id, 
-            state= import_session.state)
-        
-class Upload(models.Model):
-    objects = UploadManager()
-    
-    import_id = models.BigIntegerField()
-    user = models.ForeignKey(User, blank=True, null=True)
-    state = models.CharField(max_length=16)
-    date = models.DateTimeField('date', default = datetime.now)
-    
-    def update_from_session(self, import_session):
-        self.state = import_session.state
-        self.save()
-    def get_import_url(self):
-        return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.import_id)
-    def delete(self, cascade=True):
-        models.Model.delete(self)
-        if cascade:
-            session = Layer.objects.gs_uploader.get_session(self.import_id)
-            if session:
-                try:
-                    session.delete()
-                except:
-                    logging.exception('error deleting upload session')
         
 
 signals.pre_delete.connect(_remove_thumb, sender=Layer)

@@ -35,11 +35,11 @@ Ext.onReady(function() {
             '_none': '_none'
         },
         renderTo: "permissions_form",
-        userLookup: "{% url geonode.views.ajax_lookup %}",
+        userLookup: "{% url auth_ajax_lookup %}",
         permissions: {{ permissions_json }},
         listeners: {
             updated: function(perms) {
-                var submitTo = "{% url geonode.maps.views.ajax_map_permissions map.id %}";
+                var submitTo = "{% url maps_ajax_perm map.id %}";
                 Ext.Ajax.request({ url: submitTo, jsonData: perms.writePermissions() });
             }
         }
@@ -66,16 +66,13 @@ Ext.onReady(function() {
 
 {% block main %}
 <div class="twocol">
-	{% overall_rating map "map" as map_rating %}
-	<h3>{{map.title}}</h3>
-	<div class="overall_rating" data-rating="{{ map_rating }}"></div>
-
-
-
+   {% overall_rating map "map" as map_rating %}
   <h3>{{map.title}}</h3>
+	<div class="overall_rating" data-rating="{{ map_rating }}"></div>
   <g:plusone size="small" href="http://{{ request.get_host }}{{ request.get_full_path }}"></g:plusone>
   <div class="fb-like" data-href="http://{{ request.get_host }}{{ request.get_full_path }}" data-send="false" data-width="50" data-layout="button_count" data-show-faces="false"></div>
   <p><strong>{% trans "Abstract:" %}</strong> {{map.abstract}}</p>
+  <p><strong>{% trans "Keywords:" %}</strong> {{map.keywords.all|join:", "}}
 
   <div id="embedded_map">
   </div>
@@ -120,17 +117,12 @@ Ext.onReady(function() {
 		{% user_rating request.user map "map" as user_map_rating %}
 		<div id="user_rating" class="category-map"></div>
 	{% endif %}
-
-
-=======
-  <h3>Social</h3>
->>>>>>> 8211953377229cb55e9536d85ff7fe01e825ef4f
 </div>
 {% endblock %}
 {% block sidebar %}
 <div id="sidebar" class="threecol">
     <h3>{% trans "Download" %}</h3>
-    <p><a href="{% url geonode.maps.views.map_download map.id %}">{% trans "Download all layers included in this map" %}</a></p>
+    <p><a href="{% url maps_download map.id %}">{% trans "Download all layers included in this map" %}</a></p>
     <h3>{% trans "Layers" %}</h3>
   <p>{% trans "This map uses the following layers" %} </p>
   <ul>
@@ -145,18 +137,14 @@ Ext.onReady(function() {
     {% has_obj_perm user map "maps.change_map" as can_change %}
     {% has_obj_perm user map "maps.delete_map" as can_delete %}
 
-    <li><a href="{% url geonode.maps.views.view map.id %}">{% trans "View or edit this map" %}</a></li>
+    <li><a href="{% url maps_view map.id %}">{% trans "View or edit this map" %}</a></li>
     {% if can_change %}
-    <li><a href="{% url geonode.maps.views.map_controller map.id %}?describe">{% trans "Edit metadata" %}</a></li>
-    <li><a id="set_thumbnail" href="{% url geonode.maps.views.map_controller map.id %}?thumbnail">{% trans "Set thumbnail" %}</a></li>
-    {% endif %}
-    {% if can_change_permissions %}
-    <li><a href="{% url edit_map_permissions map.id %}">{% trans "Edit permissions" %}</a></li>
+    <li><a href="{% url maps_controller map.id %}?describe">{% trans "Edit metadata" %}</a></li>
     {% endif %}
     {% if can_delete %}
-    <li><a href="{% url geonode.maps.views.map_controller map.id %}?remove">{% trans "Delete map" %}</a></li>
+    <li><a href="{% url maps_controller map.id %}?remove">{% trans "Delete map" %}</a></li>
     {% endif %}
-    <li><a href="{% url geonode.maps.views.newmap %}?copy={{map.id}}">{% trans "Duplicate map" %}</a></li>
+    <li><a href="{% url maps_new %}?copy={{map.id}}">{% trans "Duplicate map" %}</a></li>
   </ul>
   {% has_obj_perm user map "maps.change_map_permissions" as can_change_permissions %}
   {% if can_change_permissions %}
@@ -173,7 +161,7 @@ Ext.onReady(function() {
 {% else %}
 	<script src="{{ STATIC_URL }}agon_ratings/js/jquery.raty.js"></script>
 {% endif %}
-<script>
+<script type="text/javascript">
 	$(function() {
 		$('div.overall_rating').raty({
 			half: true,
@@ -182,12 +170,10 @@ Ext.onReady(function() {
 			path: "{{ STATIC_URL }}agon_ratings/img/"
 		});
 	});
-<script type="text/javascript">
 	(function() {
 		var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
 		po.src = 'https://apis.google.com/js/plusone.js';
 		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 	})();
->>>>>>> 8211953377229cb55e9536d85ff7fe01e825ef4f
 </script>
 {% endblock %}

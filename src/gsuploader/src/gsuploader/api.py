@@ -123,6 +123,8 @@ class Item(_UploadBase):
         resource = json['resource']
         if 'featureType' in resource:
             self.resource = FeatureType(resource['featureType'],self)
+        elif 'coverage' in resource:
+            self.resource = Coverage(resource['coverage'], self)
         else:
             raise Exception('not handling resource %s' % resource)
     def set_transforms(self,transforms):
@@ -234,25 +236,33 @@ class FeatureType(_UploadBase):
                     }
                 }
             }
-        
+
         }
-        self._client().put_json(item.href,json.dumps(data))
-        
-                
-class Attribute(_UploadBase):
-    def _bind_json(self,json):
+        self._client().put_json(item.href, json.dumps(data))
+
+
+class Coverage(_UploadBase):
+    resource_type = "coverage"
+
+    def _bind_json(self, json):
+        # TODO
         self._bind(json)
 
+
+class Attribute(_UploadBase):
+    def _bind_json(self, json):
+        self._bind(json)
+
+
 class Session(_UploadBase):
-    def __init__(self,json=None):
+    def __init__(self, json=None):
         self.tasks = []
         if json:
             self._bind(json)
             if 'tasks' in json:
-                self.tasks = self._build(json['tasks'],Task)
-                
+                self.tasks = self._build(json['tasks'], Task)
 
-    def upload_task(self,files, use_url = False):
+    def upload_task(self, files, use_url=False):
         """create a task with the provided files
         files - collection of files to upload or zip file
         use_url - if true, post a URL to the uploader

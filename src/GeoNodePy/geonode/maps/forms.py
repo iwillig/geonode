@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django import forms
-import json
+from django.utils import simplejson as json
 import os
 import tempfile
 
@@ -23,7 +23,6 @@ class LayerUploadForm(forms.Form):
     def clean(self):
         cleaned = super(LayerUploadForm, self).clean()
         base_name, base_ext = os.path.splitext(cleaned["base_file"].name)
-
         if base_ext.lower() == '.zip':
             # for now, no verification, but this could be unified
             pass
