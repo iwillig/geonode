@@ -6,7 +6,8 @@ import base64
 from django import forms
 from django.contrib.auth import authenticate, get_backends as get_auth_backends
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -14,16 +15,19 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template import RequestContext, loader
 from django.utils.translation import ugettext as _
-from django.utils import simplejson as json
-
+import json
 import math
 import httplib2 
 from owslib.csw import CswRecord, namespaces
 from owslib.util import nspath
 import re
+from urllib2 import HTTPError
 from urllib import urlencode
 from urlparse import urlparse
+import uuid
 import unicodedata
+from django.views.decorators.csrf import csrf_exempt, csrf_response_exempt
+from django.forms.models import inlineformset_factory
 from django.db.models import Q
 import logging
 import taggit
@@ -172,7 +176,7 @@ def mapJSON(request, mapid):
                 mimetype="text/plain",
                 status=204
             )
-        except Exception:
+        except Exception, e:
             return HttpResponse(
                 "The server could not understand the request." + str(e),
                 mimetype="text/plain",
@@ -267,12 +271,13 @@ def newmap_config(request):
                 map_obj.zoom = math.ceil(min(width_zoom, height_zoom))
 
             
-            config = map_obj.viewer_json(*(DEFAULT_BASE_LAYERS + layers))
+            config = map.viewer_json(*(DEFAULT_BASE_LAYERS + layers))
             config['fromLayer'] = True
         else:
             config = DEFAULT_MAP_CONFIG
     return json.dumps(config)
 
+@csrf_exempt            
 def newmap(request):
     config = newmap_config(request)
     if isinstance(config, HttpResponse):
@@ -437,6 +442,20 @@ Contents:
         url = "%srest/process/batchDownload/status/%s" % (settings.GEOSERVER_BASE_URL, download_id)
         resp,content = h.request(url,'GET')
         return HttpResponse(content, status=resp.status)
+
+
+
+def view_map_permissions(request, mapid):
+    map = get_object_or_404(Map,pk=mapid) 
+
+    if not request.user.has_perm('maps.change_map_permissions', obj=map):
+        return HttpResponse(loader.render_to_string('401.html', 
+            RequestContext(request, {'error_message': 
+                _("You are not permitted to view this map's permissions")})), status=401)
+
+    ctx = _view_perms_context(map, MAP_LEV_NAMES)
+    ctx['map'] = map
+    return render_to_response("maps/permissions.html", RequestContext(request, ctx))
 
 def set_layer_permissions(layer, perm_spec):
     if "authenticated" in perm_spec:
@@ -666,6 +685,9 @@ def view_js(request, mapid):
     config = map.viewer_json()
     return HttpResponse(json.dumps(config), mimetype="application/javascript")
 
+def fixdate(str):
+    return " ".join(str.split("T"))
+
 class LayerDescriptionForm(forms.Form):
     title = forms.CharField(300)
     abstract = forms.CharField(1000, widget=forms.Textarea, required=False)
@@ -863,6 +885,7 @@ def layer_replace(request, layername):
         return HttpResponse(loader.render_to_string('401.html', 
             RequestContext(request, {'error_message': 
                 _("You are not permitted to modify this layer")})), status=401)
+    
     if request.method == 'GET':
         cat = Layer.objects.gs_catalog
         info = cat.get_resource(layer.name)
@@ -883,6 +906,7 @@ def layer_replace(request, layername):
         if form.is_valid():
             try:
                 tempdir, base_file = form.write_files()
+                name, __ = os.path.splitext(form.cleaned_data["base_file"].name)
                 saved_layer = save(layer, base_file, request.user, overwrite=True)
                 return HttpResponse(json.dumps({
                     "success": True,
@@ -902,6 +926,20 @@ def layer_replace(request, layername):
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
 
+
+@login_required
+def view_layer_permissions(request, layername):
+    layer = get_object_or_404(Layer,typename=layername) 
+
+    if not request.user.has_perm('maps.change_layer_permissions', obj=layer):
+        return HttpResponse(loader.render_to_string('401.html', 
+            RequestContext(request, {'error_message': 
+                _("You are not permitted to view this layer's permissions")})), status=401)
+    
+    ctx = _view_perms_context(layer, LAYER_LEV_NAMES)
+    ctx['layer'] = layer
+    return render_to_response("maps/layer_permissions.html", RequestContext(request, ctx))
+
 def _view_perms_context(obj, level_names):
 
     ctx =  obj.get_all_level_info()
@@ -916,6 +954,12 @@ def _view_perms_context(obj, level_names):
     ulevs.sort()
     ctx['users'] = ulevs
 
+    glevs = []
+    for g, l in ctx['groups'].items():
+        glevs.append([g, lname(l)])
+    glevs.sort()
+    ctx['groups'] = glevs
+    
     return ctx
 
 def _perms_info(obj, level_names):
@@ -923,7 +967,7 @@ def _perms_info(obj, level_names):
     # these are always specified even if none
     info[ANONYMOUS_USERS] = info.get(ANONYMOUS_USERS, obj.LEVEL_NONE)
     info[AUTHENTICATED_USERS] = info.get(AUTHENTICATED_USERS, obj.LEVEL_NONE)
-    info['users'] = sorted(info['users'].items())
+    info['users'] = sorted(info['users'].items() + info['groups'].items())
     info['levels'] = [(i, level_names[i]) for i in obj.permission_levels]
     if hasattr(obj, 'owner') and obj.owner is not None:
         info['owner'] = obj.owner.username
@@ -1035,12 +1079,16 @@ def layer_acls(request):
             
     all_readable = set()
     all_writable = set()
+    acl_objects = [acl_user] + [g for g in acl_user.groups.all()]
+
     for bck in get_auth_backends():
         if hasattr(bck, 'objects_with_perm'):
-            all_readable.update(bck.objects_with_perm(acl_user,
+            for acl_object in acl_objects:
+                all_readable.update(bck.objects_with_perm(acl_object,
                                                       'maps.view_layer',
                                                       Layer))
-            all_writable.update(bck.objects_with_perm(acl_user,
+            for acl_object in acl_objects:
+                all_writable.update(bck.objects_with_perm(acl_object,
                                                       'maps.change_layer', 
                                                       Layer))
     read_only = [x for x in all_readable if x not in all_writable]
@@ -1447,7 +1495,6 @@ def maps_search(request):
         start = int(params.get('start', '0'))
     except Exception:
         start = 0
-
     try:
         limit = min(int(params.get('limit', DEFAULT_MAPS_SEARCH_BATCH_SIZE)),
                     MAX_MAPS_SEARCH_BATCH_SIZE)
@@ -1554,8 +1601,8 @@ def batch_permissions(request):
 
     anon_level = spec['permissions'].get("anonymous")
     auth_level = spec['permissions'].get("authenticated")
-    users = spec['permissions'].get('users', [])
-    user_names = [x[0] for x in users]
+    users_and_groups = spec['permissions'].get('users', [])
+    users_and_groups_names = [x for (x, y) in users_and_groups]
 
     if "layers" in spec:
         lyrs = Layer.objects.filter(pk__in = spec['layers'])
@@ -1565,13 +1612,19 @@ def batch_permissions(request):
         if auth_level not in valid_perms:
             auth_level = "_none"
         for lyr in lyrs:
-            lyr.get_user_levels().exclude(user__username__in = user_names + [lyr.owner.username]).delete()
+            lyr.get_user_levels().exclude(user__username__in = users_and_groups_names + [lyr.owner.username]).delete()
+            lyr.get_group_levels().exclude(group__name__in = users_and_groups_names).delete()
             lyr.set_gen_level(ANONYMOUS_USERS, anon_level)
             lyr.set_gen_level(AUTHENTICATED_USERS, auth_level)
-            for user, user_level in users:
-                if user_level not in valid_perms:
-                    user_level = "_none"
-                lyr.set_user_level(user, user_level)
+            for name, level in users_and_groups:
+                if level not in valid_perms:
+                    level = "_none"
+                try:
+                    group = Group.objects.get(name=name)
+                    lyr.set_group_level(group, level)
+                except Group.DoesNotExist:
+                    user = User.objects.get(username=name)
+                    lyr.set_user_level(user, level)
 
     if "maps" in spec:
         map_query = Map.objects.filter(pk__in = spec['maps'])
@@ -1584,14 +1637,26 @@ def batch_permissions(request):
         auth_level = auth_level.replace("layer", "map")
 
         for m in map_query:
-            m.get_user_levels().exclude(user__username__in = user_names + [m.owner.username]).delete()
+            m.get_user_levels().exclude(user__username__in = users_and_groups_names + [m.owner.username]).delete()
+            m.get_group_levels().exclude(group__name__in = users_and_groups_names).delete()
             m.set_gen_level(ANONYMOUS_USERS, anon_level)
             m.set_gen_level(AUTHENTICATED_USERS, auth_level)
-            for user, user_level in spec['permissions'].get("users", []):
-                user_level = user_level.replace("layer", "map")
-                m.set_user_level(user, valid_perms.get(user_level, "_none"))
+            for name, level in spec['permissions'].get("users", []):
+                if level not in valid_perms:
+                    level = "_none"
+                level = level.replace("layer", "map")
+                try:
+                    group = Group.objects.get(name=name)
+                    m.set_group_level(group, level)
+                except Group.DoesNotExist:
+                    user = User.objects.get(username=name)
+                    m.set_user_level(user, level)
 
-    return HttpResponse("Not implemented yet")
+    return HttpResponse(
+        "Permissions updated",
+        status=200,
+        mimetype='text/plain'
+    )
 
 def batch_delete(request):
     if not request.user.is_authenticated:

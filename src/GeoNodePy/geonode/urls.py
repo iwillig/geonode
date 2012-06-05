@@ -68,8 +68,8 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     )
 
-urlpatterns += geonode.proxy.urls.urlpatterns
+urlpatterns += proxy_urlpatterns
 
-# Serve static files
-urlpatterns += staticfiles_urlpatterns()
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Extra static file endpoint for development use
+if settings.SERVE_MEDIA:
+    urlpatterns += staticfiles_urlpatterns()

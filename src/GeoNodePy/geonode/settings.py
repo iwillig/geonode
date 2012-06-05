@@ -44,6 +44,33 @@ LANGUAGES = (
     ('zh', '中國的'),
 )
 
+SITE_ID = 1
+
+# Setting a custom test runner to avoid running the tests for some problematic 3rd party apps
+TEST_RUNNER='django_nose.NoseTestSuiteRunner'
+
+NOSE_ARGS = [
+      '--verbosity=2',
+      '--cover-erase',
+      '--nocapture',
+      '--with-coverage',
+      '--cover-package=geonode',
+      '--cover-inclusive',
+      '--cover-tests',
+      '--detailed-errors',
+      '--with-xunit',
+
+# This is very beautiful/usable but requires: pip install rudolf
+#      '--with-color',
+
+# The settings below are useful while debugging test failures or errors
+
+#      '--failed',
+#      '--pdb-failures',
+#      '--stop',
+#      '--pdb',
+      ]
+
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
@@ -184,6 +211,11 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
 
+# This isn't required for running the geonode site, but it when running sites that inherit the geonode.settings module.
+LOCALE_PATHS = (
+    os.path.join(PROJECT_ROOT, "locale"),
+    os.path.join(PROJECT_ROOT, "maps", "locale"),
+)
 
 # Replacement of default authentication backend in order to support
 # permissions per object.
@@ -271,11 +303,15 @@ GEONETWORK_BASE_URL = "http://localhost:8001/geonetwork/"
 # The username and password for a user with write access to GeoNetwork
 GEONETWORK_CREDENTIALS = "admin", "admin"
 
+AUTHENTICATION_BACKENDS = ('geonode.core.auth.GranularBackend',)
 
 # GeoNode javascript client configuration
 
 # Google Api Key needed for 3D maps / Google Earth plugin
 GOOGLE_API_KEY = "ABQIAAAAkofooZxTfcCv9Wi3zzGTVxTnme5EwnLVtEDGnh-lFVzRJhbdQhQgAhB1eT_2muZtc0dl-ZSWrtzmrw"
+LOGIN_REDIRECT_URL = "/"
+
+DEFAULT_LAYERS_OWNER='admin'
 
 # Where should newly created maps be focused?
 DEFAULT_MAP_CENTER = (0, 0)
@@ -337,7 +373,54 @@ MAP_BASELAYERS = [{
 
 }]
 
+# NAVBAR expects a dict of dicts or a path to an ini file
+NAVBAR = \
+{'maps': {'id': '%sLink',
+               'item_class': '',
+               'link_class': '',
+               'text': 'Maps',
+               'url': 'geonode.maps.views.maps'},
+ 'data': {'id': '%sLink',
+          'item_class': '',
+          'link_class': '',
+          'text': 'Data',
+          'url': "geonode.maps.views.browse_data"},
+#  'index': {'id': '%sLink',
+#            'item_class': '',
+#            'link_class': '',
+#            'text': 'Featured Map',
+#            'url': 'geonode.views.index'},
+ 'master': {'id': '%sLink',
+            'item_class': '',
+            'link_class': '',
+            'text': 'This page has no tab for this navigation'},
+ 'meta': {'active_class': 'here',
+          'default_id': '%sLink',
+          'default_item_class': '',
+          'default_link_class': '',
+          'end_class': 'last',
+          'id': '%sLink',
+          'item_class': '',
+          'link_class': '',
+          'visible': 'data\nmaps'}}
 
+INSTALLED_APPS = (
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.admin',
+    'django.contrib.sitemaps',
+    'staticfiles',
+    'django_extensions',
+    'registration',
+    'profiles',
+    'avatar',
+    'geonode.core',
+    'geonode.maps',
+    'geonode.proxy',
+    'geonode'
+)
 
 #GEONODE_CLIENT_LOCATION = "http://localhost:8001/geonode-client/"
 GEONODE_CLIENT_LOCATION = "/static/geonode/"
@@ -354,7 +437,7 @@ DB_DATASTORE_USER = ''
 DB_DATASTORE_PASSWORD = ''
 DB_DATASTORE_HOST = ''
 DB_DATASTORE_PORT = ''
-DB_DATASTORE_TYPE = ''
+DB_DATASTORE_TYPE=''
 
 
 # Load more settings from a file called local_settings.py if it exists
@@ -362,3 +445,4 @@ try:
     from local_settings import *
 except ImportError:
     pass
+
