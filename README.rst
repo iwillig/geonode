@@ -63,7 +63,7 @@ Install
 
 The following steps should prepare a Python virtual environment for you::
 
-  git clone git://github.com/GeoNode/geonode.git geonode
+  git clone git@github.com:geonode/geonode.git geonode
   cd geonode
   git submodule update --init
   python bootstrap.py --no-site-packages # see note below

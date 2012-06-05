@@ -55,6 +55,7 @@ MEDIA_ROOT = os.path.join(PROJECT_ROOT, "uploaded")
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
+
 MEDIA_URL = "/uploaded/"
 
 # Absolute path to the directory that holds static files like app media.
@@ -334,6 +335,7 @@ MAP_BASELAYERS = [{
     ]
 
 }]
+
 
 
 #GEONODE_CLIENT_LOCATION = "http://localhost:8001/geonode-client/"
