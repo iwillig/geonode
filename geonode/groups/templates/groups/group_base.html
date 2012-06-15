@@ -6,14 +6,18 @@
 {% endblock %}
 {% load i18n avatar_tags %}
 
-{% block content %}
+{% block main %}
     <div class="threecol">
         {% comment %}
             do we reference all images as 'avatar' or is it for user profile images only?
             {% avatar object.logo 50 %}
             url below is wrong
         {% endcomment %}
-        <a href="{% url group_detail object.slug %}"><img src="{{ object.logo.url }}" alt="{{ object.title }}" class="group-logo" /></a>
+        <a href="{% url group_detail object.slug %}">
+        {% if object.logo %}
+            <img src="{{ object.logo.url }}" alt="{{ object.title }}" class="group-logo" />
+        {% endif %}
+        </a>
         <a href="{% url group_detail object.slug %}"><h2>{{ object.title }}</h2></a>
         {% if object.access == "public" and not is_member %}
           {% if user.is_authenticated %}
