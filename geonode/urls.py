@@ -36,15 +36,19 @@ urlpatterns = patterns('',
     # Map views
     (r'^maps/', include('geonode.maps.urls')),
 
+    # Groups views
+    (r'^groups/', include('geonode.groups.urls')),
+
     # Social
     (r'^comments/', include('dialogos.urls')),
     (r'^ratings/', include('agon_ratings.urls')),
-    (r'^groups/', include('geonode.groups.urls')),
     (r'^messages/', include('user_messages.urls')),
-    (r'^relationships/', include('relationships.urls')),
     (r'^announcements/', include('announcements.urls')),
+    (r'^notifications/', include('notification.urls')),
+    (r'^relationships/', include('relationships.urls')),
+    (r'^actstream/', include('actstream.urls')),
 
-    # Accounts
+    # Accounts/Profiles
     url(r'^accounts/ajax_login$', 'geonode.views.ajax_login',
                                        name='auth_ajax_login'),
     url(r'^accounts/ajax_lookup$', 'geonode.views.ajax_lookup',
