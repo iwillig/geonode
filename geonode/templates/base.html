@@ -67,6 +67,12 @@
               <li>
                 <a href="{% url maps_browse %}">{% trans "Maps" %}</a>
               </li>
+              <li>
+                <a href="{% url profile_list %}">{% trans "People" %}</a>
+              </li>
+              <li>
+                <a href="{% url group_list %}">{% trans "Groups" %}</a>
+              </li>
             </ul>
             <div class="pull-right">
               {% if user.is_authenticated %}
