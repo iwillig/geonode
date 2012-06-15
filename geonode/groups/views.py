@@ -2,15 +2,13 @@ from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import render_to_response, get_object_or_404, redirect
 from django.template import RequestContext
 from django.views.decorators.http import require_POST
-
 from django.contrib.auth.decorators import login_required
 
+from geonode.layers.models import Layer 
+from geonode.maps.models import Map
 from geonode.groups.forms import GroupInviteForm, GroupForm, GroupUpdateForm
 from geonode.groups.forms import GroupMapForm, GroupLayerForm
-
-from geonode.groups.models import Group, GroupInvitation
-
-from geonode.maps.models import Layer, Map, GroupLayer, GroupMap
+from geonode.groups.models import Group, GroupInvitation, GroupLayer, GroupMap
 
 
 def group_list(request):
