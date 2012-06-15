@@ -8,3 +8,6 @@
 dialogos==0.1.dev4
 idios==0.2a2.dev2
 -e git+https://github.com/eldarion/user_messages#egg=user_messages
+
+# @@@ This should be moved to a PyPI-based package, but the latest changes we need haven't been pushed to PyPI yet.
+-e git+https://github.com/justquick/django-activity-stream.git@e9ae97cdc5#egg=django-activity-stream
