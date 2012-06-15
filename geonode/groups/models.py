@@ -13,7 +13,7 @@ from django.contrib.sites.models import Site
 
 from taggit.managers import TaggableManager
 
-from geonode.maps.layers import Layer
+from geonode.layers.models import Layer
 from geonode.maps.models import Map
 
 
