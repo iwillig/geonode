@@ -118,6 +118,7 @@ INSTALLED_APPS = (
     'taggit',
     'south',
     'relationships',
+    'actstream',
     'announcements',
     'notification',
     'user_messages',
@@ -229,6 +230,12 @@ AGON_RATINGS_CATEGORY_CHOICES = {
         "layer": "How good is this layer?"
     },
 }
+
+# List of models that actstream can take action on.
+ACTSTREAM_ACTION_MODELS = [
+        "auth.User",
+        "groups.Group",
+]
 
 # For South migrations
 SOUTH_MIGRATION_MODULES = {
