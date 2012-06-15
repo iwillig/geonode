@@ -111,12 +111,17 @@ INSTALLED_APPS = (
     'django_forms_bootstrap',
     'django_extensions',
     'registration',
-    'profiles',
+    'idios',
     'avatar',
     'dialogos',
     'agon_ratings',
     'taggit',
     'south',
+    'relationships',
+    'announcements',
+    'notification',
+    'user_messages',
+    'crispy_forms',
 
     # GeoNode internal apps
     'geonode.maps',
@@ -124,6 +129,7 @@ INSTALLED_APPS = (
     'geonode.people',
     'geonode.proxy',
     'geonode.security',
+    'geonode.groups',
 )
 
 LOGGING = {
