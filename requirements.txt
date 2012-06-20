@@ -1,11 +1,7 @@
 --extra-index-url=http://dist.pinaxproject.com/dev
 --extra-index-url=http://dist.pinaxproject.com/alpha/
 
-# Move to a released version after 0.4.1 is out
--e svn+https://owslib.svn.sourceforge.net/svnroot/owslib/trunk/#egg=owslib
-
 # pinax apps not released to pypi
-dialogos==0.1.dev4
 idios==0.2a2.dev2
 -e git+https://github.com/eldarion/user_messages#egg=user_messages
 
