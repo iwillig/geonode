@@ -25,9 +25,9 @@ class Group(models.Model):
     description = models.TextField()
     keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
     access = models.CharField(max_length=15, choices=[
-        ("public", "Public"),
-        ("public-invite", "Public (invite-only)"),
-        ("private", "Private"),
+        ("public", _("Public")),
+        ("public-invite", _("Public (invite-only))"),
+        ("private", _("Private")),
     ])
     
     @classmethod
@@ -94,14 +94,18 @@ class Group(models.Model):
             invitation.send(from_user)
         return invitation
 
+    @models.permalink
+    def get_absolute_url(self):
+        return ('group_detail', (), { 'slug': self.slug })
+
 
 class GroupMember(models.Model):
     
     group = models.ForeignKey(Group)
     user = models.ForeignKey(User)
     role = models.CharField(max_length=10, choices=[
-        ("manager", "Manager"),
-        ("member", "Member"),
+        ("manager", _("Manager")),
+        ("member", _("Member")),
     ])
     joined = models.DateTimeField(default=datetime.datetime.now)
 
@@ -114,16 +118,16 @@ class GroupInvitation(models.Model):
     user = models.ForeignKey(User, null=True, related_name="pg_invitations_received")
     from_user = models.ForeignKey(User, related_name="pg_invitations_sent")
     role = models.CharField(max_length=10, choices=[
-        ("manager", "Manager"),
-        ("member", "Member"),
+        ("manager", _("Manager")),
+        ("member", _("Member")),
     ])
     state = models.CharField(
         max_length = 10,
-        choices = zip(*itertools.tee([
-            "sent",
-            "accepted",
-            "declined",
-        ])),
+        choices = (
+            ("sent", _("Sent")),
+            ("accepted", _("Accepted")),
+            ("declined", _("Declined")),
+        ),
         default = "sent",
     )
     created = models.DateTimeField(default=datetime.datetime.now)
@@ -148,12 +152,20 @@ class GroupInvitation(models.Model):
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [self.email])
     
     def accept(self, user):
+        if not user.is_authenticated():
+            raise ValueError("You must log in to accept invitations")
+        if not user.email == self.email:
+            raise ValueError("You can't accept an invitation that wasn't for you")
         self.group.join(user, role=self.role)
         self.state = "accepted"
         self.user = user
         self.save()
     
     def decline(self):
+        if not user.is_authenticated():
+            raise ValueError("You must log in to decline invitations")
+        if not user.email == self.email:
+            raise ValueError("You can't decline an invitation that wasn't for you")
         self.state = "declined"
         self.save()
 

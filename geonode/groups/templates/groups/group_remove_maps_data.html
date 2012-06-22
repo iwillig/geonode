@@ -1,8 +1,9 @@
 {% extends "groups/group_base.html" %}
+{% load i18n %}
 
 {% block sidebar %}
 <div class="twocol">
-    <h2>Remove Maps/Data from Group</h2>
+    <h2>{% trans "Remove Maps/Data from Group" %}</h2>
     <form method="POST" action="">
     {% csrf_token %}
     <ul>
@@ -11,8 +12,7 @@
     <ul>
     {{ layer_form.as_ul }}
     </ul>
-    <input type="submit" value="Remove selected maps/data" />
+    <input type="submit" value="{% trans "Remove selected maps/data" %}" />
     </form>
-
 </div>
 {% endblock %}

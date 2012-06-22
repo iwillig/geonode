@@ -1,14 +1,15 @@
 {% extends "groups/base.html" %}
 {% load avatar_tags %}
+{% load i18n %}
 
-{% block main %}
+{% block content %}
 <div class="onecol">
 <ul>
-  <li><a href="{% url group_create %}">Create a new group</a></li>
+  <li><a href="{% url group_create %}">{% trans "Create a new group" %}</a></li>
 </ul>
 {% for group in object_list %}
    <ul>
-       <li><img src="{{ group.logo.url }}" alt="{{ object.title }}" class="group-logo"><a href="{% url group_detail group.slug %}">{{ group.title }}</a></li>
+     <li><a href="{% url group_detail group.slug %}">{{ group.title }}</a></li>
    </ul>
 {% endfor %}
 </div>

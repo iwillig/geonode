@@ -1,8 +1,9 @@
 {% extends "groups/group_base.html" %}
+{% load i18n %}
 
 {% block sidebar %}
 <div class="twocol">
-    <h2>Share maps to group</h2>
+    <h2>{% trans "Share maps to group" %}</h2>
     <form method="POST" action="">
     {% csrf_token %}
     {{ form }}
@@ -10,20 +11,16 @@
     </form>
     
     {% if maps_added %}
-        <p>Added map(s) 
+        <p>
+        {% blocktrans with object.title as title %}
+        Added map(s) to group {{ title }}:
+        {% endblocktrans %}
+        <ul>
         {% for map in maps_added %}
-        {{ map.title }} 
+        <li> {{ map.title }} </li>
         {% endfor %}
-        to group {{ object.title }}.
+        </ul>
         </p>
-    {% endif %}
-    {% if current_maps %}
-    <h2>Group's maps</h2>
-    <ul>
-        {% for map in current_maps %}
-        <li><a href="{{ map.get_absolute_url }}">{{ map.title }}</a></li>
-        {% endfor %}
-    </ul>
     {% endif %}
 </div>
 {% endblock %}
