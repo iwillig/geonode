@@ -26,7 +26,7 @@ class Group(models.Model):
     keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
     access = models.CharField(max_length=15, choices=[
         ("public", _("Public")),
-        ("public-invite", _("Public (invite-only))"),
+        ("public-invite", _("Public (invite-only))")),
         ("private", _("Private")),
     ])
     
@@ -161,7 +161,7 @@ class GroupInvitation(models.Model):
         self.user = user
         self.save()
     
-    def decline(self):
+    def decline(self, user):
         if not user.is_authenticated():
             raise ValueError("You must log in to decline invitations")
         if not user.email == self.email:
