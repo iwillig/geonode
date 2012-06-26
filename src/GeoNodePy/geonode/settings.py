@@ -361,6 +361,8 @@ DB_DATASTORE_HOST = ''
 DB_DATASTORE_PORT = ''
 DB_DATASTORE_TYPE = ''
 
+USE_GEONETWORK = True
+
 
 # Load more settings from a file called local_settings.py if it exists
 try:
