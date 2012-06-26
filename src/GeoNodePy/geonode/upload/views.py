@@ -254,7 +254,7 @@ def run_response(upload_session, ext_resp):
         # http://docs.sencha.com/ext-js/3-4/#!/api/Ext.form.BasicForm-cfg-fileUpload
 
         return HttpResponse(
-            simplejson.dumps(
+            json.dumps(
                 {'success': True,
                  'redirect_to': reverse('data_upload', args=['final'])}),
                  content_type='text/html'
