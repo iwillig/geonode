@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django import forms
 from django.utils import simplejson as json
+from django.conf import settings
 import os
 import tempfile
 
@@ -48,7 +49,7 @@ class LayerUploadForm(forms.Form):
         return cleaned
 
     def write_files(self):
-        tempdir = tempfile.mkdtemp()
+        tempdir = tempfile.mkdtemp(dir=settings.FILE_UPLOAD_TEMP_DIR)
         for field in self.spatial_files:
             f = self.cleaned_data[field]
             if f is not None:
