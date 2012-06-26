@@ -685,7 +685,7 @@ def fixdate(str):
 class LayerDescriptionForm(forms.Form):
     title = forms.CharField(300)
     abstract = forms.CharField(1000, widget=forms.Textarea, required=False)
-    keywords = forms.CharField(500, required=False)
+    keywords = taggit.forms.TagField()
 
 @login_required
 def layer_metadata(request, layername):

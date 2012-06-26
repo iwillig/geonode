@@ -91,11 +91,8 @@ def _get_all_keywords():
         for l in Layer.objects.all().select_related().only('keywords'):
             kw = [ k.name for k in l.keywords.all() ]
             for k in kw:
-                if k not in allkw:
-                    allkw[k] = 1
-                else:
-                    allkw[k] += 1
-    
+                allkw[k] = allkw.get(k,0) + 1
+
     return allkw
 
 def new_search_api(request):

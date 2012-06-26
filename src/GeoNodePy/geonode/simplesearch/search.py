@@ -99,7 +99,7 @@ class MapNormalizer(Normalizer):
         map = self.o
         # resolve any local layers and their keywords
         # @todo this makes this search awful slow and these should be lazily evaluated
-        local_kw = [ l.keywords.split(' ') for l in map.local_layers if l.keywords]
+        local_kw = [ l.keyword_list() for l in map.local_layers if l.keywords]
         keywords = local_kw and list(set( reduce(lambda a,b: a+b, local_kw))) or []
         return {
             'id' : map.id,
@@ -247,11 +247,11 @@ def _build_kw_query(query, query_keywords=False):
         Q(title__icontains=kw) | Q(abstract__icontains=kw) for kw in kws
     ]
     if query_keywords:
-        subquery = [ q | Q(keywords__icontains=kw) for q in subquery ]
+        subquery = [ q | Q(keywords__name__icontains=kw) for q in subquery ]
     return reduce( operator.or_, subquery)
 
 def _build_kw_only_query(query):
-    return reduce(operator.or_, [Q(keywords__contains=kw) for kw in _split_query(query)])
+    return reduce(operator.or_, [Q(keywords__name__contains=kw) for kw in _split_query(query)])
 
 def _filter_by_extent(index, q, byextent, user=False):
     env = Envelope(map(float,byextent.split(',')))
