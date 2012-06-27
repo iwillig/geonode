@@ -172,7 +172,20 @@ def time_step_context(import_session, form_data):
 
 
 def time_step_view(request, upload_session):
+    import_session = upload_session.import_session
+
     if request.method == 'GET':
+        # check for invalid attribute names
+        feature_type = import_session.tasks[0].items[0].resource
+        if feature_type.resource_type == 'featureType':
+            invalid = filter(lambda a: a.name.find(' ') >= 0, feature_type.attributes)
+            if invalid:
+                att_list = "<pre>%s</pre>" % '. '.join([a.name for a in invalid])
+                msg = "Attributes with spaces are not supported : %s" % att_list
+                return render_to_response('upload/upload_error.html', RequestContext(request,{
+                    'error_msg' : msg
+                }))
+        
         return render_to_response('upload/layer_upload_time.html',
             RequestContext(
                 request,
@@ -182,8 +195,6 @@ def time_step_view(request, upload_session):
         )
     elif request.method != 'POST':
         raise Exception()
-
-    import_session = upload_session.import_session
 
     form = _create_time_form(import_session, request.POST)
     #@todo validation feedback
