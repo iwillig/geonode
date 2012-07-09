@@ -53,6 +53,7 @@ def layer_type(filename):
     
     shp_exts = ['.shp',]
     cov_exts = ['.tif', '.tiff', '.geotiff', '.geotif']
+    csv_exts = ['.csv']
 
     if extension.lower() == '.zip':
         zf = ZipFile(filename)
@@ -65,7 +66,7 @@ def layer_type(filename):
         finally:
             zf.close()
 
-    if extension.lower() in shp_exts:
+    if extension.lower() in shp_exts or extension.lower() in csv_exts:
          return FeatureType.resource_type
     elif extension.lower() in cov_exts:
          return Coverage.resource_type
@@ -371,7 +372,7 @@ def save(layer, base_file, user, overwrite = True, title=None,
     if gs_resource is not None:
         assert gs_resource.name == name
     else:
-        msg = ('GeoServer returne resource as None for layer %s.'
+        msg = ('GeoServer returned resource as None for layer %s.'
                'What does that mean? ' % name)
         logger.warn(msg)
         raise GeoNodeException(msg)

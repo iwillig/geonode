@@ -154,6 +154,8 @@ def rename_and_prepare(base_file):
                 main_file = f
             elif ext.lower() == '.tif':
                 main_file = f
+            elif ext.lower() == '.csv':
+                main_file = f
         if not main_file: raise Exception(
                 'Could not locate a shapefile or tif file')
         if rename:
