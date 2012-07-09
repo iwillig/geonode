@@ -80,6 +80,8 @@ class Normalizer:
         return self.o.title
     def last_modified(self):
         abstract
+    def relevance(self):
+        return getattr(self.o, 'relevance', 0)
     def as_dict(self):
         if self.dict is None:
             if self.o._deferred:
@@ -87,6 +89,7 @@ class Normalizer:
             self.dict = self.populate(self.data or {})
             self.dict['iid'] = self.iid
             self.dict['rating'] = self.rating
+            self.dict['relevance'] = getattr(self.o, 'relevance', 0)
             if hasattr(self,'views'):
                 self.dict['views'] = self.views
         return self.dict
@@ -201,6 +204,13 @@ def _get_owner_results(results, query, kw):
         for field in _owner_query_fields:
             qs = qs | Q(**{'%s__icontains' % field: query})
         q = q.filter(qs)
+        
+        q = _add_relevance(q,query,[
+            ('username',10, 5),
+            ('blurb',5, 2),
+            ('organization',5, 2),
+            ('biography',5, 2),
+        ])
     
     results.extend( _process_results(map(OwnerNormalizer,q)))
         
@@ -233,9 +243,34 @@ def _get_map_results(results, query, kw):
             layers_with_kw = Layer.objects.filter(_build_kw_only_query(bykw)).values('typename')
             map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
             q = q.filter(id__in=map_layers_with)
+        if query:
+            q = _add_relevance(q,query,[
+                ('title',10, 5),
+                ('abstract',5, 2),
+            ])
     
     results.extend( _process_results( map(MapNormalizer,q) ))
     
+    
+def _add_relevance(query, text, rank_rules):
+    eq = """CASE WHEN "%s" = '%s' THEN %s ELSE 0 END"""
+    frag = """CASE WHEN position(lower('%s') in lower(%s)) >= 1 THEN %s ELSE 0 END"""
+    
+    preds = []
+
+    preds.extend( [ eq % (r[0],text,r[1]) for r in rank_rules] )
+    preds.extend( [ frag % (text,r[0],r[2]) for r in rank_rules] )
+    
+    words = _split_query(text)
+    if len(words) > 1:
+        for w in words:
+            preds.extend( [ frag % (w,r[0],r[2] / 2) for r in rank_rules] )
+            
+    sql = " + ".join(preds)
+            
+    # ugh - work around bug
+    query = query.defer(None)
+    return query.extra(select={'relevance':sql})
     
 def _build_kw_query(query, query_keywords=False):
     '''Build an OR query on title and abstract from provided search text.
@@ -342,6 +377,12 @@ def _get_layer_results(results, query, kw):
             if layer is None: continue #@todo - remote layer (how to get last_modified?)
             normalizers.append(LayerNormalizer(layer,doc))
     else:
+        if query:
+            q = _add_relevance(q,query,[
+                ('name',10, 1),
+                ('title',10, 5),
+                ('abstract',5, 2),
+            ])
         normalizers = map(LayerNormalizer, q)
     _process_results(normalizers)
     results.extend(normalizers)
