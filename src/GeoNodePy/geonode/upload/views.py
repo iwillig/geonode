@@ -81,6 +81,7 @@ class TimeForm(forms.Form):
 
     def _build_choice(self, att, names):
         if names:
+            names.sort()
             choices = [('', '<None>')] + [(a, a) for a in names]
             self.fields[att] = forms.ChoiceField(
                 choices=choices, required=False)
