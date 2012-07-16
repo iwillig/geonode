@@ -17,20 +17,24 @@ from geonode.maps.utils import *
 from geonode.maps.models import *
 from geonode.maps.forms import NewLayerUploadForm
 from geonode.maps.views import json_response
+from geonode.upload.models import Upload
 from geonode.upload.upload import *
+from geonode.upload.utils import *
 
 from django import forms
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
+from django.http import HttpResponseRedirect
 from django.utils.html import escape
 from django.core.urlresolvers import reverse
+from django.shortcuts import get_object_or_404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 
 import json
 import os
-
+import logging
 
 _SESSION_KEY = 'geonode_upload_session'
 _ALLOW_TIME_STEP = hasattr(settings, "UPLOADER_SHOW_TIME_STEP") and settings.UPLOADER_SHOW_TIME_STEP or False
@@ -112,7 +116,8 @@ def save_step_view(req, session):
             RequestContext(req, {
             'storage_remaining': "%d MB" % mb,
             'enough_storage': mb > 64,
-            'async_upload' : _ASYNC_UPLOAD
+            'async_upload' : _ASYNC_UPLOAD,
+            'incomplete' : Upload.objects.get_incomplete_uploads(req.user)
         }))
         
     assert session is None
@@ -294,9 +299,17 @@ def view(req, step):
     upload_session = None
 
     if step is None:
+        if 'id' in req.GET:
+            # upload recovery
+            upload = get_object_or_404(Upload, id=req.GET['id'], user=req.user)
+            session = upload.get_session()
+            if session:
+                return HttpResponseRedirect(reverse('data_upload', args=[session.completed_step]))
+
+        
         step = 'save'
 
-        # @todo should warn user if session is being abandoned!
+        # delete existing session
         if _SESSION_KEY in req.session:
             del req.session[_SESSION_KEY]
 
@@ -308,10 +321,18 @@ def view(req, step):
     try:
         resp = _steps[step](req, upload_session)
         if upload_session:
+            upload_session.completed_step = step
             req.session[_SESSION_KEY] = upload_session
             Upload.objects.update_from_session(upload_session.import_session)
         return resp
     except Exception, e:
+        
         if upload_session:
+            # @todo probably don't want to do this
             upload_session.cleanup()
-        return json_response('Error in upload step : %s', exception=e)
+        if req.is_ajax():
+            return json_response('Error in upload step : %s', exception=e)
+        logging.getLogger(__name__).exception('Unexpected error in upload step')
+        return render_to_response('upload/upload_error.html', RequestContext(req,{
+            'error_msg' : 'Unexpected error : %s,' % e
+        }))

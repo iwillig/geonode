@@ -15,6 +15,19 @@
 {% block main %}
 <div class="twocol">
     <h2>{% trans "Add data" %}</h2>
+    {% if incomplete %}
+    <h3>Incomplete Uploads</h3>
+    <p>You have the following incomplete uploads:</p>
+    {% for u in incomplete %}
+    <div>
+        <div>{{ u.name }}, last updated on {{ u.date }}</div>
+        <div class="upload_actions">
+            <a class="btn btn-mini">Resume</a>
+            <a class="btn btn-mini">Delete</a>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
     {% block additional_info %}{% endblock %}
   {% if errors %}
     <div id="errors">
