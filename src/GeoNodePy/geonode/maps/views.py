@@ -1015,14 +1015,19 @@ def layer_replace(request, layername):
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
         
-def json_response(body=None, errors=None, redirect_to=None, exception=None):
+def json_response(body=None, errors=None, redirect_to=None, exception=None,
+                  content_type=None):
     """Create a proper JSON response. If body is provided, this is the response.
     If errors is not None, the response is a success/errors json object.
     If redirect_to is not None, the response is a success=True, redirect_to object
     If the exception is provided, it will be logged. If body is a string, the
     exception message will be used as a format option to that string and the
     result will be a success=False, errors = body % exception
+    
+    content_type : for compatibility, optional content_type, default is json
     """
+    if content_type is None:
+        content_type = "application/json"
     if errors:
         body = {
             'success' : False,
@@ -1051,7 +1056,7 @@ def json_response(body=None, errors=None, redirect_to=None, exception=None):
 
     if not isinstance(body, basestring):
         body = json.dumps(body)
-    return HttpResponse(body, content_type = "application/json")
+    return HttpResponse(body, content_type=content_type)
         
 @login_required
 def view_layer_permissions(request, layername):
@@ -1806,10 +1811,15 @@ def time_info(request):
     else:
         from geoserver.support import xml_property, attribute_list
         cat = Layer.objects.gs_catalog
-        layer_name = request.GET.get('layer')
+        layer_name = request.GET.get('layer', '')
         after_split = layer_name.split(":", 1)
         if len(after_split) != 2:
-            return HttpResponse(json.dumps({}), mimetype="application/javascript")
+            # resolve by name if full name not supplied
+            try:
+                lyr = Layer.objects.get(name=after_split[0])
+                after_split = lyr.typename.split(":", 1)
+            except Layer.DoesNotExist:
+                return HttpResponse(json.dumps({}), mimetype="application/javascript")
         ws, lyr = after_split
         layer = cat.get_resource(workspace=cat.get_workspace(ws), name=lyr)
         if layer is not None and 'time' in layer.metadata:

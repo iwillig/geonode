@@ -162,7 +162,8 @@ def _search_params(request):
             'oldest' : ('last_modified',True),
             'alphaaz' : ('title',True),
             'alphaza' : ('title',False),
-            'popularity' : ('rank',False)
+            'popularity' : ('rank',False),
+            'rel' : ('relevance',False)
 
         }[params.get('sort','newest')]
 
