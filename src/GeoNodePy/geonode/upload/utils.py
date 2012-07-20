@@ -7,6 +7,12 @@ import os
 import re
 from zipfile import ZipFile
 
+def find_sld(base_file):
+    '''work around assumption in get_files that sld will be named the same'''
+    for f in os.listdir(os.path.dirname(base_file)):
+        if f.lower().endswith('.sld'):
+            return f
+
 
 def rename_and_prepare(base_file):
     """ensure the file(s) have a proper name @hack this should be done
@@ -15,6 +21,8 @@ def rename_and_prepare(base_file):
     is/was, geonode will compute a name based on the zipfile but the
     importer will use names as it unpacks the zipfile. Renaming all
     the various pieces seems a burden on the client
+    
+    Additionally, if a SLD file is present, extract this.
     """
     name, ext = os.path.splitext(os.path.basename(base_file))
     xml_unsafe = re.compile(r"(^[^a-zA-Z\._]+)|([^a-zA-Z\._0-9]+)")
@@ -34,6 +42,10 @@ def rename_and_prepare(base_file):
                 main_file = f
             elif ext.lower() == '.csv':
                 main_file = f
+                
+            # if an sld is there, extract so it can be found
+            if ext.lower() == '.sld':
+                zf.extract(f, dirname)
         if not main_file: raise Exception(
                 'Could not locate a shapefile or tif file')
         if rename:

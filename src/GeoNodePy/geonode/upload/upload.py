@@ -29,9 +29,7 @@ from geoserver.resource import FeatureType
 from gsuploader.uploader import RequestFailed
 
 from django.conf import settings
-from django.utils.html import escape
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 
 import shutil
 import json

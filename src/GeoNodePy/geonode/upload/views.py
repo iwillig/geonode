@@ -13,15 +13,13 @@ or return response objects.
 State is stored in a UploaderSession object stored in the user's session.
 This needs to be made more stateful by adding a model.
 """
-from geonode.maps.utils import *
-from geonode.maps.models import *
 from geonode.maps.forms import NewLayerUploadForm
 from geonode.maps.views import json_response
+from geonode.upload.forms import TimeForm
 from geonode.upload.models import Upload
-from geonode.upload.upload import *
-from geonode.upload.utils import *
+from geonode.upload import upload
+from geonode.upload import utils
 
-from django import forms
 from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
@@ -35,6 +33,8 @@ from django.contrib.auth.decorators import login_required
 import json
 import os
 import logging
+
+logger = logging.getLogger(__name__)
 
 _SESSION_KEY = 'geonode_upload_session'
 _ALLOW_TIME_STEP = hasattr(settings, "UPLOADER_SHOW_TIME_STEP") and settings.UPLOADER_SHOW_TIME_STEP or False
@@ -53,43 +53,6 @@ def _progress_redirect(step, endpoint):
 
 def _redirect(step):
     return json_response(redirect_to=reverse('data_upload', args=[step]))
-
-
-class TimeForm(forms.Form):
-    presentation_strategy = forms.CharField(required=False)
-    srs = forms.CharField(required=False)
-    precision_value = forms.IntegerField(required=False)
-    precision_step = forms.ChoiceField(required=False, choices=[
-        ('years',)*2,
-        ('months',)*2,
-        ('days',)*2,
-        ('hours',)*2,
-        ('minutes',)*2,
-        ('seconds',)*2
-    ])
-
-    def __init__(self, *args, **kwargs):
-        # have to remove these from kwargs or Form gets mad
-        time_names = kwargs.pop('time_names', None)
-        text_names = kwargs.pop('text_names', None)
-        year_names = kwargs.pop('year_names', None)
-        super(TimeForm, self).__init__(*args, **kwargs)
-        self._build_choice('time_attribute', time_names)
-        self._build_choice('end_time_attribute', time_names)
-        self._build_choice('text_attribute', text_names)
-        self._build_choice('end_text_attribute', text_names)
-        if text_names:
-            self.fields['text_attribute_format'] = forms.CharField(required=False)
-        self._build_choice('year_attribute', year_names)
-        self._build_choice('end_year_attribute', year_names)
-
-    def _build_choice(self, att, names):
-        if names:
-            names.sort()
-            choices = [('', '<None>')] + [(a, a) for a in names]
-            self.fields[att] = forms.ChoiceField(
-                choices=choices, required=False)
-    # @todo implement clean
 
 
 def _create_time_form(import_session, form_data):
@@ -126,17 +89,20 @@ def save_step_view(req, session):
     tempdir = None
     if form.is_valid():
         tempdir, base_file = form.write_files()
-        base_file = rename_and_prepare(base_file)
+        base_file = utils.rename_and_prepare(base_file)
         name, __ = os.path.splitext(os.path.basename(base_file))
-        import_session = save_step(req.user, name, base_file, overwrite=False)
-        upload_session = req.session[_SESSION_KEY] = UploaderSession(
+        import_session = upload.save_step(req.user, name, base_file, overwrite=False)
+        sld = utils.find_sld(base_file)
+        logger.info('provided sld is %s' % sld)
+        upload_session = req.session[_SESSION_KEY] = upload.UploaderSession(
             tempdir=tempdir,
             base_file=base_file,
             name=name,
             import_session=import_session,
             layer_abstract=form.cleaned_data["abstract"],
             layer_title=form.cleaned_data["layer_title"],
-            permissions=form.cleaned_data["permissions"]
+            permissions=form.cleaned_data["permissions"],
+            import_sld_file = sld
         )
         if _ALLOW_TIME_STEP:
             return _redirect('time')
@@ -230,7 +196,7 @@ def time_step_view(request, upload_session):
             break
 
     try:
-        time_step(
+        upload.time_step(
             upload_session,
             time_attribute=time_attribute,
             time_transform_type=time_transform_type,
@@ -254,7 +220,7 @@ def run_response(upload_session, ext_resp):
     ext_resp: if True, reply using extjs json
     '''
     try:
-        target = run_import(upload_session, _ASYNC_UPLOAD)
+        target = upload.run_import(upload_session, _ASYNC_UPLOAD)
     except Exception, ex:
         return json_response(exception=ex)
 
@@ -281,7 +247,7 @@ def run_response(upload_session, ext_resp):
 
 
 def final_step_view(req, upload_session):
-    saved_layer = final_step(upload_session, req.user)
+    saved_layer = upload.final_step(upload_session, req.user)
     return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
 
 
@@ -332,7 +298,7 @@ def view(req, step):
             upload_session.cleanup()
         if req.is_ajax():
             return json_response('Error in upload step : %s', exception=e)
-        logging.getLogger(__name__).exception('Unexpected error in upload step')
+        logger.exception('Unexpected error in upload step')
         return render_to_response('upload/upload_error.html', RequestContext(req,{
             'error_msg' : 'Unexpected error : %s,' % e
         }))
