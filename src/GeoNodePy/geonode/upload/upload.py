@@ -79,6 +79,9 @@ class UploaderSession(object):
 
     # track the most recently completed upload step
     completed_step = None
+    
+    # the upload type - see the _pages dict in views
+    upload_type = None
 
     def set_target(self, target):
         self.import_target = {

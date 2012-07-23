@@ -2,6 +2,7 @@ from geonode.maps.models import Layer
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.db import models
 
 import cPickle as pickle
@@ -15,8 +16,8 @@ class UploadManager(models.Manager):
     def __init__(self):
         models.Manager.__init__(self)
         
-    def update_from_session(self, import_session):
-        self.get(import_id = import_session.id).update_from_session(import_session)
+    def update_from_session(self, upload_session):
+        self.get(import_id = upload_session.import_session.id).update_from_session(upload_session)
         
     def create_from_session(self, user, import_session):
         return self.create(
@@ -39,20 +40,32 @@ class Upload(models.Model):
     upload_dir = models.CharField(max_length=100, null=True)
     name = models.CharField(max_length=64, null=True)
     complete = models.BooleanField(default = False)
+    # hold our serialized session object
     session = models.TextField(null=True)
+    # hold a dict of any intermediate Layer metadata - not used for now
+    metadata = models.TextField(null=True)
     
     def get_session(self):
         if self.session:
-            return pickle.load(self.session)
-    
-    def update_from_session(self, import_session):
-        self.state = import_session.state
+            return pickle.loads(str(self.session))
+        
+    def update_from_session(self, upload_session):
+        self.state = upload_session.import_session.state
         if "COMPLETE" == self.state:
             self.complete = True
             self.session = None
         self.date = datetime.now()
-        self.session = pickle.dumps(import_session)
+        self.session = pickle.dumps(upload_session)
+        if self.upload_dir is None:
+            self.upload_dir = path.dirname(upload_session.base_file)
+            self.name = upload_session.layer_title or upload_session.name
         self.save()
+        
+    def get_resume_url(self):
+        return reverse('data_upload') + "?id=%s" % self.import_id
+    
+    def get_delete_url(self):
+        return reverse('data_upload_delete', args=[self.import_id])
         
     def get_import_url(self):
         return "%srest/imports/%s" % (settings.GEOSERVER_BASE_URL, self.import_id)
@@ -68,3 +81,6 @@ class Upload(models.Model):
                     logging.exception('error deleting upload session')
             if self.upload_dir and path.exists(self.upload_dir):
                 shutil.rmtree(self.upload_dir)
+                
+    def __unicode__(self):
+        return 'Upload [%s] gs%s - %s, %s' % (self.pk, self.import_id, self.name, self.user)

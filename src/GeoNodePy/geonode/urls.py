@@ -31,7 +31,7 @@ urlpatterns = patterns('',
                 {'template': 'developer.html'}, name='dev'),
 
     # Data views
-    (r'^upload/', include('geonode.upload.urls')),
+    (r'^data/upload/', include('geonode.upload.urls')),
     (r'^data/', include(geonode.maps.urls.datapatterns)),
     (r'^maps/', include(geonode.maps.urls.urlpatterns)),
     (r'^comments/', include('dialogos.urls')),

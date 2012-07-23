@@ -1,3 +1,4 @@
+import os.path
 from geonode.maps.models import Layer
 from geoserver.catalog import FailedRequestError
 
@@ -6,6 +7,33 @@ from django.conf import settings
 import os
 import re
 from zipfile import ZipFile
+import logging
+
+
+def get_upload_type(filename):
+    # @todo - this is bad and all file handling should be fixed now 
+    # (but I'm working on somethign else)!
+    
+    base_name, extension = os.path.splitext(filename)
+    extension = extension[1:].lower()
+    
+    possible_types = set(('shp','csv','tif'))
+    
+    if extension == 'zip':
+        zf = ZipFile(filename, 'r')
+        file_list = zf.namelist()
+        zf.close()
+        for f in file_list:
+            _, ext = os.path.splitext(f)
+            ext = ext[1:].lower()
+            if ext in possible_types:
+                return ext
+        raise Exception('Could not find a supported upload type in %s' % file_list)
+    else:
+        assert extension in possible_types
+        return extension
+    
+
 
 def find_sld(base_file):
     '''work around assumption in get_files that sld will be named the same'''
@@ -64,7 +92,7 @@ def rename_and_prepare(base_file):
     return os.path.join(
         dirname,
         xml_unsafe.sub('_', os.path.basename(base_file))
-        )
+    )
         
 
 def create_geoserver_db_featurestore():
