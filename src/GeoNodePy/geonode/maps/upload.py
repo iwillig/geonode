@@ -33,9 +33,11 @@ from django.template import RequestContext
 import shutil
 import json
 import os.path
+import re
+import logging
 from zipfile import ZipFile
 
-
+logger = logging.getLogger(__name__)
 
 _SESSION_KEY = 'geonode_upload_session'
 
@@ -90,6 +92,7 @@ class UploaderSession(object):
                 setattr(self,k,v)
             else:
                 raise Exception('not handled : %s' % k)
+            
     def cleanup(self):
         """do what we should at the given state of the upload"""
         pass
@@ -129,8 +132,10 @@ def upload(name, base_file, user=None, time_attribute=None, time_transform_type=
 def _log(msg, *args):
     logger.info(msg, *args)
     
-def _redirect(step):
-    return json_response(redirect_to=reverse('data_upload', args=[step]))
+def _redirect(step, ext_compat=False):
+    content_type = 'text/html' if ext_compat else None
+    return json_response(redirect_to=reverse('data_upload', args=[step]), 
+                         content_type=content_type)
 
 def _rename_and_prepare(base_file):
     """ensure the file(s) have a proper name
@@ -154,6 +159,10 @@ def _rename_and_prepare(base_file):
             # @todo other files - need to unify extension handling somewhere
             if ext.lower() == '.shp':
                 main_file = f
+            
+            if ext.lower() == '.sld':
+                zf.extract(f, dirname)
+
         if not main_file: raise Exception('Could not locate a shapefile')
         if rename:
             # dang, have to unpack and rename
@@ -170,16 +179,29 @@ def _rename_and_prepare(base_file):
             
     return os.path.join(dirname,xml_unsafe.sub('_', os.path.basename(base_file)))
 
+
+def _find_sld(base_file):
+    '''work around assumption in get_files that sld will be named the same'''
+    for f in os.listdir(os.path.dirname(base_file)):
+        if f.lower().endswith('.sld'):
+            return f
+
+
 def save_step_view(req, session):
     assert session is None
     
     form = NewLayerUploadForm(req.POST, req.FILES)
     tempdir = None
+    # if this is a form submit using iframe, it will require text/html
+    # otherwise it is an ajax request and can/should reply in kind
+    ext_compat = not req.is_ajax()
     if form.is_valid():
         tempdir, base_file = form.write_files()
         base_file = _rename_and_prepare(base_file)
         name, __ = os.path.splitext(os.path.basename(base_file))
-        import_session = save_step(req.user, name, base_file, overwrite=False) 
+        import_session = save_step(req.user, name, base_file, overwrite=False)
+        sld = _find_sld(base_file)
+        _log('provided sld is %s' % sld)
         req.session[_SESSION_KEY] = UploaderSession(
             tempdir = tempdir,
             base_file = base_file,
@@ -187,14 +209,15 @@ def save_step_view(req, session):
             import_session = import_session,
             layer_abstract = form.cleaned_data["abstract"],
             layer_title = form.cleaned_data["layer_title"],
-            permissions = form.cleaned_data["permissions"]
+            permissions = form.cleaned_data["permissions"],
+            import_sld_file = sld
         )
-        return _redirect('time')
+        return _redirect('time', ext_compat=ext_compat)
     else:
         errors = []
         for e in form.errors.values():
             errors.extend([escape(v) for v in e])
-        return json_response(errors = errors)
+        return json_response(errors = errors, ext_compat=ext_compat)
 
 def save_step(user, layer, base_file, overwrite = True):
     
@@ -292,11 +315,13 @@ class TimeForm(forms.Form):
         self._build_choice('end_text_attribute',text_names)
         if text_names:
             self.fields['text_attribute_format'] = forms.CharField(required=False)
+            self.fields['end_text_attribute_format'] = forms.CharField(required=False)
         self._build_choice('year_attribute',year_names)
         self._build_choice('end_year_attribute',year_names)
             
     def _build_choice(self, att, names):
         if names:
+            names.sort()
             choices =  [ ("","<None>") ] + [ (a,a) for a in names ]
             self.fields[att] = forms.ChoiceField(choices=choices,required=False)
     # @todo implement clean
@@ -711,7 +736,6 @@ def view(req, step):
     else:
         assert _SESSION_KEY in req.session, 'Expected uploader session for step %s' % step
         upload_session = req.session[_SESSION_KEY]
-        
     try:
         resp = _steps[step](req, upload_session)
         if upload_session:
