@@ -45,11 +45,11 @@ _ASYNC_UPLOAD = settings.DB_DATASTORE == True
 if _ALLOW_TIME_STEP and not _ASYNC_UPLOAD:
     raise Exception("To support the time step, you must enable DB_DATASTORE")
 
-def _progress_redirect(step, endpoint):
+def _progress_redirect(step):
     return json_response(dict(
         success = True,
         redirect_to= reverse('data_upload', args=[step]),
-        progress = endpoint
+        progress = reverse('data_upload_progress')
     ))
 
 
@@ -64,14 +64,14 @@ def _error_response(req, exception=None, errors=None, force_ajax=False):
         'error_msg' : 'Unexpected error : %s,' % exception
     }))
 
-#def _redirect(req, step):
-#    content_type = 'text/html' if req.is_ajax() else None
-#    return json_response(redirect_to=reverse('data_upload', args=[step]),
-#        content_type=content_type)
 
-
-def _next_step_response(req, upload_session, force_ajax):
+def _next_step_response(req, upload_session, force_ajax=False):
     next = get_next_step(upload_session)
+    # @todo this is not handled cleanly - run is not a real step in that it
+    # has no corresponding view served by the 'view' function.
+    if next == 'run':
+        upload_session.completed_step = next
+        return run_response(req, upload_session)
     if req.is_ajax() or force_ajax:
         content_type = 'text/html' if not req.is_ajax() else None
         return json_response(redirect_to=reverse('data_upload', args=[next]),
@@ -139,9 +139,10 @@ def save_step_view(req, session):
         return json_response(errors=errors)
 
 
-def data_upload_progress(req, upload_session):
+def data_upload_progress(req):
     """This would not be needed if geoserver REST did not require admin role
     and is an inefficient way of getting this information"""
+    upload_session = req.session[_SESSION_KEY]
     import_session = upload_session.import_session
     progress = import_session.tasks[0].items[0].get_progress()
     return json_response(progress)
@@ -249,9 +250,7 @@ def run_response(req, upload_session):
 
     if _ASYNC_UPLOAD:
         next = get_next_step(upload_session)
-        return _progress_redirect(next, reverse(
-            'data_upload', args=['progress']
-        ))
+        return _progress_redirect(next)
         
     return _next_step_response(req, upload_session)
 
@@ -264,12 +263,12 @@ def final_step_view(req, upload_session):
 _steps = {
     'save': save_step_view,
     'time': time_step_view,
-    'run' : run_response,
     'final': final_step_view,
 }
 
+# note 'run' is not a "real" step, but handled as a special case
 _pages = {
-    'shp' : ('time', 'progress', 'final'),
+    'shp' : ('time', 'run', 'final'),
 }
 
 if not _ALLOW_TIME_STEP:
@@ -283,7 +282,7 @@ def get_next_step(upload_session):
     assert upload_session.upload_type is not None
     pages = _pages[upload_session.upload_type]
     if upload_session.completed_step:
-        next = pages[min(len(pages) - 1,pages.index(upload_session.completed_step))]
+        next = pages[min(len(pages) - 1,pages.index(upload_session.completed_step) + 1)]
     else:
         next = pages[0]
     return next
