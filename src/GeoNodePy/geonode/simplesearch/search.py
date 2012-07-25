@@ -5,7 +5,10 @@ from django.db.models import Q
 from django.template import defaultfilters
 from django.contrib.gis.gdal import Envelope
 
-from geonode.maps.models import *
+from geonode.maps.models import Contact
+from geonode.maps.models import Layer
+from geonode.maps.models import Map
+from geonode.maps.models import MapLayer
 from geonode.maps.views import _metadata_search
 from geonode.maps.views import _split_query
 
@@ -64,6 +67,11 @@ def _filter_results(l):
     '''If the layer name doesn't match any of the patterns, it shows in the results'''
     return not any(p.search(l['name']) for p in _exclude_regex)
 
+def _bbox(obj):
+    idx = obj.spatial_temporal_index
+    extent = idx.extent.extent if idx else (-180,-90,180,90)
+    return dict(minx=extent[0], miny=extent[1], maxx=extent[2], maxy=extent[3])
+
 class Normalizer:
     '''Base class to allow lazy normalization of Map and Layer attributes.
     
@@ -79,50 +87,54 @@ class Normalizer:
     def title(self):
         return self.o.title
     def last_modified(self):
-        abstract
+        raise Exception('abstract')
     def relevance(self):
         return getattr(self.o, 'relevance', 0)
-    def as_dict(self):
+    def as_dict(self, exclude):
         if self.dict is None:
             if self.o._deferred:
                 self.o = getattr(type(self.o),'objects').get(pk = self.o.pk)
-            self.dict = self.populate(self.data or {})
+            self.dict = self.populate(self.data or {}, exclude)
             self.dict['iid'] = self.iid
             self.dict['rating'] = self.rating
             self.dict['relevance'] = getattr(self.o, 'relevance', 0)
             if hasattr(self,'views'):
                 self.dict['views'] = self.views
+        if exclude:
+            for e in exclude:
+                if e in self.dict: self.dict.pop(e)
         return self.dict
     
     
 class MapNormalizer(Normalizer):
     def last_modified(self):
         return self.o.last_modified
-    def populate(self, dict):
+    def populate(self, doc, exclude):
         map = self.o
         # resolve any local layers and their keywords
         # @todo this makes this search awful slow and these should be lazily evaluated
         local_kw = [ l.keywords.split(' ') for l in map.local_layers if l.keywords]
         keywords = local_kw and list(set( reduce(lambda a,b: a+b, local_kw))) or []
-        return {
-            'id' : map.id,
-            'title' : map.title,
-            'abstract' : defaultfilters.linebreaks(map.abstract),
-            'topic' : '', # @todo
-            'detail' : reverse('geonode.maps.views.map_controller', args=(map.id,)),
-            'owner' : map.owner.username,
-            'owner_detail' : reverse('about_storyteller', args=(map.owner.username,)),
-            'last_modified' : _date_fmt(map.last_modified),
-            '_type' : 'map',
-            '_display_type' : _MAP_DISPLAY,
-            'thumb' : map.get_thumbnail_url(),
-            'keywords' : keywords,
-        }
+        doc['id'] = map.id
+        doc['title'] = map.title
+        doc['abstract'] = defaultfilters.linebreaks(map.abstract)
+        doc['topic'] = '', # @todo
+        doc['detail'] = reverse('geonode.maps.views.map_controller', args=(map.id,))
+        doc['owner'] = map.owner.username
+        doc['owner_detail'] = reverse('about_storyteller', args=(map.owner.username,))
+        doc['last_modified'] = _date_fmt(map.last_modified)
+        doc['_type'] = 'map'
+        doc['_display_type'] = _MAP_DISPLAY
+        doc['thumb'] = map.get_thumbnail_url()
+        doc['keywords'] = keywords
+        if 'bbox' not in exclude:
+            doc['bbox'] = _bbox(map)
+        return doc
         
 class LayerNormalizer(Normalizer):
     def last_modified(self):
         return self.o.date
-    def populate(self, doc):
+    def populate(self, doc, exclude):
         layer = self.o
         doc['owner'] = layer.owner.username
         doc['thumb'] = layer.get_thumbnail_url()
@@ -133,11 +145,14 @@ class LayerNormalizer(Normalizer):
         doc['abstract'] = defaultfilters.linebreaks(layer.abstract)
         doc['storeType'] = layer.storeType
         doc['_display_type'] = _LAYER_DISPLAY
+        if 'bbox' not in exclude:
+            doc['bbox'] = _bbox(layer)
         if not settings.USE_GEONETWORK:
             doc['keywords'] = layer.keyword_list()
             doc['title'] = layer.title
             doc['detail'] = layer.get_absolute_url()
-
+        if 'download_links' not in exclude:
+            doc['download_links'] = layer.download_links()
         owner = layer.owner
         if owner:
             doc['owner_detail'] = reverse('about_storyteller', args=(layer.owner.username,))
@@ -150,7 +165,7 @@ class OwnerNormalizer(Normalizer):
         return self.o.user.username
     def last_modified(self):
         return self.o.user.date_joined
-    def populate(self, doc):
+    def populate(self, doc, exclude):
         contact = self.o
         user = contact.user
         try:
