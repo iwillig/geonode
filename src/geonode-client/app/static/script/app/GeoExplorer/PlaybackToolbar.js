@@ -20,7 +20,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
 
     overlayNodeText: "Storylayers",
 
-    legendOffsetY: 90,
+    legendOffsetY: 93,
     
     initComponent: function() {
         if(!this.playbackActions){
@@ -151,7 +151,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         if(pressed){
             btn.layerPanel.setHeight(app.mapPanel.getHeight()-this.legendOffsetY);
             btn.layerPanel.show();
-            btn.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-5,30]);
+            btn.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-1,33]);
         }else{
             btn.layerPanel.hide();
         }
@@ -171,7 +171,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     
     buildLayerPanel: function(btn, pressed){
         var layerPanel = this.layerManager.output[0];
-        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-5,30]);
+        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
         return layerPanel;
     },
     
