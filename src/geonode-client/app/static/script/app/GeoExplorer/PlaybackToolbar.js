@@ -17,6 +17,10 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     legendTooltip: 'Show Map Legend',
     
     editTooltip: 'Edit This Map',
+
+    overlayNodeText: "Storylayers",
+
+    legendOffsetY: 93,
     
     initComponent: function() {
         if(!this.playbackActions){
@@ -145,8 +149,9 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             btn.layerPanel = this.buildLayerPanel();
         }
         if(pressed){
+            btn.layerPanel.setHeight(app.mapPanel.getHeight()-this.legendOffsetY);
             btn.layerPanel.show();
-            btn.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-5,30]);
+            btn.layerPanel.el.alignTo(app.mapPanel.el,'tr-tr',[-1,33]);
         }else{
             btn.layerPanel.hide();
         }
@@ -166,7 +171,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     
     buildLayerPanel: function(btn, pressed){
         var layerPanel = this.layerManager.output[0];
-        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-5,30]);
+        layerPanel.el.anchorTo(app.mapPanel.el,'tr-tr',[-1,33]);
         return layerPanel;
     },
     
@@ -180,9 +185,12 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         var layerManager = new gxp.plugins.LayerManager({
             id:'layermanager-tool',
             outputTarget:'map',
+            overlayNodeText: this.overlayNodeText,
             outputConfig: {
                 hidden:true,
                 boxMaxWidth: 300,
+                height: app.mapPanel.getHeight()-this.legendOffsetY,
+                autoScroll: true,
                 plain: true,
                 border: false,
                 floating: true,
