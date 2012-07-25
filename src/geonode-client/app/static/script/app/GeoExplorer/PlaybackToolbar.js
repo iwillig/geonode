@@ -17,6 +17,8 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     legendTooltip: 'Show Map Legend',
     
     editTooltip: 'Edit This Map',
+
+    overlayNodeText: "Storylayers",
     
     initComponent: function() {
         if(!this.playbackActions){
@@ -180,9 +182,12 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         var layerManager = new gxp.plugins.LayerManager({
             id:'layermanager-tool',
             outputTarget:'map',
+            overlayNodeText: this.overlayNodeText,
             outputConfig: {
                 hidden:true,
                 boxMaxWidth: 300,
+                height: app.mapPanel.getHeight()-90,
+                autoScroll: true,
                 plain: true,
                 border: false,
                 floating: true,
