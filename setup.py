@@ -21,8 +21,9 @@ setup(name='GeoNode',
       install_requires=[
         # native dependencies
         "PIL",
-        "lxml",
+        "lxml==2.3",
         # python dependencies
+        "gsconfig==0.6",
         "OWSLib==0.5.0",
         "Django==1.4",
         "django-extensions==0.8",
@@ -39,7 +40,6 @@ setup(name='GeoNode',
         "South==0.7.3",
         "django-forms-bootstrap==2.0.3.post1",
         "django-crispy-forms==1.0.0",
-        "gsconfig==0.5.5",
         # setup
         "Paver",
         # we use paste as an development server
@@ -54,7 +54,7 @@ setup(name='GeoNode',
         "Sphinx==1.1.3",
         # testing
         "django-nose",
-        "nose",
+        "nose>=1.0",
         "mock",
         ],
       zip_safe=False,
