@@ -1760,10 +1760,15 @@ def time_info(request):
     else:
         from geoserver.support import xml_property, attribute_list
         cat = Layer.objects.gs_catalog
-        layer_name = request.GET.get('layer')
+        layer_name = request.GET.get('layer', '')
         after_split = layer_name.split(":", 1)
         if len(after_split) != 2:
-            return HttpResponse(json.dumps({}), mimetype="application/javascript")
+            # resolve by name if full name not supplied
+            try:
+                lyr = Layer.objects.get(name=after_split[0])
+                after_split = lyr.typename.split(":", 1)
+            except Layer.DoesNotExist:
+                return HttpResponse(json.dumps({}), mimetype="application/javascript")
         ws, lyr = after_split
         layer = cat.get_resource(workspace=cat.get_workspace(ws), name=lyr)
         if layer is not None and 'time' in layer.metadata:

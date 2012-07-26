@@ -2,10 +2,13 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.conf import settings
 from django.template import RequestContext
+from django.contrib.auth.models import User
 from django.core.cache import cache
 
 from geonode.maps.views import default_map_config
-from geonode.maps.models import *
+from geonode.maps.models import Contact
+from geonode.maps.models import Layer
+from geonode.maps.models import Map
 from geonode.simplesearch.search import combined_search_results
 from geonode.simplesearch.util import resolve_extension
 
@@ -15,7 +18,9 @@ import operator
 import logging
 import zlib
 
-_SEARCH_PARAMS = ['bytype','bykw','byowner','byextent','byadded','byperiod']
+logger = logging.getLogger(__name__)
+
+_SEARCH_PARAMS = ['bytype','bykw','byowner','byextent','byadded','byperiod','exclude']
 
 # settings API
 _search_config = getattr(settings,'SIMPLE_SEARCH_SETTINGS', {})
@@ -106,9 +111,9 @@ def new_search_api(request):
         ts = time() - ts
         logger.info('generated combined search results in %s',ts)
 
-        return _search_json(items, total, start, ts)
+        return _search_json(params[-1], items, total, start, ts)
     except Exception, ex:
-        logging.getLogger("").exception("error during search")
+        logger.exception("error during search")
         return HttpResponse(json.dumps({
             'success' : False,
             'errors' : [str(ex)]
@@ -143,6 +148,9 @@ def _search_params(request):
     query = params.get('q', '')
     try:
         start = int(params.get('start', '0'))
+        # compat
+        if 'startIndex' in params:
+            start = int(params.get('startIndex',0))
     except:
         start = 0
     try:
@@ -161,11 +169,20 @@ def _search_params(request):
             'oldest' : ('last_modified',True),
             'alphaaz' : ('title',True),
             'alphaza' : ('title',False),
-            'popularity' : ('rank',False)
+            'popularity' : ('rank',False),
+            'rel' : ('relevance',False)
 
         }[params.get('sort','newest')]
 
     filters = dict([(k,params.get(k,None) or None) for k in _SEARCH_PARAMS])
+    
+    # stuff the user in there, too, if authenticated
+    filters['user'] = request.user if request.user.is_authenticated() else None
+    
+    # compat
+    aliases = dict(type='bytype',bbox='byextent')
+    for k,v in aliases.items():
+        if k in params: filters[v] = params[k]
                 
     if filters.get('byperiod'):
         filters['byperiod'] = tuple(filters['byperiod'].split(','))
@@ -173,25 +190,29 @@ def _search_params(request):
     return query, start, limit, sort_field, sort_asc, filters
     
     
-def _search_json(results, total, start, time):
+def _search_json(params, results, total, start, time):
     # unique item id for ext store (this could be done client side)
     iid = start
     for r in results:
         r.iid = iid
         iid += 1
-        
-    results = map(lambda r: r.as_dict(),results)
+    
+    exclude = params.get('exclude')
+    exclude = set(exclude.split(',')) if exclude else ()
+    results = map(lambda r: r.as_dict(exclude),results)
         
     results = {
         '_time' : time,
         'rows' : results,
-        'total' :  total
+        'total' :  total,
+        'success' : True,
     }
-    results['success'] = True
     return HttpResponse(json.dumps(results), mimetype="application/json")
+
 
 def cache_key(query,filters):
     return str(reduce(operator.xor,map(hash,filters.items())) ^ hash(query))
+
 
 def _new_search(query, start, limit, sort_field, sort_asc, filters):
     # to support super fast paging results, cache the intermediates
@@ -221,9 +242,9 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
     
     # this is a cruddy, in-memory search since there is no database relationship
     if settings.USE_GEONETWORK:
-        if 'bykw' in filters:
-            kw = filters['bykw']
-            filter_fun.append(lambda r: 'keywords' in r.as_dict() and kw in r.as_dict()['keywords'])
+        kw = filters['bykw']
+        if kw:
+            filter_fun.append(lambda r: 'keywords' in r.as_dict(()) and kw in r.as_dict(())['keywords'])
     
     for fun in filter_fun:
         results = filter(fun,results)
@@ -236,6 +257,7 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
     results.sort(key=keyfunc,reverse=not sort_asc)
     
     return len(results), results[start:start+limit]
+
 
 def author_list(req):
     q = User.objects.all()
