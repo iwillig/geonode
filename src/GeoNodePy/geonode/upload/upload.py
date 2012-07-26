@@ -21,6 +21,7 @@ from geonode.maps.models import Contact
 from geonode.maps.models import GeoNodeException
 from geonode.maps.utils import get_default_user
 from geonode.upload.models import Upload
+from geonode.upload import signals
 from geonode.upload.utils import create_geoserver_db_featurestore
 
 import geoserver
@@ -514,5 +515,7 @@ def final_step(upload_session, user):
 
     if upload_session.tempdir and os.path.exists(upload_session.tempdir):
         shutil.rmtree(upload_session.tempdir)
+
+    signals.upload_complete.send(sender=final_step, layer=saved_layer)
 
     return saved_layer
