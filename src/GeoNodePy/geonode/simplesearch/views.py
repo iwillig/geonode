@@ -243,9 +243,9 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
     
     # this is a cruddy, in-memory search since there is no database relationship
     if settings.USE_GEONETWORK:
-        if 'bykw' in filters:
-            kw = filters['bykw']
-            filter_fun.append(lambda r: 'keywords' in r.as_dict() and kw in r.as_dict()['keywords'])
+        kw = filters['bykw']
+        if kw:
+            filter_fun.append(lambda r: 'keywords' in r.as_dict(()) and kw in r.as_dict(())['keywords'])
     
     for fun in filter_fun:
         results = filter(fun,results)
