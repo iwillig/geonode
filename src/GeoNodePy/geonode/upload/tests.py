@@ -236,8 +236,10 @@ class TestUpload(GeoNodeTest):
 
     def test_successful_layer_upload(self):
         """ Tests if layers can be upload to a running GeoNode GeoServer"""
-        valid_path = os.path.join(GOOD_DATA, 'vector')
-        self.upload_folder_of_files(valid_path, self.check_layer)
+        vector_path = os.path.join(GOOD_DATA, 'vector')
+        raster_path = os.path.join(GOOD_DATA, 'raster')
+        self.upload_folder_of_files(vector_path, self.check_layer)
+        self.upload_folder_of_files(raster_path, self.check_layer)
 
     def test_invalid_layer_upload(self):
         """ Tests the layers that are invalid and should not be uploaded"""
