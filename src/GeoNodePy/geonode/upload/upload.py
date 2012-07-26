@@ -369,18 +369,15 @@ def time_step(upload_session, time_attribute, time_transform_type,
 
 
 def final_step(upload_session, user):
-    target = upload_session.import_target
-    if target is None: raise Exception('error')
     import_session = upload_session.import_session
-
     _log('Reloading session %s to check validity', import_session.id)
     import_session = Layer.objects.gs_uploader.get_session(import_session.id)
     upload_session.import_session = import_session
 
-    # @todo the importer chooses an available featuretype name late in the game
-    # need to verify the resource.name otherwise things will fail.
-    # This happens when the same data is uploaded a second time and the default
-    # name is chosen
+    # the importer chooses an available featuretype name late in the game need
+    # to verify the resource.name otherwise things will fail.  This happens
+    # when the same data is uploaded a second time and the default name is
+    # chosen
 
     cat = Layer.objects.gs_catalog
     cat._cache.clear()
@@ -428,7 +425,9 @@ def final_step(upload_session, user):
 
     _log('Creating Django record for [%s]', name)
     resource = import_session.tasks[0].items[0].resource
-    typename = "%s:%s" % (target['workspace_name'], resource.name)
+    target = import_session.tasks[0].target
+    upload_session.set_target(target)
+    typename = "%s:%s" % (target.workspace.name, resource.name)
     layer_uuid = str(uuid.uuid1())
 
     title = upload_session.layer_title
@@ -442,10 +441,10 @@ def final_step(upload_session, user):
     saved_layer, created = Layer.objects.get_or_create(
         name=resource.name,
         defaults=dict(
-            store=target['name'],
-            storeType=target['resource_type'],
+            store=target.name,
+            storeType=target.resource_type,
             typename=typename,
-            workspace=target['workspace_name'],
+            workspace=target.workspace.name,
             title=title or resource.title,
             uuid=layer_uuid,
             abstract=abstract or '',

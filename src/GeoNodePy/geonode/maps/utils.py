@@ -547,7 +547,7 @@ def check_geonode_is_up():
     """
     try:
         Layer.objects.gs_catalog.get_workspaces()
-    except:
+    except Exception, e:
         # Cannot connect to GeoNode
         from django.conf import settings
 

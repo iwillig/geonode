@@ -977,7 +977,7 @@ def layer_replace(request, layername):
             for e in form.errors.values():
                 errors.extend([escape(v) for v in e])
             return HttpResponse(json.dumps({ "success": False, "errors": errors}))
-        
+
 def json_response(body=None, errors=None, redirect_to=None, exception=None,
                   content_type=None):
    """Create a proper JSON response. If body is provided, this is the response.
