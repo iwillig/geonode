@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from django.conf import settings
 from geoserver.catalog import Catalog
 from gisdata import BAD_DATA
 from gisdata import GOOD_DATA
@@ -13,10 +14,9 @@ import urllib2
 
 GEONODE_USER     = 'admin'
 GEONODE_PASSWD   = 'admin'
-GEOSERVER_USER   = 'admin'
-GEOSERVER_PASSWD = 'admin'
-GEONODE_URL      = 'http://localhost:8000'
-GEOSERVER_URL    = 'http://localhost:8001/geoserver'
+GEONODE_URL      = settings.SITEURL.rstrip('/')
+GEOSERVER_URL    = settings.GEOSERVER_BASE_URL
+GEOSERVER_USER, GEOSERVER_PASSWD = settings.GEOSERVER_CREDENTIALS
 
 
 def parse_cookies(cookies):
@@ -32,7 +32,7 @@ def get_wms(version='1.1.1'):
     # right now owslib does not support auth for get caps
     # requests. Either we should roll our own or fix owslib
     return WebMapService(
-        GEOSERVER_URL + '/wms',
+        GEOSERVER_URL + 'wms',
         version=version,
         username=GEOSERVER_USER,
         password=GEOSERVER_PASSWD
@@ -142,7 +142,7 @@ class GeoNodeTest(TestCase):
             GEONODE_URL, GEONODE_USER, GEONODE_PASSWD
         )
         self.catalog = Catalog(
-            GEOSERVER_URL + '/rest', GEOSERVER_USER, GEOSERVER_PASSWD
+            GEOSERVER_URL + 'rest', GEOSERVER_USER, GEOSERVER_PASSWD
         )
         super(GeoNodeTest, self).setUp()
 
