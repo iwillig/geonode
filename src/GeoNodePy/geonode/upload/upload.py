@@ -252,7 +252,8 @@ def run_import(upload_session, async):
 
     # if a target datastore is configured, ensure the datastore exists
     # in geoserver and set the uploader target appropriately
-    if settings.DB_DATASTORE:
+    if (settings.DB_DATASTORE and
+        import_session.tasks[0].items[0].layer.layer_type != 'RASTER'):
         target = create_geoserver_db_featurestore()
         _log('setting target datastore %s %s',
              target.name, target.workspace.name
