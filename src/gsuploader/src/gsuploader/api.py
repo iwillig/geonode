@@ -304,7 +304,7 @@ class Session(_UploadBase):
     def delete(self):
         """Delete the upload"""
         url = self._url("imports/%s",self.id)
-        resp, content = self._client.delete(url)
+        resp, content = self._client().delete(url)
         if resp['status'] != '204':
             raise Exception('expected 204 response code, got %s' % resp['status'],content)
     
