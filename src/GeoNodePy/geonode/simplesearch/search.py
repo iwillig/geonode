@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.template import defaultfilters
@@ -68,7 +69,14 @@ def _filter_results(l):
     return not any(p.search(l['name']) for p in _exclude_regex)
 
 def _bbox(obj):
-    idx = obj.spatial_temporal_index
+    idx = None
+    # the one-to-one reverse relationship requires special handling if null :(
+    # maybe one day: https://code.djangoproject.com/ticket/10227
+    try:
+        idx = obj.spatial_temporal_index
+    except ObjectDoesNotExist:
+        pass
+    # unknown extent, just give something that works
     extent = idx.extent.extent if idx else (-180,-90,180,90)
     return dict(minx=extent[0], miny=extent[1], maxx=extent[2], maxy=extent[3])
 

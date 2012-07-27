@@ -69,6 +69,7 @@ def index_object(obj, update=False):
     else:
         _logger.debug('skipping %s',obj)
         
+
 def index_layer(index, obj):
     start = end = None
     try:
@@ -94,9 +95,13 @@ def index_layer(index, obj):
             index.extent = Envelope(min_x,min_y,max_x,max_y).wkt;
         except Exception,ex:
             _logger.warn('Error computing envelope: %s, bounding box was %s', str(ex),wms_metadata.boundingBoxWGS84)
-        index.save()
     else:
-        _logger.warn('Bounding box empty, not indexing')
+        #@todo might be better to have a nullable extent
+        _logger.warn('Bounding box empty, adding default envelope')
+        index.extent = Envelope(-180,-90,180,90).wkt
+    
+    index.save()
+
     
 def index_map(index, obj):
     time_start = None
