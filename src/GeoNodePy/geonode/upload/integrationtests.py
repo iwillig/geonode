@@ -190,7 +190,10 @@ class TestUpload(GeoNodeTest):
         data = json.loads(resp.read())
         return resp, data
 
-    def check_layer(self, file_path, resp, data):
+    def check_raster_layer(self, file_path, resp, data):
+        return self.check_layer(file_path, resp, data, is_raster=True)
+
+    def check_layer(self, file_path, resp, data, is_raster=False):
         """Method to check if a layer was correctly uploaded to the
         GeoNode.
 
@@ -209,7 +212,7 @@ class TestUpload(GeoNodeTest):
         self.assertTrue('redirect_to' in data)
         redirect_to = data['redirect_to']
 
-        if settings.UPLOADER_SHOW_TIME_STEP:
+        if settings.UPLOADER_SHOW_TIME_STEP and not is_raster:
             resp, data = self.check_and_pass_through_timestep(data)
             self.assertEquals(resp.code, 200)
             self.assertTrue(data['success'])
@@ -259,9 +262,7 @@ class TestUpload(GeoNodeTest):
         vector_path = os.path.join(GOOD_DATA, 'vector')
         raster_path = os.path.join(GOOD_DATA, 'raster')
         self.upload_folder_of_files(vector_path, self.check_layer)
-        if not settings.UPLOADER_SHOW_TIME_STEP:
-            # skip uploading rasters with time step enabled
-            self.upload_folder_of_files(raster_path, self.check_layer)
+        self.upload_folder_of_files(raster_path, self.check_raster_layer)
 
     def test_invalid_layer_upload(self):
         """ Tests the layers that are invalid and should not be uploaded"""

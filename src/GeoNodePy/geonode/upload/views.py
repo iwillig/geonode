@@ -67,6 +67,15 @@ def _error_response(req, exception=None, errors=None, force_ajax=False):
 
 def _next_step_response(req, upload_session, force_ajax=False):
     next = get_next_step(upload_session)
+
+    if next == 'time':
+        # @TODO we skip time steps for coverages currently
+        import_session = upload_session.import_session
+        feature_type = import_session.tasks[0].items[0].resource
+        if feature_type.resource_type == 'coverage':
+            upload_session.completed_step = 'time'
+            return _next_step_response(req, upload_session)
+
     # @todo this is not handled cleanly - run is not a real step in that it
     # has no corresponding view served by the 'view' function.
     if next == 'run':
@@ -196,7 +205,7 @@ def time_step_view(request, upload_session):
             RequestContext(
                 request,
                 time_step_context(
-                    upload_session.import_session, form_data=None)
+                    import_session, form_data=None)
                 )
         )
     elif request.method != 'POST':
