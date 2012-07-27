@@ -22,7 +22,6 @@ setup(name='GeoNodePy',
           "django-extensions",
           "httplib2"
       ],
-      test_suite = 'geonode.upload.tests',
       zip_safe=False,
       entry_points="""
       # -*- Entry points: -*-
