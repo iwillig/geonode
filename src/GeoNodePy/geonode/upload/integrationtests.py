@@ -180,6 +180,16 @@ class TestUpload(GeoNodeTest):
         layer = self.catalog.get_layer(original_name)
         self.assertIsNotNone(layer is not None)
 
+    def check_and_pass_through_timestep(self, data):
+        redirect_to = data['redirect_to']
+        self.assertEquals(redirect_to, '/data/upload/time')
+        resp = self.client.make_request('/data/upload/time')
+        self.assertEquals(resp.code, 200)
+        data = {'csrfmiddlewaretoken': self.client.get_crsf_token()}
+        resp = self.client.make_request('/data/upload/time', data)
+        data = json.loads(resp.read())
+        return resp, data
+
     def check_layer(self, file_path, resp, data):
         """Method to check if a layer was correctly uploaded to the
         GeoNode.
@@ -198,6 +208,14 @@ class TestUpload(GeoNodeTest):
         self.assertTrue(data['success'])
         self.assertTrue('redirect_to' in data)
         redirect_to = data['redirect_to']
+
+        if settings.UPLOADER_SHOW_TIME_STEP:
+            resp, data = self.check_and_pass_through_timestep(data)
+            self.assertEquals(resp.code, 200)
+            self.assertTrue(data['success'])
+            self.assertTrue('redirect_to' in data)
+            redirect_to = data['redirect_to']
+
         self.assertEquals(redirect_to, '/data/upload/final')
         self.check_layer_geonode_page(redirect_to)
         # FIXME capabilities doc doesn't show layers if DB_DATASTORE is set
@@ -209,6 +227,9 @@ class TestUpload(GeoNodeTest):
     def check_invalid_layer(self, _, resp, data):
         """ Makes sure that we got the correct response from an layer
         that can't be uploaded"""
+        if settings.UPLOADER_SHOW_TIME_STEP:
+            resp, data = self.check_and_pass_through_timestep(data)
+
         self.assertTrue(resp.code, 200)
         self.assertTrue(not data['success'])
         self.assertEquals(
@@ -238,7 +259,9 @@ class TestUpload(GeoNodeTest):
         vector_path = os.path.join(GOOD_DATA, 'vector')
         raster_path = os.path.join(GOOD_DATA, 'raster')
         self.upload_folder_of_files(vector_path, self.check_layer)
-        self.upload_folder_of_files(raster_path, self.check_layer)
+        if not settings.UPLOADER_SHOW_TIME_STEP:
+            # skip uploading rasters with time step enabled
+            self.upload_folder_of_files(raster_path, self.check_layer)
 
     def test_invalid_layer_upload(self):
         """ Tests the layers that are invalid and should not be uploaded"""
