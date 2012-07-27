@@ -241,6 +241,15 @@ def run_import(upload_session, async):
     Returns the target datastore.
     """
     import_session = upload_session.import_session
+    import_session = Layer.objects.gs_uploader.get_session(import_session.id)
+    if import_session.state == 'INCOMPLETE':
+        item = upload_session.import_session.tasks[0].items[0]
+        if item.state == 'NO_CRS':
+            err = 'No projection found'
+        else:
+            err = item.state or 'Session not ready for import.'
+        raise Exception(err)
+
     # if a target datastore is configured, ensure the datastore exists
     # in geoserver and set the uploader target appropriately
     if settings.DB_DATASTORE:

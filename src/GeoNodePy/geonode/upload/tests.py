@@ -210,11 +210,7 @@ class TestUpload(GeoNodeTest):
         self.assertTrue(not data['success'])
         self.assertEquals(
             data['errors'],
-            #['When uploading Shapefiles, .SHX and .DBF files are also '
-            # 'required.']
-            # FIXME bad error message
-            ['Unexpected error: The layer exists and the overwrite '
-             'parameter is False']
+            ['Unexpected exception No projection found']
         )
 
     def upload_folder_of_files(self, folder, final_check):
