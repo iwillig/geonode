@@ -8,6 +8,7 @@ from unittest import TestCase
 import MultipartPostHandler
 import json
 import os
+import time
 import urllib
 import urllib2
 
@@ -212,19 +213,17 @@ class TestUpload(GeoNodeTest):
         self.assertTrue('redirect_to' in data)
         redirect_to = data['redirect_to']
 
-        if settings.UPLOADER_SHOW_TIME_STEP and not is_raster:
+        if (not is_raster and settings.UPLOADER_SHOW_TIME_STEP):
             resp, data = self.check_and_pass_through_timestep(data)
             self.assertEquals(resp.code, 200)
             self.assertTrue(data['success'])
             self.assertTrue('redirect_to' in data)
             redirect_to = data['redirect_to']
+            self.wait_for_progress(data.get('progress'))
 
         self.assertEquals(redirect_to, '/data/upload/final')
         self.check_layer_geonode_page(redirect_to)
-        # FIXME capabilities doc doesn't show layers if DB_DATASTORE is set
-        # don't know why that's the case
-        if not settings.DB_DATASTORE:
-            self.check_layer_geoserver_caps(original_name)
+        self.check_layer_geoserver_caps(original_name)
         self.check_layer_geoserver_rest(original_name)
 
     def check_invalid_layer(self, _, resp, data):
@@ -255,6 +254,7 @@ class TestUpload(GeoNodeTest):
             _file = os.path.join(folder, main)
             base, _ = os.path.splitext(_file)
             resp, data = self.client.upload_file(_file)
+            self.wait_for_progress(data.get('progress'))
             final_check(base, resp, data)
 
     def test_successful_layer_upload(self):
@@ -299,8 +299,57 @@ class TestUpload(GeoNodeTest):
         base = 'single_point'
         self.client.login()
         resp, data = self.client.upload_file(shp)
+        self.wait_for_progress(data.get('progress'))
         self.check_layer(base, resp, data)
 
         # try uploading the same layer twice
         resp, data = self.client.upload_file(shp)
+        self.wait_for_progress(data.get('progress'))
         self.check_layer(base, resp, data)
+
+
+    def wait_for_progress(self, progress_url):
+        if progress_url:
+            resp = self.client.get(progress_url)
+            assert resp.getcode() == 200, 'Invalid progress status code'
+            raw_data = resp.read()
+            json_data = json.loads(raw_data)
+            # "COMPLETE" state means done
+            if json_data.get('state', '') == 'RUNNING':
+                time.sleep(0.1)
+                self.wait_for_progress(progress_url)
+
+
+    def test_time(self):
+        """Verify that uploading time based csv files works properly"""
+        if not settings.UPLOADER_SHOW_TIME_STEP:
+            print '\ntime step not enabled ... skipping time tests'
+            return
+
+        timedir = os.path.join(GOOD_DATA, 'time')
+        self.client.login()
+        base = 'boxes_with_date'
+        shp = os.path.join(timedir, '%s.shp' % base)
+
+        # get to time step
+        resp, data = self.client.upload_file(shp)
+        self.wait_for_progress(data.get('progress'))
+        self.assertEquals(resp.code, 200)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['redirect_to'], '/data/upload/time')
+
+        resp, data = self.client.get_html('/data/upload/time')
+        self.assertEquals(resp.code, 200)
+        data = dict(csrfmiddlewaretoken=self.client.get_crsf_token(),
+                    time_attribute='date',
+                    presentation_strategy='LIST',
+                    )
+        resp = self.client.make_request('/data/upload/time', data)
+        data = json.loads(resp.read())
+        self.assertEquals(resp.code, 200)
+        self.wait_for_progress(data.get('progress'))
+        redirect_to = data['redirect_to']
+        self.assertEquals(redirect_to, '/data/upload/final')
+        self.check_layer_geonode_page(redirect_to)
+        self.check_layer_geoserver_caps(base)
+        self.check_layer_geoserver_rest(base)
