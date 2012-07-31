@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.template import defaultfilters
 from django.contrib.gis.gdal import Envelope
+from django.contrib.auth.models import User
 
 from geonode.maps.models import Contact
 from geonode.maps.models import Layer
@@ -60,10 +61,20 @@ if _display_names:
     _USER_DISPLAY = _display_names.get('user')
     _MAP_DISPLAY = _display_names.get('map')
     _LAYER_DISPLAY = _display_names.get('layer')
+    
+_owner_rank_rules = resolve_extension('owner_rank_rules')
+if not _owner_rank_rules:
+    _owner_rank_rules = lambda: []
 
 # end settings API
 
-    
+def _rank_rules(model, *rules):
+    # prefix field names with model's db table to avoid ambiguity
+    for r in rules:
+        r[0] = '"%s"."%s"' % (model._meta.db_table, r[0])
+    return rules
+
+
 def _filter_results(l):
     '''If the layer name doesn't match any of the patterns, it shows in the results'''
     return not any(p.search(l['name']) for p in _exclude_regex)
@@ -233,12 +244,12 @@ def _get_owner_results(results, query, kw):
             qs = qs | Q(**{'%s__icontains' % field: query})
         q = q.filter(qs)
         
-        q = _add_relevance(q,query,[
-            ('username',10, 5),
-            ('blurb',5, 2),
-            ('organization',5, 2),
-            ('biography',5, 2),
-        ])
+        rules = _rank_rules(User,['username', 10, 5]) + \
+                _rank_rules(Contact,['organization', 5, 2])
+        added = _owner_rank_rules()
+        if added:
+            rules = rules + _rank_rules(*added)
+        q = _add_relevance(q, query, rules)
     
     results.extend( _process_results(map(OwnerNormalizer,q)))
         
@@ -272,16 +283,17 @@ def _get_map_results(results, query, kw):
             map_layers_with = MapLayer.objects.filter(name__in=layers_with_kw).values('map')
             q = q.filter(id__in=map_layers_with)
         if query:
-            q = _add_relevance(q,query,[
-                ('title',10, 5),
-                ('abstract',5, 2),
-            ])
+            rules = _rank_rules(Map,
+                ['title',10, 5],
+                ['abstract',5, 2],
+            )
+            q = _add_relevance(q, query, rules)
     
     results.extend( _process_results( map(MapNormalizer,q) ))
     
     
 def _add_relevance(query, text, rank_rules):
-    eq = """CASE WHEN "%s" = '%s' THEN %s ELSE 0 END"""
+    eq = """CASE WHEN %s = '%s' THEN %s ELSE 0 END"""
     frag = """CASE WHEN position(lower('%s') in lower(%s)) >= 1 THEN %s ELSE 0 END"""
     
     preds = []
@@ -406,11 +418,12 @@ def _get_layer_results(results, query, kw):
             normalizers.append(LayerNormalizer(layer,doc))
     else:
         if query:
-            q = _add_relevance(q,query,[
-                ('name',10, 1),
-                ('title',10, 5),
-                ('abstract',5, 2),
-            ])
+            rules = _rank_rules(Layer,
+                ['name',10, 1],
+                ['title',10, 5],
+                ['abstract',5, 2],
+            )
+            q = _add_relevance(q, query, rules)
         normalizers = map(LayerNormalizer, q)
     _process_results(normalizers)
     results.extend(normalizers)
