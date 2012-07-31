@@ -159,8 +159,11 @@ class LayerNormalizer(Normalizer):
             doc['keywords'] = layer.keyword_list()
             doc['title'] = layer.title
             doc['detail'] = layer.get_absolute_url()
-        if 'download_links' not in exclude:
-            doc['download_links'] = layer.download_links()
+        #if 'download_links' not in exclude:
+        #    links = layer.download_links()
+        #    for i,e in enumerate(links):
+        #        links[i] = [ unicode(l) for l in e]
+        #    doc['download_links'] = links
         owner = layer.owner
         if owner:
             doc['owner_detail'] = reverse('about_storyteller', args=(layer.owner.username,))
