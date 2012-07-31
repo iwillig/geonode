@@ -149,7 +149,9 @@ class LayerNormalizer(Normalizer):
         doc['last_modified'] = _date_fmt(layer.date)
         doc['id'] = layer.id
         doc['_type'] = 'layer'
+        doc['owsUrl'] = layer.get_virtual_wms_url()
         doc['topic'] = layer.topic_category
+        doc['name'] = layer.typename
         doc['abstract'] = defaultfilters.linebreaks(layer.abstract)
         doc['storeType'] = layer.storeType
         doc['_display_type'] = _LAYER_DISPLAY

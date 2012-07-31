@@ -29,7 +29,6 @@ _extra_context = resolve_extension('extra_context')
 # end settings API
 
 DEFAULT_MAPS_SEARCH_BATCH_SIZE = 10
-MAX_MAPS_SEARCH_BATCH_SIZE = 25
 
 def _create_viewer_config():
     DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(None)
@@ -154,8 +153,7 @@ def _search_params(request):
     except:
         start = 0
     try:
-        limit = min(int(params.get('limit', DEFAULT_MAPS_SEARCH_BATCH_SIZE)),
-                    MAX_MAPS_SEARCH_BATCH_SIZE)
+        limit = int(params.get('limit', DEFAULT_MAPS_SEARCH_BATCH_SIZE))
     except:
         limit = DEFAULT_MAPS_SEARCH_BATCH_SIZE
         
@@ -256,7 +254,10 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
         keyfunc = lambda r: getattr(r,sort_field)()
     results.sort(key=keyfunc,reverse=not sort_asc)
     
-    return len(results), results[start:start+limit]
+    if limit > 0:
+        results = results[start:start+limit]
+    
+    return len(results), results
 
 
 def author_list(req):

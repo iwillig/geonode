@@ -1228,6 +1228,9 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)
+    
+    def get_virtual_wms_url(self):
+        return settings.GEOSERVER_BASE_URL + "%s/%s/" % tuple(self.typename.split(':'))
 
     def __str__(self):
         return "%s Layer" % self.typename
