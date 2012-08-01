@@ -540,6 +540,11 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 var defaultTools = createToolCfg(config, this.toggleGroup);
                 Ext.apply(config, loadedConfig);
                 config.tools = config.tools || [];
+                config.sources['local'].hidden = true;
+                config.sources['search'] = {
+                    ptype: "ms_cataloguesource",
+                    url: "/search/api"
+                };
                 var ptypes = Ext.pluck(config.tools,'ptype');
                 Ext.each(defaultTools,function(cfg){
                     if(ptypes.indexOf(cfg.ptype)==-1){
