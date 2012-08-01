@@ -1,5 +1,7 @@
 from geonode.maps.models import Layer
 
+from gsuploader.uploader import NotFound
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -76,7 +78,10 @@ class Upload(models.Model):
     def delete(self, cascade=True):
         models.Model.delete(self)
         if cascade:
-            session = Layer.objects.gs_uploader.get_session(self.import_id)
+            try:
+                session = Layer.objects.gs_uploader.get_session(self.import_id)
+            except NotFound:
+                session = None
             if session:
                 try:
                     session.delete()
