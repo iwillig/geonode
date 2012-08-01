@@ -71,6 +71,9 @@ class Uploader(object):
             
 class RequestFailed(Exception):
     pass
+
+class NotFound(Exception):
+    pass
         
 class _Client(object):
     """Lower level http client"""
@@ -112,6 +115,8 @@ class _Client(object):
         _logger.info("%s request to %s",method,url)
         resp, content = self.http.request(url,method,data,headers)
         _debug(resp, content)
+        if resp.status == 404:
+            raise NotFound()
         if resp.status < 200 or resp.status > 299:
             raise RequestFailed('Server error',resp.status,content)
         return resp, content
@@ -195,7 +200,10 @@ def _debug(resp, content):
     if _logger.isEnabledFor(logging.DEBUG):
         _logger.debug("response : %s",pprint.pformat(resp))
         if "content-type" in resp and resp['content-type'] == 'application/json':
-            content = json.loads(content) 
-            content = json.dumps(content,indent=2)
+            try:
+                content = json.loads(content) 
+                content = json.dumps(content,indent=2)
+            except ValueError:
+                pass
 
         _logger.debug("content : %s",content)
