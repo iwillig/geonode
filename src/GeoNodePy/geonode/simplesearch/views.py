@@ -20,7 +20,7 @@ import zlib
 
 logger = logging.getLogger(__name__)
 
-_SEARCH_PARAMS = ['bytype','bykw','byowner','byextent','byadded','byperiod','exclude']
+_SEARCH_PARAMS = ['bytype','bykw','byowner','byextent','byadded','byperiod','exclude','cache']
 
 # settings API
 _search_config = getattr(settings,'SIMPLE_SEARCH_SETTINGS', {})
@@ -101,16 +101,20 @@ def _get_all_keywords():
 
 def new_search_api(request):
     from time import time
-    
+#    from django.db import connection
+#    connection.queries = []
     ts = time()
     try:
         params = _search_params(request)
         start = params[1]
         total, items = _new_search(*params)
-        ts = time() - ts
-        logger.info('generated combined search results in %s',ts)
-
-        return _search_json(params[-1], items, total, start, ts)
+        ts1 = time() - ts
+        ts = time()
+        results = _search_json(params[-1], items, total, start, ts1)
+        ts2 = time() - ts
+        logger.info('generated combined search results in %s, %s',ts1,ts2)
+#        print ts1,ts2, connection.queries.__len__()
+        return results
     except Exception, ex:
         logger.exception("error during search")
         return HttpResponse(json.dumps({
@@ -177,6 +181,8 @@ def _search_params(request):
     # stuff the user in there, too, if authenticated
     filters['user'] = request.user if request.user.is_authenticated() else None
     
+    filters['limit'] = limit
+    
     # compat
     aliases = dict(type='bytype',bbox='byextent')
     for k,v in aliases.items():
@@ -214,7 +220,7 @@ def cache_key(query,filters):
 
 def _new_search(query, start, limit, sort_field, sort_asc, filters):
     # to support super fast paging results, cache the intermediates
-    use_cache = True
+    use_cache = filters.get('cache',1)
     results = None
     cache_time = 60
     if use_cache:
@@ -228,6 +234,7 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
         results = combined_search_results(query,filters)
         if use_cache:
             dumped = zlib.compress(pickle.dumps(results))
+            logger.info("cached search results %s" % len(dumped))
             cache.set(key, dumped, cache_time)
 
     else:

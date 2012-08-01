@@ -406,7 +406,14 @@ def _get_layer_results(results, query, kw):
     byperiod = kw.get('byperiod')
     if byperiod:
         q = _filter_by_period(LayerIndex, q, byperiod)
-        
+       
+    # this is a special optimization for prefetching results when requesting
+    # all records via search
+    # keywords and thumbnails cannot be prefetched at the moment due to
+    # the way the contenttypes are implemented
+    if kw['limit'] == 0:
+        q = q.defer(None).prefetch_related("owner","spatial_temporal_index")
+    
     # if we're using geonetwork, have to fetch the results from that
     if layer_results:
         normalizers = []
