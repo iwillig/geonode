@@ -9,46 +9,43 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
 
     rootProperty: "rows",
 
-    asyncCreateLayerRecord: true,
-
     fields: [
         {name: "name"},
         {name: "title"},
         {name: "abstract"},
-        {name: "bounds", mapping: "bbox", convert: function(v) {
-            return {
-                left: v.minx,
-                right: v.maxx,
-                bottom: v.miny,
-                top: v.maxy
-            };
-        }},
-        {name: "URI", mapping: "download_links", convert: function(v) {
-            var result = [];
-            for (var i=0,ii=v.length;i<ii;++i) {
-                result.push(v[i][2]);
+        {name: "owsUrl", convert: function(v) {
+            if (v.indexOf('/wms') !== -1 || v.indexOf('/ows') !== -1) {
+                return v;
+            } else {
+                return v.charAt(v.length-1) === '/' ? v + 'ows' : v + '/ows';
             }
-            return result;
         }}
     ],
 
-    baseParams: {limit: 1000000},
+    baseParams: {limit: 0},
 
     createLayerRecord: function(config, callback, scope) {
+        var idx = this.store.findExact('name', config.name);
+        var rec = this.store.getAt(idx);
+        var url = rec.get('owsUrl');
         var name = config.name.indexOf(":") !== -1 ? config.name.split(":")[1] : config.name;
-        // TODO filter the local source instead as suggested by @ahocevar
         var source = new gxp.plugins.WMSSource({
-            lazy: false,
+            isLazy: function() { return false; },
+            hidden: true,
             id: Ext.id(),
-            // TODO: make configurable
-            url: "/geoserver/geonode/" + name + "/wms?"
+            url: url
+        });
+        source.on({
+            "ready": function() {
+                this.target.createLayerRecord({
+                    source: source.id,
+                    name: name
+                }, callback, scope);
+            },
+            scope: this
         });
         source.init(this.target);
         this.target.layerSources[source.id] = source;
-        this.target.createLayerRecord({
-            source: source.id,
-            name: name
-        }, callback, scope);
     }
 
 });
