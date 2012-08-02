@@ -47,6 +47,8 @@ urlpatterns = patterns('',
                 {'template': 'upload/upload_permissions.html'}, name='upload_permissions'),
 
     # Data views
+    url(r'^upload/', include('geonode.fileupload.urls')),
+    (r'^data/upload/', include('geonode.upload.urls')),
     (r'^data/', include('geonode.layers.urls')),
 
     # Map views

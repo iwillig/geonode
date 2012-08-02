@@ -28,6 +28,8 @@ from geonode.layers.enumerations import COUNTRIES, ALL_LANGUAGES, \
     TOPIC_CATEGORIES, DEFAULT_SUPPLEMENTAL_INFORMATION, LINK_TYPES
 
 from geoserver.catalog import Catalog
+from gsuploader.uploader import Uploader
+
 from taggit.managers import TaggableManager
 
 
@@ -40,7 +42,7 @@ class LayerManager(models.Manager):
         models.Manager.__init__(self)
         url = "%srest" % settings.GEOSERVER_BASE_URL
         self.gs_catalog = Catalog(url, _user, _password)
-
+        self.gs_uploader = Uploader(url, _user, _password)
 
     def admin_contact(self):
         # this assumes there is at least one superuser

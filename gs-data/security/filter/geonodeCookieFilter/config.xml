@@ -1,0 +1,5 @@
+<org.geonode.security.GeoNodeAuthFilterConfig>
+  <id>4c490b43:138a594e596:-7fee</id>
+  <name>geonodeCookieFilter</name>
+  <className>org.geonode.security.GeoNodeCookieProcessingFilter</className>
+</org.geonode.security.GeoNodeAuthFilterConfig>
