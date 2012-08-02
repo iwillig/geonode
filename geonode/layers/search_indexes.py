@@ -21,10 +21,10 @@ class LayerIndex(indexes.RealTimeSearchIndex, indexes.Indexable):
     modified = indexes.DateTimeField(model_attr="date")
     category = indexes.CharField(model_attr="topic_category", faceted=True)
     detail_url = indexes.CharField(model_attr="get_absolute_url")
-    bbox_left = indexes.FloatField(model_attr='bbox_left')
-    bbox_right = indexes.FloatField(model_attr='bbox_right')
-    bbox_top = indexes.FloatField(model_attr='bbox_top')
-    bbox_bottom = indexes.FloatField(model_attr='bbox_bottom')
+    #bbox_left = indexes.FloatField(model_attr='bbox_left')
+    #bbox_right = indexes.FloatField(model_attr='bbox_right')
+    #bbox_top = indexes.FloatField(model_attr='bbox_top')
+    #bbox_bottom = indexes.FloatField(model_attr='bbox_bottom')
 
     json = indexes.CharField(indexed=False)
 
