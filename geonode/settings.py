@@ -111,23 +111,30 @@ INSTALLED_APPS = (
     'django_forms_bootstrap',
     'django_extensions',
     'registration',
-    'profiles',
+    'idios',
     'avatar',
     'dialogos',
     'agon_ratings',
     'taggit',
     'south',
     'haystack',
+    'relationships',
+    'actstream',
+    'announcements',
+    'notification',
+    'user_messages',
+    'crispy_forms',
 
     # GeoNode internal apps
+    'geonode.proxy',
+    'geonode.security',
+    'geonode.layers',
     'geonode.maps',
     'geonode.upload',
     'geonode.fileupload',
-    'geonode.layers',
     'geonode.people',
+    'geonode.groups',
     'geonode.printing',
-    'geonode.proxy',
-    'geonode.security',
     'geonode.search',
     'geonode.catalogue',
 )
@@ -234,6 +241,12 @@ AGON_RATINGS_CATEGORY_CHOICES = {
         "layer": "How good is this layer?"
     },
 }
+
+# List of models that actstream can take action on.
+ACTSTREAM_ACTION_MODELS = [
+        "auth.User",
+        "groups.Group",
+]
 
 # For South migrations
 SOUTH_MIGRATION_MODULES = {

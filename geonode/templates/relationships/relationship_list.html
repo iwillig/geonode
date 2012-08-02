@@ -1,0 +1,101 @@
+{% extends "page_layout.html" %}
+
+{% block head %}
+{{ block.super }}
+{% include "geonode/ext_header.html" %}
+<script type="text/javascript">
+
+function revert_output(output_div, user_info, removed) {
+    /* Update the ouput and user hints after a successful submission. */
+    output_div.update("");
+    output_div.hide();
+    
+    if (removed) {
+        user_info.setStyle("background", "red");
+    } else {
+        user_info.setStyle("background", "white");
+    }
+}
+
+Ext.onReady(function () {
+    Ext.select("a.action").on("click", function (evt, el, o) {
+        var url = this.href,
+            output = Ext.get("confirmation"),
+            dh = Ext.DomHelper,
+            user_info = Ext.get("user_info_" + this.id),
+            confirm_spec,
+            confirm_div;
+            
+        // Remove highlights from any previously highlighted users.
+        Ext.select("div.user_info").setStyle("background-color", "white");
+        
+        
+        evt.preventDefault();
+        
+        user_info.setStyle("background-color", "lightBlue");
+        
+        // Provide an Ext element spec for the body of the confirmation section.
+        confirm_spec = {
+            tag: "div",
+            id: "confirm_options",
+            children: [
+                { tag: "button", id: "confirm_yes", html: "Yes" },
+                { tag: "button", id: "confirm_no", html: "No" }
+            ]
+        };
+        
+        output.update("Are you sure?");
+        dh.append(output, confirm_spec);
+        
+        // Hook up a handler for our confirmation button.
+        Ext.get("confirm_yes").on("click", function (evt, el, o) {
+            Ext.Ajax.request({
+                method: "POST",
+                url: url,
+                defaultHeaders: {'HTTP_X_REQUESTED_WITH': "XMLHttpRequest"}
+            });
+            revert_output(output, user_info, true);
+        });
+        
+        // Handler for the negation button.
+        Ext.get("confirm_no").on("click", function (evt, el, o) {
+            revert_output(output, user_info, false);
+        });
+        
+        output.show();
+        
+    });
+});
+</script>
+{% endblock %}
+
+{% load i18n avatar_tags relationship_tags %}
+
+{% block main %}
+
+<div class="twocol">
+    <div id="confirmation" style="display: none;">
+    </div>
+    <ul id="relationship_list" style="list-style-type: none;">
+    {% for user in relationship_list %}
+        <div style="height: 90px;" class="user_info" id="user_info_{{ user.id }}">
+        <div style="float: left">{% avatar user 70 %}</div>
+        <li style="margin-left: 75px;"><p>{{ user.username }} - 
+        {% if status.name == "Following" %}
+            <a href="{{ user|remove_relationship_url:"following"}}" class="action" id="{{ user.id }}">{% trans "Unfollow" %}</a>
+        {% endif %}
+
+        {% if status.name == "Blocking" %}
+            <a href="{{ user|remove_relationship_url:"blocking"}}" class="action" id="{{ user.id }}">{% trans "Unblock" %}</a>
+        {% endif %}
+
+        </p></li>
+        </div>
+        {% empty %}
+            <li>You're not {{ status_slug }} anyone!</li>
+    {% endfor %}
+    </ul>
+</div>
+
+
+{% endblock %}
