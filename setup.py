@@ -41,6 +41,8 @@ setup(name='GeoNode',
         "django-forms-bootstrap==2.0.3.post1",
         "requests",
         "django-crispy-forms==1.0.0",
+        "Markdown==2.1.1",
+        "django-hosts",
         # setup
         "Paver",
         # we use paste as an development server

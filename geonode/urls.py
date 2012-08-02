@@ -82,6 +82,9 @@ urlpatterns = patterns('',
     # Printing
     (r'^printing/', include('geonode.printing.urls')),
 
+    # Portals
+    (r'^portals/', include('geonode.portals.urls')),
+
     # Meta
     url(r'^lang\.js$', 'django.views.generic.simple.direct_to_template',
          {'template': 'lang.js', 'mimetype': 'text/javascript'}, name='lang'),

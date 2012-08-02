@@ -108,6 +108,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
 
     # Third party apps
+    'django_hosts',
     'django_forms_bootstrap',
     'django_extensions',
     'registration',
@@ -127,6 +128,7 @@ INSTALLED_APPS = (
 
     # GeoNode internal apps
     'geonode.proxy',
+    'geonode.portals',
     'geonode.security',
     'geonode.layers',
     'geonode.maps',
@@ -203,9 +205,17 @@ MIDDLEWARE_CLASSES = (
     # The setting below makes it possible to serve different languages per
     # user depending on things like headers in HTTP requests.
     'django.middleware.locale.LocaleMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django_hosts.middleware.HostsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'geonode.portals.middleware.FlatpageFallbackMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
+
+
+ROOT_URLCONF = 'geonode.urls'
+ROOT_HOSTCONF = 'geonode.hosts'
+DEFAULT_HOST = 'www'
 
 
 # Replacement of default authentication backend in order to support
