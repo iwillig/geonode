@@ -62,14 +62,11 @@
       <artifactId>excel</artifactId>
       <version>${geoserver.version}</version>
     </dependency>
-<<<<<<< HEAD
     <dependency>
       <groupId>org.opengeo.geoserver</groupId>
       <artifactId>importer</artifactId>
       <version>${geoserver-exts.version}</version>
     </dependency>
-=======
->>>>>>> 070eb20b7899fcc232bebf15803fe045b89e72af
     <!--dependency>
       <groupId>org.geoserver.community</groupId>
       <artifactId>ftp</artifactId>
@@ -252,7 +249,6 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-<<<<<<< HEAD
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
             <argLine>-XX:MaxPermSize=256m</argLine>
@@ -261,8 +257,6 @@
       
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-=======
->>>>>>> 8af076d6903623f5c20e282b5e95e499ef0c3779
         <artifactId>maven-resources-plugin</artifactId>
         <version>2.4</version>
         <configuration>
