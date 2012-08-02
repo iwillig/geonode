@@ -15,10 +15,10 @@ class MapIndex(indexes.RealTimeSearchIndex, indexes.Indexable):
     date = indexes.DateTimeField(model_attr="last_modified")
     iid = indexes.IntegerField(model_attr='id')
     type = indexes.CharField(faceted=True)
-    bbox_left = indexes.FloatField(model_attr='bbox_left')
-    bbox_right = indexes.FloatField(model_attr='bbox_right')
-    bbox_top = indexes.FloatField(model_attr='bbox_top')
-    bbox_bottom = indexes.FloatField(model_attr='bbox_bottom')
+    #bbox_left = indexes.FloatField(model_attr='bbox_left')
+    #bbox_right = indexes.FloatField(model_attr='bbox_right')
+    #bbox_top = indexes.FloatField(model_attr='bbox_top')
+    #bbox_bottom = indexes.FloatField(model_attr='bbox_bottom')
     json = indexes.CharField(indexed=False)
 
     def get_model(self):
