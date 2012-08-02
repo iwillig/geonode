@@ -19,7 +19,7 @@ from geonode.layers.utils import layer_type
 from geonode.layers.models import Layer
 from geonode.people.models import Contact
 from geonode import GeoNodeException
-from geonode.layers.utils import get_default_user
+from geonode.people.utils import get_default_user
 from geonode.upload.models import Upload
 from geonode.upload.utils import create_geoserver_db_featurestore
 from geonode.layers.utils import layer_set_permissions
