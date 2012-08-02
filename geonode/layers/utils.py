@@ -1,4 +1,5 @@
-"""GeoNode SDK for managing GeoNode layers and users
+# -*- coding: utf-8 -*-
+"""Utilities for managing GeoNode layers
 """
 
 # Standard Modules
@@ -13,12 +14,11 @@ import string
 import urllib2
 from lxml import etree
 import glob
-import math
 
 # Django functionality
-from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
 from django.conf import settings
+
 
 # Geonode functionality
 from geonode import GeoNodeException
@@ -28,12 +28,12 @@ from geonode.people.utils import get_valid_user
 from geonode.layers.models import Layer
 from geonode.people.models import Contact
 from geonode.gs_helpers import cascading_delete, get_sld_for, delete_from_postgis
+from django.contrib.auth.models import User
 from geonode.security.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 # Geoserver functionality
 import geoserver
 from geoserver.catalog import FailedRequestError
 from geoserver.resource import FeatureType, Coverage
-from zipfile import ZipFile
 
 logger = logging.getLogger('geonode.layers.utils')
 
@@ -58,27 +58,11 @@ def layer_type(filename):
        returns a gsconfig resource_type string
        that can be either 'featureType' or 'coverage'
     """
-    base_name, extension = os.path.splitext(filename)
-    
-    shp_exts = ['.shp',]
-    cov_exts = ['.tif', '.tiff', '.geotiff', '.geotif']
-    csv_exts = ['.csv']
-
-    if extension.lower() == '.zip':
-        zf = ZipFile(filename)
-        # ZipFile doesn't support with statement in 2.6, so don't do it
-        try:
-            for n in zf.namelist():
-                b, e = os.path.splitext(n.lower())
-                if e in shp_exts or e in cov_exts:
-                    base_name, extension = b,e
-        finally:
-            zf.close()
-
-    if extension.lower() in shp_exts or extension.lower() in csv_exts:
-         return FeatureType.resource_type
-    elif extension.lower() in cov_exts:
-         return Coverage.resource_type
+    extension = os.path.splitext(filename)[1]
+    if extension.lower() in ['.shp']:
+        return FeatureType.resource_type
+    elif extension.lower() in ['.tif', '.tiff', '.geotiff', '.geotif']:
+        return Coverage.resource_type
     else:
         msg = ('Saving of extension [%s] is not implemented' % extension)
         raise GeoNodeException(msg)
@@ -516,62 +500,7 @@ def save(layer, base_file, user, overwrite = True, title=None,
     return saved_layer
 
 
-def get_default_user():
-    """Create a default user
-    """
-    try:
-        return User.objects.get(is_superuser=True)
-    except User.DoesNotExist:
-        raise GeoNodeException('You must have an admin account configured '
-                               'before importing data. '
-                               'Try: django-admin.py createsuperuser')
-    except User.MultipleObjectsReturned:
-        raise GeoNodeException('You have multiple admin accounts, '
-                               'please specify which I should use.')
-
-def get_valid_user(user=None):
-    """Gets the default user or creates it if it does not exist
-    """
-    if user is None:
-        theuser = get_default_user()
-    elif isinstance(user, basestring):
-        theuser = User.objects.get(username=user)
-    elif user.is_anonymous():
-        raise GeoNodeException('The user uploading files must not '
-                               'be anonymous')
-    else:
-        theuser = user
-
-    #FIXME: Pass a user in the unit tests that is not yet saved ;)
-    assert isinstance(theuser, User)
-
-    return theuser
-
-
-def check_geonode_is_up():
-    """Verifies all of geonetwork, geoserver and the django server are running,
-       this is needed to be able to upload.
-    """
-    try:
-        Layer.objects.gs_catalog.get_workspaces()
-    except Exception, e:
-        # Cannot connect to GeoNode
-        from django.conf import settings
-
-        msg = ('Cannot connect to the GeoServer at %s\nPlease make sure you '
-               'have started GeoNode.' % settings.GEOSERVER_BASE_URL)
-        raise GeoNodeException(msg)
-
-    try:
-        Layer.objects.gn_catalog.login()
-    except:
-        from django.conf import settings
-        msg = ('Cannot connect to the GeoNetwork at %s\n'
-               'Please make sure you have started '
-               'GeoNetwork.' % settings.GEONETWORK_BASE_URL)
-        raise GeoNodeException(msg)
-
-def file_upload(filename, user=None, title=None, overwrite=True, keywords=[]):
+def file_upload(filename, user=None, title=None, overwrite=True, keywords=()):
     """Saves a layer in GeoNode asking as little information as possible.
        Only filename is required, user and title are optional.
     """
@@ -679,4 +608,3 @@ def _create_db_featurestore(name, data, overwrite = False, charset = None):
     except Exception:
         delete_from_postgis(name)
         raise
-
