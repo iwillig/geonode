@@ -160,7 +160,6 @@ class Layer(models.Model, PermissionLevelMixin):
     # Section 5
     temporal_extent_start = models.DateField(_('temporal extent start'), blank=True, null=True)
     temporal_extent_end = models.DateField(_('temporal extent end'), blank=True, null=True)
-
     supplemental_information = models.TextField(_('supplemental information'), default=DEFAULT_SUPPLEMENTAL_INFORMATION)
 
     # Section 6
@@ -370,9 +369,70 @@ class Layer(models.Model, PermissionLevelMixin):
 
     metadata_author = property(_get_metadata_author, _set_metadata_author)
 
+    def save_to_geoserver(self):
+        if self.resource is None:
+            return
+        if hasattr(self, "_resource_cache"):
+            self.resource.title = self.title
+            self.resource.abstract = self.abstract
+            self.resource.name= self.name
+            self.resource.keywords = self.keyword_list()
+
+            # Get metadata link from csw catalog
+            catalogue = get_catalogue()
+            record = catalogue.get_record(self.uuid)
+            if record is not None:
+                self.metadata_links = record.links['metadata']
+            Layer.objects.gs_catalog.save(self._resource_cache)
+        if self.poc and self.poc.user:
+            self.publishing.attribution = str(self.poc.user)
+            profile = Contact.objects.get(user=self.poc.user)
+            self.publishing.attribution_link = settings.SITEURL[:-1] + profile.get_absolute_url()
+            Layer.objects.gs_catalog.save(self.publishing)
+
+    def  _populate_from_gs(self):
+        gs_resource = Layer.objects.gs_catalog.get_resource(self.name)
+        if gs_resource is None:
+            return
+        srs = gs_resource.projection
+        if self.geographic_bounding_box is '' or self.geographic_bounding_box is None:
+            self.set_bbox(gs_resource.native_bbox, srs=srs)
+            self.set_latlon_bounds(gs_resource.latlon_bbox)
+
+    def _autopopulate(self):
+        if self.poc is None:
+            self.poc = Layer.objects.default_poc()
+        if self.metadata_author is None:
+            self.metadata_author = Layer.objects.default_metadata_author()
+        if self.abstract == '' or self.abstract is None:
+            self.abstract = 'No abstract provided'
+        if self.title == '' or self.title is None:
+            self.title = self.name
+
+    def _populate_from_catalogue(self):
+        catalogue = get_catalogue()
+        meta = catalogue.get_record(self.uuid)
+        if meta is None:
+            return
+        if hasattr(meta.distribution, 'online'):
+            onlineresources = [r for r in meta.distribution.online if r.protocol == "WWW:LINK-1.0-http--link"]
+            if len(onlineresources) == 1:
+                res = onlineresources[0]
+                self.distribution_url = res.url
+                self.distribution_description = res.description
+
 
     def keyword_list(self):
         return [kw.name for kw in self.keywords.all()]
+
+    def set_latlon_bounds(self,box):
+        """
+        Set the four bounds in lat lon projection
+        """
+        self.bbox_left = box[0]
+        self.bbox_right = box[1]
+        self.bbox_bottom = box[2]
+        self.bbox_top = box[3]
 
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)

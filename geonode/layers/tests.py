@@ -4,7 +4,10 @@ import base64
 import shutil
 import tempfile
 
+from collections import namedtuple
+from contextlib import nested
 from mock import Mock, patch
+from lxml import etree
 
 from django.conf import settings
 from django.test import TestCase
@@ -15,13 +18,14 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context
 from django.template.loader import get_template
 from django.forms import ValidationError
+from django.db.models import signals
 
 import geonode.layers.utils
 import geonode.layers.views
 import geonode.layers.models
 
 from geonode import GeoNodeException
-
+from geonode.layers.models import post_save_layer
 from geonode.layers.models import Layer
 from geonode.layers.forms import JSONField, LayerUploadForm
 from geonode.layers.utils import save, layer_type, get_files, get_valid_name, \

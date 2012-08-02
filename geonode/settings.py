@@ -117,6 +117,7 @@ INSTALLED_APPS = (
     'agon_ratings',
     'taggit',
     'south',
+    'haystack',
 
     # GeoNode internal apps
     'geonode.maps',
@@ -127,6 +128,7 @@ INSTALLED_APPS = (
     'geonode.printing',
     'geonode.proxy',
     'geonode.security',
+    'geonode.search',
     'geonode.catalogue',
 )
 
@@ -395,6 +397,15 @@ DB_DATASTORE_PORT = ''
 DB_DATASTORE_TYPE = ''
 
 UPLOADER_SHOW_TIME_STEP = False
+
+# Haystack Search Backend Configuration
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+        'URL': 'http://127.0.0.1:9200/',
+        'INDEX_NAME': 'haystack',
+    },
+}
 
 # Load more settings from a file called local_settings.py if it exists
 try:
