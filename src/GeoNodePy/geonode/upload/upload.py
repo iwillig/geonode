@@ -213,12 +213,16 @@ def save_step(user, layer, base_file, overwrite=True):
             base_file, use_url=False, import_id=next_id)
             
         # save record of this whether valid or not - will help w/ debugging
-        Upload.objects.create_from_session(user, import_session)
+        upload = Upload.objects.create_from_session(user, import_session)
         
         if not import_session.tasks:
             error_msg = 'No upload tasks were created'
         elif not import_session.tasks[0].items:
             error_msg = 'No upload items found for task'
+            
+        if error_msg:
+            upload.state = upload.STATE_INVALID
+            upload.save()
            
         # @todo once the random tmp9723481758915 type of name is not
         # around, need to track the name computed above, for now, the
