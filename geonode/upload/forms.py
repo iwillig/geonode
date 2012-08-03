@@ -1,4 +1,10 @@
 from django import forms
+from geonode.upload.models import UploadFile 
+
+class UploadFileForm(forms.ModelForm):
+    class Meta:
+        model = UploadFile
+
 
 class TimeForm(forms.Form):
     presentation_strategy = forms.CharField(required=False)

@@ -402,7 +402,7 @@ def setup_data():
     Import sample data (from gisdata package) into GeoNode
     """
     import gisdata
-    data_dir = gisdata.GOOD_DATA
+    data_dir = gisdata.VECTOR_DATA
     sh("python manage.py importlayers %s" % data_dir)
 
 

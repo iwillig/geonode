@@ -43,6 +43,8 @@ setup(name='GeoNode',
         "django-crispy-forms==1.0.0",
         "Markdown==2.1.1",
         "django-hosts",
+        "beautifulsoup4",
+        "MultipartPostHandler"
         # setup
         "Paver",
         # we use paste as an development server

@@ -84,3 +84,24 @@ class Upload(models.Model):
                 
     def __unicode__(self):
         return 'Upload [%s] gs%s - %s, %s' % (self.pk, self.import_id, self.name, self.user)
+
+
+class UploadFile(models.Model):
+    upload = models.ForeignKey(Upload, null=True, blank=True)
+    file = models.FileField(upload_to="uploads")
+    slug = models.SlugField(max_length=50, blank=True)
+
+    def __unicode__(self):
+        return self.slug
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('data_upload_new', )
+
+    def save(self, *args, **kwargs):
+        self.slug = self.file.name
+        super(UploadFile, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.file.delete(False)
+        super(UploadFile, self).delete(*args, **kwargs)

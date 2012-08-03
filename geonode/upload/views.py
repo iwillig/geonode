@@ -16,9 +16,10 @@ This needs to be made more stateful by adding a model.
 from geonode.layers.forms import NewLayerUploadForm
 from geonode.utils import json_response
 from geonode.upload.forms import TimeForm
-from geonode.upload.models import Upload
+from geonode.upload.models import Upload, UploadFile
 from geonode.upload import upload
 from geonode.upload import utils
+from geonode.upload.forms import UploadFileForm 
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -30,6 +31,7 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
+from django.views.generic import CreateView, DeleteView
 
 import json
 import os
@@ -67,6 +69,15 @@ def _error_response(req, exception=None, errors=None, force_ajax=False):
 
 def _next_step_response(req, upload_session, force_ajax=False):
     next = get_next_step(upload_session)
+
+    if next == 'time':
+        # @TODO we skip time steps for coverages currently
+        import_session = upload_session.import_session
+        feature_type = import_session.tasks[0].items[0].resource
+        if feature_type.resource_type == 'coverage':
+            upload_session.completed_step = 'time'
+            return _next_step_response(req, upload_session)
+
     # @todo this is not handled cleanly - run is not a real step in that it
     # has no corresponding view served by the 'view' function.
     if next == 'run':
@@ -196,7 +207,7 @@ def time_step_view(request, upload_session):
             RequestContext(
                 request,
                 time_step_context(
-                    upload_session.import_session, form_data=None)
+                    import_session, form_data=None)
                 )
         )
     elif request.method != 'POST':
@@ -270,7 +281,7 @@ def run_response(req, upload_session):
 
 def final_step_view(req, upload_session):
     saved_layer = upload.final_step(upload_session, req.user)
-    return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
+    return HttpResponseRedirect(saved_layer.get_absolute_url())
 
 
 _steps = {
@@ -355,3 +366,52 @@ def delete(req, id):
         raise PermissionDenied()
     upload.delete()
     return HttpResponseRedirect(reverse('data_upload'))
+
+
+class UploadFileCreateView(CreateView):
+    form_class = UploadFileForm
+    model = UploadFile
+
+    def form_valid(self, form):
+        self.object = form.save()
+        f = self.request.FILES.get('file')
+        data = [{'name': f.name, 'url': settings.MEDIA_URL + "uploads/" + f.name.replace(" ", "_"), 'thumbnail_url': settings.MEDIA_URL + "pictures/" + f.name.replace(" ", "_"), 'delete_url': reverse('data_upload_remove', args=[self.object.id]), 'delete_type': "DELETE"}]
+        response = JSONResponse(data, {}, response_mimetype(self.request))
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        return response
+    
+    def form_invalid(self, form):
+        data = [{}]
+        response = JSONResponse(data, {}, response_mimetype(self.request))
+        response['Content-Disposition'] = 'inline; filename=files.json'
+        return response
+
+
+def response_mimetype(request):
+    if "application/json" in request.META['HTTP_ACCEPT']:
+        return "application/json"
+    else:
+        return "text/plain"
+
+class UploadFileDeleteView(DeleteView):
+    model = UploadFile
+
+    def delete(self, request, *args, **kwargs):
+        """
+        This does not actually delete the file, only the database record.  But
+        that is easy to implement.
+        """
+        self.object = self.get_object()
+        self.object.delete()
+        if request.is_ajax():
+            response = JSONResponse(True, {}, response_mimetype(self.request))
+            response['Content-Disposition'] = 'inline; filename=files.json'
+            return response
+        else:
+            return HttpResponseRedirect(reverse('data_upload_new'))
+
+class JSONResponse(HttpResponse):
+    """JSON response class."""
+    def __init__(self,obj='',json_opts={},mimetype="application/json",*args,**kwargs):
+        content = json.dumps(obj,**json_opts)
+        super(JSONResponse,self).__init__(content,mimetype,*args,**kwargs)

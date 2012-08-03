@@ -33,24 +33,30 @@ class Uploader(object):
         """
         return self._call(self.client.get_import,id)
 
-    def start_import(self):
+    def start_import(self, import_id=None):
         """Create a new import session.
+        import_id - optional id to specify
         returns a gsuploader.api.Session object
         """
-        return self._call(self.client.start_import)
+        session = self._call(self.client.start_import, import_id)
+        if import_id: assert session.id >= import_id
+        return session
         
-    def upload(self,fpath,use_url=False):
+    def upload(self, fpath, use_url=False, import_id=None):
         """Try a complete import - create a session and upload the provided file.
         fpath can be a path to a zip file or the 'main' file if a shapefile or a tiff
         returns a gsuploader.api.Session object
+        
+        use_url - if True, will post a URL to geoserver, not the file itself
+                  for now, this only works with actual files, not remote urls
+        import_id - if provided, PUT to the endpoint to create the specified id
         """
         files = [ fpath ]
         if fpath.lower().endswith(".shp"):
             files = _util.shp_files(fpath)
             
-        session = self.start_import()
+        session = self.start_import(import_id)
         session.upload_task(files, use_url)
-
         return session
         
     # pickle protocol - client object cannot be serialized
@@ -132,8 +138,14 @@ class _Client(object):
     def get_imports(self):
         return parse_response(self._request(self.url("imports")))
     
-    def start_import(self):
-        return parse_response(self._request(self.url("imports"),"POST"))
+    def start_import(self, import_id=None):
+        method = 'POST'
+        if import_id is not None:
+            url = self.url("imports/%s" % import_id)
+            method = 'PUT'
+        else:
+            url = self.url("imports")
+        return parse_response(self._request(url, method))
         
     def post_multipart(self,url,files,fields=[]):
         """

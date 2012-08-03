@@ -133,7 +133,6 @@ INSTALLED_APPS = (
     'geonode.layers',
     'geonode.maps',
     'geonode.upload',
-    'geonode.fileupload',
     'geonode.people',
     'geonode.groups',
     'geonode.printing',
