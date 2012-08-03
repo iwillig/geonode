@@ -22,7 +22,7 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
         }}
     ],
 
-    baseParams: {limit: 0},
+    baseParams: {limit: 0, sort: 'alphaaz'},
 
     createLayerRecord: function(config, callback, scope) {
         var idx = this.store.findExact('name', config.name);
