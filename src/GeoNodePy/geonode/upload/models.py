@@ -28,7 +28,7 @@ class UploadManager(models.Manager):
             state= import_session.state)
             
     def get_incomplete_uploads(self, user):
-        return self.filter(user=user, complete=False)
+        return self.filter(user=user, complete=False).exclude(state=Upload.STATE_INVALID)
     
         
 class Upload(models.Model):
@@ -36,6 +36,7 @@ class Upload(models.Model):
     
     import_id = models.BigIntegerField(null=True)
     user = models.ForeignKey(User, null=True)
+    # hold importer state or internal state (STATE_)
     state = models.CharField(max_length=16)
     date = models.DateTimeField('date', default = datetime.now)
     layer = models.ForeignKey(Layer, null=True)
@@ -46,6 +47,8 @@ class Upload(models.Model):
     session = models.TextField(null=True)
     # hold a dict of any intermediate Layer metadata - not used for now
     metadata = models.TextField(null=True)
+    
+    STATE_INVALID = 'INVALID'
     
     def get_session(self):
         if self.session:
