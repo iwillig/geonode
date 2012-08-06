@@ -80,12 +80,12 @@ def _next_step_response(req, upload_session, force_ajax=False):
     # has no corresponding view served by the 'view' function.
     if next == 'run':
         upload_session.completed_step = next
-        if _ASYNC_UPLOAD:
+        if _ASYNC_UPLOAD and req.is_ajax():
             return run_response(req, upload_session)
         else:
             try:
                 # on sync we want to run the import and advance to the next step
-                run_import(upload_session)
+                run_import(upload_session, async=False)
                 return _next_step_response(req, upload_session,
                                            force_ajax=force_ajax)
             except Exception, e:
@@ -186,6 +186,54 @@ def time_step_context(import_session, form_data):
     return context
 
 
+def csv_step_view(request, upload_session):
+    import_session = upload_session.import_session
+    item = import_session.tasks[0].items[0]
+    feature_type = item.resource
+    attributes = feature_type.attributes
+
+    # need to check if geometry is found
+    # if so, can proceed directly to next step
+    for attr in attributes:
+        if attr.binding == u'com.vividsolutions.jts.geom.Point':
+            upload_session.completed_step = 'csv'
+            return _next_step_response(request, upload_session)
+
+    # no geometry found, let's find all the numerical columns
+    number_names = ['java.lang.Integer', 'java.lang.Double']
+    point_candidates = [attr.name for attr in attributes
+                        if attr.binding in number_names]
+    point_candidates.sort()
+
+    if request.method == 'POST':
+        lat_field = request.POST.get('lat', '')
+        lng_field = request.POST.get('lng', '')
+        if not lat_field or not lng_field:
+            raise Exception('Missing latitude/longitude fields')
+        if (lat_field not in point_candidates
+            or lng_field not in point_candidates):
+            raise Exception('Invalid latitude/longitude fields')
+        if lat_field == lng_field:
+            raise Exception('Cannot choose same column for latitude and '
+                            'longitude')
+        transform = {'type': 'AttributesToPointGeometryTransform',
+                     'latField': lat_field,
+                     'lngField': lng_field,
+                     }
+        feature_type.set_srs('EPSG:4326')
+        item.set_transforms([transform])
+        item.save()
+        upload_session.completed_step = 'csv'
+        return _next_step_response(request, upload_session)
+    else:
+        context = dict(present_choices=len(point_candidates) >= 2,
+                       point_candidates=point_candidates,
+                       async_upload=_ASYNC_UPLOAD,
+                       )
+        return render_to_response('upload/layer_upload_csv.html',
+                                  RequestContext(request, context))
+
+
 def time_step_view(request, upload_session):
     import_session = upload_session.import_session
 
@@ -258,9 +306,9 @@ def time_step_view(request, upload_session):
     return _next_step_response(request, upload_session)
 
 
-def run_import(upload_session):
+def run_import(upload_session, async=_ASYNC_UPLOAD):
     # run_import can raise an exception which callers should handle
-    target = upload.run_import(upload_session, _ASYNC_UPLOAD)
+    target = upload.run_import(upload_session, async)
     upload_session.set_target(target)
 
 
@@ -286,13 +334,14 @@ _steps = {
     'save': save_step_view,
     'time': time_step_view,
     'final': final_step_view,
+    'csv': csv_step_view,
 }
 
 # note 'run' is not a "real" step, but handled as a special case
 _pages = {
     'shp' : ('time', 'run', 'final'),
     'tif' : ('time', 'run', 'final'),
-    'csv' : ('time', 'run', 'final'),
+    'csv' : ('time', 'csv', 'run', 'final'),
 }
 
 if not _ALLOW_TIME_STEP:

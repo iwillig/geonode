@@ -1,0 +1,46 @@
+{% extends "page_layout.html" %}
+{% load i18n %}
+{% load static from staticfiles %}
+
+{% block title %} {% trans "Upload Layer Step 2" %} - {{ block.super }} {% endblock %}
+
+{% block head %}
+{% include "geonode/ext_header.html" %}
+{% include "geonode/app_header.html" %}
+{% include "geonode/geo_header.html" %}
+{{ block.super }}
+{% endblock %}
+{% block main %}
+{% if present_choices %}
+<h2>Geospatial Data</h2>
+<p>Please indicate which attributes contain the latitude and longitude coordinates in the CSV data.</p>
+<form method="POST" id="csvForm">
+  {% csrf_token %}
+  <div>
+    <label for="lat" style="display: inline-block; width: 75px">Latitude</label>
+    <select id="lat" name="lat">
+      {% for option in point_candidates %}
+      <option value="{{ option }}">{{ option }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div style="margin: 10px 0">
+    <label for="lat" style="display: inline-block; width: 75px">Longitude</label>
+    <select id="lng" name="lng">
+      {% for option in point_candidates %}
+      <option value="{{ option }}">{{ option }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <input type="submit" value="Next" />
+</form>
+<script type="text/javascript" src="{{ STATIC_URL }}script/upload_common.js"></script>
+<script type="text/javascript">
+{% autoescape off %}
+{% if async_upload %}
+enableUploadProgress('csvForm');
+{% endif %}
+{% endautoescape %}
+</script>
+{% endif %}
+{% endblock %}
