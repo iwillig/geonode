@@ -99,7 +99,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         var items = GeoExplorer.PlaybackToolbar.superclass.buildPlaybackItems.call(this);
         return items;
     },
-    
+
     toggleMapSize: function(btn,pressed){
         var main = Ext.get('main');
         if(pressed) {
@@ -119,11 +119,11 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             }
             var headerHeight = Ext.get('header').getHeight() + Ext.get('top-crossbar').getHeight() + Ext.get('crossbar').getHeight();
             var fullBox = {
-                width : window.innerWidth * 0.98,
-                height : window.innerHeight - headerHeight + this.offsets[1]
+                width : window.innerWidth,
+                height : window.innerHeight - headerHeight + 2
             };
             app.portal.setSize(fullBox.width, fullBox.height);
-            app.portal.el.alignTo(main, 'tl-tl');
+            app.portal.el.alignTo(main, 'tl-tl', [-7, 0]);
             app.mapPanel.addClass('full-mapview');
             btn.btnEl.removeClass('gxp-icon-fullScreen');
             btn.btnEl.addClass('gxp-icon-smallScreen');
