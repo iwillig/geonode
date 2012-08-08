@@ -106,10 +106,9 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             if(!app.portal.originalSize) {
                 app.portal.originalSize = app.portal.getSize();
                 var relpos = this.getPosition(true);
-                this.offsets = [relpos[0], relpos[1] + this.getHeight() - app.mapPanel.getHeight()];
                 app.portal.on({
                     'resize' : function(cmp, w, h) {
-                        this.el.alignTo(app.mapPanel.el, 'bl-bl', this.offsets);
+                        this.el.alignTo(app.mapPanel.el, 'bl-bl');
                     },
                     scope : this,
                     delay : 250
@@ -140,7 +139,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             Ext.getBody().setStyle({overflow:''});
         }
         btn.el.removeClass('x-btn-pressed');
-        this.el.anchorTo(app.portal.el, 'bl-bl', this.offsets);
+        this.el.anchorTo(app.portal.el, 'bl-bl');
         window.scrollTo(0,0);
     },
     
