@@ -186,6 +186,18 @@ def time_step_context(import_session, form_data):
     return context
 
 
+latitude_names = set(['latitude', 'lat'])
+longitude_names = set(['longitude', 'lon', 'lng', 'long'])
+
+
+def is_latitude(colname):
+    return colname.lower() in latitude_names
+
+
+def is_longitude(colname):
+    return colname.lower() in longitude_names
+
+
 def csv_step_view(request, upload_session):
     import_session = upload_session.import_session
     item = import_session.tasks[0].items[0]
@@ -226,9 +238,27 @@ def csv_step_view(request, upload_session):
         upload_session.completed_step = 'csv'
         return _next_step_response(request, upload_session)
     else:
-        context = dict(present_choices=len(point_candidates) >= 2,
+        # try to guess the lat/lng fields from the candidates
+        lat_candidate = None
+        lng_candidate = None
+        for candidate in attributes:
+            if candidate.name in point_candidates:
+                if is_latitude(candidate.name):
+                    lat_candidate = candidate.name
+                elif is_longitude(candidate.name):
+                    lng_candidate = candidate.name
+        guessed_lat_or_lng = bool(lat_candidate or lng_candidate)
+        present_choices = len(point_candidates) >= 2
+        if lat_candidate:
+            point_candidates.remove(lat_candidate)
+        if lng_candidate:
+            point_candidates.remove(lng_candidate)
+        context = dict(present_choices=present_choices,
                        point_candidates=point_candidates,
                        async_upload=_ASYNC_UPLOAD,
+                       lat_candidate=lat_candidate,
+                       lng_candidate=lng_candidate,
+                       guessed_lat_or_lng=guessed_lat_or_lng,
                        )
         return render_to_response('upload/layer_upload_csv.html',
                                   RequestContext(request, context))
