@@ -100,29 +100,28 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         return items;
     },
 
-    toggleMapSize: function(btn,pressed){
+    resize: function(offsets) {
         var main = Ext.get('main');
+        var headerHeight = Ext.get('header').getHeight() + Ext.get('top-crossbar').getHeight() + Ext.get('crossbar').getHeight();
+        var fullBox = {
+            width : window.innerWidth +1,
+            height : window.innerHeight - headerHeight + 2
+        };
+        app.portal.setSize(fullBox.width, fullBox.height);
+        app.portal.el.alignTo(main, 'tl-tl', offsets);
+    },
+
+    toggleMapSize: function(btn,pressed){
         if(pressed) {
             if(!app.portal.originalSize) {
                 app.portal.originalSize = app.portal.getSize();
-                var relpos = this.getPosition(true);
-                app.portal.on({
-                    'resize' : function(cmp, w, h) {
-                        this.el.alignTo(app.mapPanel.el, 'bl-bl');
-                    },
-                    scope : this,
-                    delay : 250
-                });
+                Ext.EventManager.onWindowResize(function() {
+                    this.resize.call(this, [0, 0]);
+                }, this);
                 app.portal.el.setStyle({'z-index' : 1000});
                 this.el.setStyle({'z-index' : 1050});
             }
-            var headerHeight = Ext.get('header').getHeight() + Ext.get('top-crossbar').getHeight() + Ext.get('crossbar').getHeight();
-            var fullBox = {
-                width : window.innerWidth,
-                height : window.innerHeight - headerHeight + 2
-            };
-            app.portal.setSize(fullBox.width, fullBox.height);
-            app.portal.el.alignTo(main, 'tl-tl', [-7, 0]);
+            this.resize.call(this, [-8, 0]);
             app.mapPanel.addClass('full-mapview');
             btn.btnEl.removeClass('gxp-icon-fullScreen');
             btn.btnEl.addClass('gxp-icon-smallScreen');
