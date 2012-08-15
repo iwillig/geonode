@@ -102,6 +102,9 @@ class _Client(object):
 
     def post(self, url):
         return self._request(url, "POST")
+    
+    def delete(self, url):
+        return self._request(url, "DELETE")
         
     def put_json(self, url, data):
         return self._request(url, "PUT", data, {
@@ -109,7 +112,7 @@ class _Client(object):
         })
     
     def _request(self, url, method="GET", data=None, headers={}):
-        _logger.info("%s request to %s",method,url)
+        _logger.info("%s request to %s:\n%s",method,url,data)
         resp, content = self.http.request(url,method,data,headers)
         _debug(resp, content)
         if resp.status < 200 or resp.status > 299:
