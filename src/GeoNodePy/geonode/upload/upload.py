@@ -248,11 +248,16 @@ def run_import(upload_session, async):
     import_session = Layer.objects.gs_uploader.get_session(import_session.id)
     if import_session.state == 'INCOMPLETE':
         item = upload_session.import_session.tasks[0].items[0]
+        err = None
         if item.state == 'NO_CRS':
-            err = 'No projection found'
+            if upload_session.upload_type == 'csv':
+                item.resource.set_srs('EPSG:4326')
+            else:
+                err = 'No projection found'
         else:
             err = item.state or 'Session not ready for import.'
-        raise Exception(err)
+        if err:
+            raise Exception(err)
 
     # if a target datastore is configured, ensure the datastore exists
     # in geoserver and set the uploader target appropriately
