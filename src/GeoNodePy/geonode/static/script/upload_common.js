@@ -60,7 +60,12 @@ function enableUploadProgress(uploadFormID) {
                 ev.preventDefault();
                 extForm.on('actioncomplete',function(form,xhrlike) {
                     var resp = Ext.decode(xhrlike.response.responseText);
-                    pollProgress(resp.redirect_to, resp.progress, Ext.get(uploadFormID));
+                    if (resp.progress) {
+                        pollProgress(resp.redirect_to, resp.progress, Ext.get(uploadFormID));
+                    } else {
+                        // if there is no progress, we should just continue on to the next step
+                        document.location = resp.redirect_to;
+                    }
                 });
                 extForm.on('actionfailed',function(form,xhrlike) {
                     var msg = "result" in xhrlike ? 
