@@ -2,7 +2,6 @@ from django import forms
 
 class TimeForm(forms.Form):
     presentation_strategy = forms.CharField(required=False)
-    srs = forms.CharField(required=False)
     precision_value = forms.IntegerField(required=False)
     precision_step = forms.ChoiceField(required=False, choices=[
         ('years',)*2,
@@ -35,3 +34,7 @@ class TimeForm(forms.Form):
             self.fields[att] = forms.ChoiceField(
                 choices=choices, required=False)
     # @todo implement clean
+
+
+class SRSForm(forms.Form):
+    srs = forms.CharField(required=True)

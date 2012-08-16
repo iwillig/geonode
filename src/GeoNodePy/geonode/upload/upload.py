@@ -243,7 +243,7 @@ def run_import(upload_session, async):
     import_session = upload_session.import_session
     import_session = Layer.objects.gs_uploader.get_session(import_session.id)
     if import_session.state == 'INCOMPLETE':
-        item = upload_session.import_session.tasks[0].items[0]
+        item = import_session.tasks[0].items[0]
         if item.state == 'NO_CRS':
             err = 'No projection found'
         else:
@@ -282,7 +282,6 @@ def time_step(upload_session, time_attribute, time_transform_type,
               end_time_transform_type=None,
               end_time_format=None,
               time_format=None,
-              srs=None,
               use_big_date=None):
     '''
     Apply any time transformations, set dimension info, and SRS
@@ -303,7 +302,6 @@ def time_step(upload_session, time_attribute, time_transform_type,
     presentation_strategy - LIST, DISCRETE_INTERVAL, CONTINUOUS_INTERVAL
     precision_value - number
     precision_step - year, month, day, week, etc.
-    srs - optional srs to add to transformation
     '''
     resource = upload_session.import_session.tasks[0].items[0].resource
     transforms = []
@@ -372,20 +370,22 @@ def time_step(upload_session, time_attribute, time_transform_type,
         upload_session.import_session.tasks[0].items[0].set_transforms(transforms)
         upload_session.import_session.tasks[0].items[0].save()
 
-    if srs:
-        srs = srs.strip().upper()
-        if not srs.startswith("EPSG:"):
-            srs = "EPSG:%s" % srs
-        logger.info('Setting SRS to %s', srs)
-        # this particular REST operation provides nice error handling
-        try:
-            resource.set_srs(srs)
-        except RequestFailed, ex:
-            args = ex.args
-            if ex.args[1] == 400:
-                errors = json.loads(ex.args[2])
-                args = "\n".join(errors['errors'])
-            raise Exception(args)
+
+def srs_step(upload_session, srs):
+    resource = upload_session.import_session.tasks[0].items[0].resource
+    srs = srs.strip().upper()
+    if not srs.startswith("EPSG:"):
+        srs = "EPSG:%s" % srs
+    logger.info('Setting SRS to %s', srs)
+    # this particular REST operation provides nice error handling
+    try:
+        resource.set_srs(srs)
+    except RequestFailed, ex:
+        args = ex.args
+        if ex.args[1] == 400:
+            errors = json.loads(ex.args[2])
+            args = "\n".join(errors['errors'])
+        raise Exception(args)
 
 
 def final_step(upload_session, user):
