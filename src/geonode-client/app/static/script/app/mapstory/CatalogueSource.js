@@ -26,10 +26,10 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
 
     createLayerRecord: function(config, callback, scope) {
         var idx = this.store.findExact('name', config.name);
-        var rec = this.store.getAt(idx);
-        if (!rec) {
+        if (idx === -1) {
             return;
         }
+        var rec = this.store.getAt(idx);
         var url = rec.get('owsUrl');
         var name = config.name.indexOf(":") !== -1 ? config.name.split(":")[1] : config.name;
         var source = new gxp.plugins.WMSSource({
