@@ -151,7 +151,7 @@
       <div class="container">
         {% block footer %}
           <div class="pull-left">
-            {% trans "Powered by" %} <a href="http://geonode.org">{% trans "GeoNode" %}</a> |
+            {% trans "Powered by" %} <a href="http://geonode.org">{% trans "GeoNode" %} {{ VERSION }}</a> |
             <strong>{% trans "Need Help?" %}</strong>
             <a href="{% url help %}">{% trans "Help" %}</a> |
             <a href="{% url dev %}">{% trans "For Developers" %}</a>
@@ -181,6 +181,30 @@
 
     <script src="{{ STATIC_URL }}geonode/select2/select2.js"></script>
     <script type="text/javascript">
+
+    $(function() {
+      $("input.user-select").select2({
+        placeholder: {title: '{% trans "Add User..." %}', id: ""},
+        minimumInputLength: 1,
+        multiple: true,
+        ajax: {
+          url: "{% url auth_ajax_lookup %}",
+          dataType: "json",
+          type: "POST",
+          data: function (term, page) {
+            return {
+              query: term,
+            };
+          },
+          results: function (data, page) {
+            return {results: data.users};
+          }
+        },
+        id: userID,
+        formatResult: userFormatResult,
+        formatSelection: userFormatSelection
+      });
+>>>>>>> b1f0b5b925ae9a250d82cb37edd392989bd723f0
 
       $(function() {
 
@@ -256,11 +280,20 @@
             return user.username;
         }
       });
+      $("input.asset-selector").live("change", toggle_buttons);
+      toggle_buttons();
+    });
+
     </script>
 
     {% block extra_script %}{% endblock extra_script %}
 
     <script type="text/javascript" src="{% url django.views.i18n.javascript_catalog %}"></script>
     <script type="text/javascript" src="{% url lang %}"></script>
+
+    {% block footer-extend %}
+    
+    {% endblock %}
+
   </body>
 </html>

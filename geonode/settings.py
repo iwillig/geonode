@@ -182,7 +182,6 @@ LOGGING = {
             'class': 'django.utils.log.AdminEmailHandler',
         }
     },
-<<<<<<< HEAD
     "loggers": {        
         "django": {
             "handlers": ["console"],
@@ -192,13 +191,6 @@ LOGGING = {
             "handlers": ["mail_admins"],
             "level": "ERROR",
             "propagate": True,
-=======
-    'loggers': {
-        'django': {
-            'handlers':['null'],
-            'propagate': True,
-            'level':'INFO',
->>>>>>> a4df5b1193257ceb44cd1ff40e052d2f8a38adcc
         },
         "geonode": {
             "handlers": ["console"],

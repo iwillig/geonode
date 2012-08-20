@@ -439,3 +439,9 @@ Comments
 #preview_map {
   margin-bottom: 1em;
 }
+#uploader {
+    margin-bottom: 30px;
+    padding-top: 30px;
+    text-align: center;
+
+}

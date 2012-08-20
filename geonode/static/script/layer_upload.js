@@ -1,369 +1,103 @@
-function setup(options) {
-    Ext.onReady(function() {
-        init(options);
-    });
-}
-function init(options) {
-    Ext.QuickTips.init();
-    options = Ext.apply({
-        is_featuretype : true,
-        layer_name : null
-    },options);
 
-    var xml_unsafe = /(^[^a-zA-Z\._]+)|([^a-zA-Z0-9\._])/g;
-    var layer_title;
-    if (options.layer_name) {
-        layer_title = new Ext.form.TextField({
-            id: 'layer_name',
-            name: 'layer_name',
-            emptyText: options.layer_name,
-            fieldLabel: gettext('Name'),
-            allowBlank: true,
-            disabled: true
-        });
-    } else {
-        layer_title =  new Ext.form.TextField({
-            id: 'layer_title',
-            fieldLabel: gettext('Title'),
-            name: 'layer_title'
-        });
-    }
+// globals vars.... 
+var global_files = {},
+    file_container = $('#file-container');
 
-    var listeners = {
-        "fileselected": function(cmp, value) {
-            // remove the path from the filename - avoids C:/fakepath etc.
-            cmp.setValue(value.split(/[/\\]/).pop());
-        }
+
+var get_or_populate = function(hash, key, callback) {
+    if (typeof hash[key] === 'undefined') {
+        hash[key] = callback();
     };
-    var form_fields = [layer_title,{
-            xtype: "hidden",
-            name: "csrfmiddlewaretoken",
-            value: options.csrf_token
-        }];
+    return hash[key];
+};
 
-    var base_file = new Ext.ux.form.FileUploadField({
-        id: 'base_file',
-        emptyText: gettext('Select a layer data file'),
-        fieldLabel: gettext('Data'),
-        name: 'base_file',
-        allowBlank: false,
-        listeners: listeners
+
+var base = function(name) {
+    return name.split('.')[0];
+};
+
+var identify = function(file) {
+
+};
+
+var group_by_name = function(data) {
+
+    $.each(data.files, function(idx, file) {
+        var name = base(file.name);
+        get_or_populate(global_files, name, function() {return []});
+        global_files[name].push(file);
     });
 
-    var dbf_file = new Ext.ux.form.FileUploadField({
-        id: 'dbf_file',
-        emptyText: gettext('Select a .dbf data file'),
-        fieldLabel: gettext('DBF'),
-        name: 'dbf_file',
-        allowBlank: true,
-        listeners: listeners,
-        validator: function(name) {
-            if ((name.length > 0) && (name.search(/\.dbf$/i) == -1)) {
-                return gettext("Invalid DBF File.");
-            } else {
-                return true;
-            }
-        }
+};
+
+var draw_file_table = function() {
+
+};
+
+var upload_shapefile = function() {
+    var a = $(this),
+        name = a.data('name'),
+        files = global_files[name];
+    $.ajax({
+        
     });
+};
 
-    var shx_file = new Ext.ux.form.FileUploadField({
-        id: 'shx_file',
-        emptyText: gettext('Select a .shx data file'),
-        fieldLabel: gettext('SHX'),
-        name: 'shx_file',
-        allowBlank: true,
-        listeners: listeners,
-        validator: function(name) {
-            if ((name.length > 0) && (name.search(/\.shx$/i) == -1)) {
-                return gettext("Invalid SHX File.");
-            } else {
-                return true;
-            }
-        }
-    });
+var redraw = function() {
+    var list_template = Hogan.compile(
+        '{{#files}}' + 
+        ' <li>{{name}}</li>' +
+        '{{/files}}'
+    );
 
-    var prj_file = new Ext.ux.form.FileUploadField({
-        id: 'prj_file',
-        emptyText: gettext('Select a .prj data file (optional)'),
-        fieldLabel: gettext('PRJ'),
-        name: 'prj_file',
-        allowBlank: true,
-        listeners: listeners,
-        validator: function(name) {
-            if ((name.length > 0) && (name.search(/\.prj$/i) == -1)) {
-                return gettext("Invalid PRJ File.");
-            } else {
-                return true;
-            }
-        }
-    });
+    file_container.empty();
 
-    var sld_file = new Ext.ux.form.FileUploadField({
-        id: 'sld_file',
-        emptyText: gettext('Select a .sld style file (optional)'),
-        fieldLabel: gettext('SLD'),
-        name: 'sld_file',
-        allowBlank: true,
-        listeners: listeners
-    });
+    for(var name in global_files) {
 
-    var abstractField = new Ext.form.TextArea({
-        id: 'abstract',
-        fieldLabel: gettext('Abstract'),
-        name: 'abstract',
-        allowBlank: true
-    });
+        var div = $('<div/>', {id: 'div-' + name}),
+            title = $('<p/>', {text: 'Uploading shapefile: ' + name}).appendTo(div),
+            a = $('<a/>', {text: 'Upload shapefile'}).appendTo(div),
+            ul = $('<ul/>').appendTo(div);
+        a.data('name', name);
+        a.click(upload_shapefile);
 
-    var permissionsField = new Ext.form.Hidden({
-        name: "permissions"
-    });
+        div.appendTo(file_container);
+        var out = list_template.render({files: global_files[name]});
+        ul.append(out);
 
-    form_fields.push(base_file);
+    };
+};
 
-    if (options.is_featuretype) {
-        form_fields = form_fields.concat(dbf_file, shx_file, prj_file);
-    }
+var setup = function(options) {
+    var csrf_token  = options.csrf_token,
+        form_target = options.form_target,
+        user_lookup = options.user_lookup,
+        form        = $('#upload_form'),
+        container = $('#upload_form_con');
 
-    if (!options.layer_name) {
-        form_fields = form_fields.concat(sld_file,abstractField,permissionsField);
-    }
 
-    var fp = new Ext.FormPanel({
-        renderTo: 'upload_form',
-        fileUpload: true,
-        width: 500,
-        frame: true,
-        autoHeight: true,
-        unstyled: true,
-        labelWidth: 50,
-        bodyStyle: 'padding: 10px 10px 0 10px;',
-        defaults: {
-            anchor: '95%',
-            msgTarget: 'side'
+    form.fileupload({
+        dataType: 'json',
+        dropZone: $('#dropzone'),
+        add: function(e, data) {
+            group_by_name(data);
+            // Note the add method is called everytime an file is add
+            // to the upload process. Which means this method is
+            // called a bunch of times. We wipe the ul element before
+            // we insert the file to 
+            redraw(data);
         },
-        items: form_fields,
-        buttons: [{
-            text: gettext('Upload'),
-            handler: function(){
-                if (fp.getForm().isValid()) {
-                    fp.getForm().submit({
-                        url: options.form_target,
-                        waitMsg: gettext('Uploading your data...'),
-                        success: function(form, action) {
-                            document.location = action.result.redirect_to;
-                        },
-                        failure: function(form, action) {
-                            Ext.Msg.show({
-                                title: gettext('Error'),
-                                msg: action.response.responseText,
-                                midWidth: 200,
-                                modal: true,
-                                icon: Ext.Msg.ERROR,
-                                buttons: Ext.Msg.Ok
-                            });
-                        }
-                    });
-                }
-            }
-        }]
-    });
-
-    var disable_shapefile_inputs = function() {
-        dbf_file.hide();
-        shx_file.hide();
-        prj_file.hide();
-    };
-
-    var enable_shapefile_inputs = function() {
-        dbf_file.show();
-        shx_file.show();
-        prj_file.show();
-    };
-
-    var check_shapefile = function() {
-        if ((/\.shp$/i).test(base_file.getValue())) {
-            enable_shapefile_inputs();
-        } else {
-            disable_shapefile_inputs();
+        formData: function(form) {
+            console.log(form);
+        },
+        submit: function(e, data) {
+            e.preventDefault();
+            console.log('submit called');
+        },
+        done: function(e, data) {
+            console.log('done calback called');
         }
-    };
 
-    base_file.addListener('fileselected', function(cmp, value) {
-        check_shapefile();
     });
     
-    if (options.layer_name) {
-        enable_shapefile_inputs();
-    } else {
-        disable_shapefile_inputs();
-    }
-
-    if (! options.layer_name) {
-        var permissionsEditor = new GeoNode.PermissionsEditor({
-            renderTo: "permissions_form",
-            userLookup: options.userLookup,
-            listeners: {
-                updated: function(pe) {
-                    permissionsField.setValue(Ext.util.JSON.encode(pe.writePermissions()));
-                }
-            },
-            permissions: {
-                anonymous: 'layer_readonly',
-                authenticated: 'layer_readonly',
-                users:[]
-            }
-        });
-        permissionsEditor.fireEvent("updated", permissionsEditor);
-    }
-
-    function test_file_api() {
-        var fi = document.createElement('INPUT');
-        fi.type = 'file';
-        return 'files' in fi;
-    }
-
-    if (test_file_api()) {
-        // track dropped files separately from values of input fields
-        var dropped_files = {};
-        // drop handler
-        var drop = function(ev) {
-            ev.preventDefault();
-            var dt = ev.dataTransfer, files = dt.files, i = 0, ext, key, w;
-            // this is the single file drop - it may be a tiff or a shp file or a zip
-            if (files.length == 1 && !dbf_file.isVisible()) {
-                base_file.setValue(files[i].name);
-                check_shapefile();
-                dropped_files.base_file = files[i];
-            } else {
-                // multiple file drop
-                for (; i < files.length; i++) {
-                    ext = files[i].name.split('.');
-                    // grab the last part to avoid .shp.xml getting sucked in
-                    ext = ext[ext.length - 1];
-                    if (ext == 'shp') {
-                        base_file.setValue(files[i].name);
-                        enable_shapefile_inputs();
-                        dropped_files.base_file = files[i];
-                    } else {
-                        try {
-                            key = ext + '_file', w = eval(key);
-                            w.setValue(files[i].name);
-                            dropped_files[key] = files[i];
-                        } catch (ReferenceError) {}
-                    }
-                }
-            }
-        };
-
-        // drop target w/ drag over/exit effects
-        var dropPanel = new Ext.Container({
-            html: "Drop Files Here",
-            cls: 'x-panel-body',
-            style: { borderWidth: '1px', borderStyle: 'solid', textAlign: 'center'},
-            listeners: {
-                render: function(p) {
-                    var el = p.getEl().dom;
-                    function t() {p.getEl().toggleClass('x-grid3-cell-selected');}
-                    el.addEventListener("dragover", function(ev) {
-                        ev.stopPropagation();
-                        ev.preventDefault();
-                    }, true);
-                    el.addEventListener("drop", function(ev) {
-                        p.getEl().removeClass('x-grid3-cell-selected');
-                        drop(ev);
-                    },false);
-                    el.addEventListener("dragexit",t);
-                    el.addEventListener("dragenter",t);
-                }
-            }
-        });
-        fp.add(dropPanel);
-        fp.doLayout();
-        
-        function createDragFormData() {
-            var data = new FormData(), id, value, fields = fp.getForm().getFieldValues(), size = 0;
-            for (id in fields) {
-                value = fields[id];
-                if (id in dropped_files) {
-                    size = size + dropped_files[id].size;
-                    data.append(id,dropped_files[id],value);
-                } else {
-                    data.append(id,value);
-                }
-            }
-            return data;
-        }
-
-        function upload(formData) {
-            var xhr = new XMLHttpRequest();
-            var progress;
-
-            xhr.upload.addEventListener('loadstart', function(ev) {
-                progress = Ext.MessageBox.progress("Please wait","Uploading your data...");
-            }, false);
-            xhr.upload.addEventListener('progress', function(ev) {
-                if (ev.lengthComputable) {
-                    // assume that 25% of the time will be actual server work, not just upload time
-                    var msg = parseInt(ev.loaded / 1024) + " of " + parseInt(ev.total / 1024);
-                    progress.updateProgress( (ev.loaded/ev.total)* .75, msg);
-                    if (ev.loaded == ev.total) {
-                        progress.updateProgress(.75,"Awaiting response");
-                    }
-                }
-            }, false);
-
-            function error(ev,result) {
-                var error_message;
-                if (typeof result != 'undefined') {
-                    error_message = '<ul>';
-                    for (var i = 0; i < result.errors.length; i++) {
-                        error_message += '<li>' + result.errors[i] + '</li>'
-                    }
-                    error_message += '</ul>'
-                } else {
-                    error_message = "Unexpected Error:<p>" + xhr.responseText;
-                }
-
-                Ext.Msg.show({
-                    title: gettext("Error"),
-                    msg: error_message,
-                    minWidth: 200,
-                    modal: true,
-                    icon: Ext.Msg.ERROR,
-                    buttons: Ext.Msg.OK
-                });
-            }
-            xhr.addEventListener('load', function(ev) {
-                try {
-                    var result = Ext.decode(xhr.responseText);
-                    if (result.success) {
-                        if (result.progress) {
-                            pollProgress(result.redirect_to, result.progress, fp.getForm().el);
-                        } else {
-                            document.location = result.redirect_to;
-                        }
-                    } else {
-                        error(ev, result);
-                    }
-                } catch (ex) {
-                    console.log(ex);
-                    error(ev);
-                }
-            }, false);
-            xhr.addEventListener('error', error, false);
-
-            xhr.open("POST",options.form_target, true);
-            xhr.send(formData);
-        }
-
-        var originalHandler = fp.buttons[0].handler;
-        fp.buttons[0].handler = function() {
-            if (!fp.getForm().isValid()) return;
-            if ('base_file' in dropped_files) {
-                upload(createDragFormData());
-            } else {
-                originalHandler();
-            }
-        }
-    }
-}
+};
