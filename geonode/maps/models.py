@@ -83,10 +83,10 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
     
     keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
 
-    bbox_top = models.FloatField(blank=True,null=True)
-    bbox_bottom = models.FloatField(blank=True,null=True)
-    bbox_right = models.FloatField(blank=True,null=True)
-    bbox_left = models.FloatField(blank=True,null=True)
+    bbox_y1 = models.FloatField(blank=True,null=True)
+    bbox_y0 = models.FloatField(blank=True,null=True)
+    bbox_x1 = models.FloatField(blank=True,null=True)
+    bbox_x0 = models.FloatField(blank=True,null=True)
     # The extent of the layers in the map
 
     def __unicode__(self):
@@ -217,17 +217,17 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
             self.set_user_level(self.owner, self.LEVEL_ADMIN)    
 
     def updateBounds(self):
-        bbox_left = bbox_right = bbox_bottom = bbox_top = 0
+        bbox_x0 = bbox_x1 = bbox_y0 = bbox_y1 = 0
         for layer in self.local_layers:
-            bbox_top = max(bbox_top,layer.bbox_top)
-            bbox_right = max(bbox_right,layer.bbox_right)
-            bbox_bottom = min(bbox_bottom,layer.bbox_bottom)
-            bbox_left = min(bbox_left,layer.bbox_left)
+            bbox_y1 = max(bbox_y1,layer.bbox_y1)
+            bbox_x1 = max(bbox_x1,layer.bbox_x1)
+            bbox_y0 = min(bbox_y0,layer.bbox_y0)
+            bbox_x0 = min(bbox_x0,layer.bbox_x0)
         
-        self.bbox_bottom = bbox_bottom
-        self.bbox_left = bbox_left
-        self.bbox_top = bbox_top
-        self.bbox_right = bbox_right
+        self.bbox_y0 = bbox_y0
+        self.bbox_x0 = bbox_x0
+        self.bbox_y1 = bbox_y1
+        self.bbox_x1 = bbox_x1
 
     def create_from_layer_list(self, user, layers, title, abstract):
         self.owner = user
