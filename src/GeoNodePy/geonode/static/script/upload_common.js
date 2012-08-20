@@ -57,7 +57,11 @@ function enableUploadProgress(uploadFormID) {
             // AJAX submit form
             var form = Ext.get(uploadFormID), extForm = new Ext.form.BasicForm(form);
             form.on('submit',function(ev) {
-                ev.preventDefault();
+                // IE8 event handling doesn't order the handlers properly
+                // if more than one is added to the form submit listeners
+                if ('beforeaction' in form) {
+                    form.beforeaction();
+                }
                 extForm.on('actioncomplete',function(form,xhrlike) {
                     var resp = Ext.decode(xhrlike.response.responseText);
                     if (resp.progress) {
