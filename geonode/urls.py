@@ -96,7 +96,6 @@ urlpatterns = patterns('',
                                   {'sitemaps': sitemaps}, name='sitemap'),
     (r'^i18n/', include('django.conf.urls.i18n')),
     (r'^admin/', include(admin.site.urls)),
-    )
     
     # Temp static pages
     url(r'^mapinfo/$', 'django.views.generic.simple.direct_to_template',
@@ -113,6 +112,7 @@ urlpatterns = patterns('',
                 {'template': 'upload/upload_info.html'}, name='upload_info'),
     url(r'^upload-permissions/$', 'django.views.generic.simple.direct_to_template',
                 {'template': 'upload/upload_permissions.html'}, name='upload_permissions'),
+    )
 
 
 urlpatterns += geonode.proxy.urls.urlpatterns
