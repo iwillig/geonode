@@ -450,10 +450,10 @@ class Layer(models.Model, PermissionLevelMixin):
         """
         Set the four bounds in lat lon projection
         """
-        self.bbox_left = box[0]
-        self.bbox_right = box[1]
-        self.bbox_bottom = box[2]
-        self.bbox_top = box[3]
+        self.bbox_x0 = box[0]
+        self.bbox_x1 = box[1]
+        self.bbox_y0 = box[2]
+        self.bbox_y1 = box[3]
 
     def get_absolute_url(self):
         return "/data/%s" % (self.typename)
