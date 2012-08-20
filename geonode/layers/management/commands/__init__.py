@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-from django.conf import settings
-from django.db.models import signals
-from django.utils.translation import ugettext_noop as _
-
-if "notification" in settings.INSTALLED_APPS:
-    from notification import models as notification
-    
-    def create_notice_types(app, created_models, verbosity, **kwargs):
-        notification.create_notice_type("map_create", _("Map Created"), _("someone has created a map"))
-        
-    signals.post_syncdb.connect(create_notice_types, sender=notification)
-else:
-    print "Skipping creation of NoticeTypes, since notification app was not found."
-=======
 #########################################################################
 #
 # Copyright (C) 2012 OpenPlans
@@ -31,4 +16,16 @@ else:
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #########################################################################
->>>>>>> a4df5b1193257ceb44cd1ff40e052d2f8a38adcc
+from django.conf import settings
+from django.db.models import signals
+from django.utils.translation import ugettext_noop as _
+
+if "notification" in settings.INSTALLED_APPS:
+    from notification import models as notification
+    
+    def create_notice_types(app, created_models, verbosity, **kwargs):
+        notification.create_notice_type("map_create", _("Map Created"), _("someone has created a map"))
+        
+    signals.post_syncdb.connect(create_notice_types, sender=notification)
+else:
+    print "Skipping creation of NoticeTypes, since notification app was not found."
