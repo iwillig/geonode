@@ -39,7 +39,6 @@ import geonode.layers.views
 import geonode.layers.models
 
 from geonode import GeoNodeException
-from geonode.layers.models import post_save_layer
 from geonode.layers.models import Layer
 from geonode.layers.forms import JSONField, LayerUploadForm
 from geonode.layers.utils import save, layer_type, get_files, get_valid_name, \
