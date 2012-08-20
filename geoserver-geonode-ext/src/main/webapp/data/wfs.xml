@@ -25,12 +25,22 @@
       </gml>
     </entry>
     <entry>
+      <version>V_11</version>
+      <gml>
+        <srsNameStyle>URN</srsNameStyle>
+        <overrideGMLAttributes>false</overrideGMLAttributes>
+      </gml>
+    </entry>
+<<<<<<< HEAD
+=======
+    <entry>
       <version>V_10</version>
       <gml>
         <srsNameStyle>XML</srsNameStyle>
         <overrideGMLAttributes>true</overrideGMLAttributes>
       </gml>
     </entry>
+>>>>>>> 4faaaef3e9d5757e1246a9b91dd03d2f1dd1011b
   </gml>
   <serviceLevel>COMPLETE</serviceLevel>
   <maxFeatures>2147483647</maxFeatures>
