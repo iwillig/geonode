@@ -47,7 +47,7 @@ def search(request):
 		"GOOGLE_API_KEY": settings.GOOGLE_API_KEY,
 		"site": settings.SITEURL,
 		"facets": facets,
-		"keywords": Layer.objects.gn_catalog.get_all_keywords()
+		#"keywords": Layer.objects.gn_catalog.get_all_keywords()
 	}))
 
 
