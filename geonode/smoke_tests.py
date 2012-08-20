@@ -55,10 +55,10 @@ class GeoNodeSmokeTests(TestCase):
         self.failUnlessEqual(response.status_code, 200)
     
     def test_developer_page(self):
-        '''Test help page renders.'''
+        '''Test developer page renders.'''
 
         c = Client()
-        response = c.get('/help/')
+        response = c.get('/developer/')
         self.failUnlessEqual(response.status_code, 200)
     
     #### Data/Layer Pages ####
