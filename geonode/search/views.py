@@ -113,15 +113,15 @@ def search_api(request):
 	results = []
 	
 	#if bbox is not None:
-	#	left,bottom,right,top = bbox.split(',')
+	#	x0,y0,x1,y1 = bbox.split(',')
 	#	sqs = sqs.filter(
 	#		# first check if the bbox has at least one point inside the window
-	#		SQ(bbox_left__gte=left) & SQ(bbox_left__lte=right) & SQ(bbox_top__gte=bottom) & SQ(bbox_top__lte=top) | #check top_left is inside the window
-	#		SQ(bbox_right__lte=right) &  SQ(bbox_right__gte=left) & SQ(bbox_top__lte=top) &  SQ(bbox_top__gte=bottom) | #check top_right is inside the window
-	#		SQ(bbox_bottom__gte=bottom) & SQ(bbox_bottom__lte=top) & SQ(bbox_right__lte=right) &  SQ(bbox_right__gte=left) | #check bottom_right is inside the window
-	#		SQ(bbox_top__lte=top) & SQ(bbox_top__gte=bottom) & SQ(bbox_left__gte=left) & SQ(bbox_left__lte=right) | #check bottom_left is inside the window
+	#		SQ(bbox_x0__gte=x0) & SQ(bbox_x0__lte=x1) & SQ(bbox_y1__gte=y0) & SQ(bbox_y1__lte=y1) | #check y1_x0 is inside the window
+	#		SQ(bbox_x1__lte=x1) &  SQ(bbox_x1__gte=x0) & SQ(bbox_y1__lte=y1) &  SQ(bbox_y1__gte=y0) | #check y1_x1 is inside the window
+	#		SQ(bbox_y0__gte=y0) & SQ(bbox_y0__lte=y1) & SQ(bbox_x1__lte=x1) &  SQ(bbox_x1__gte=x0) | #check y0_x1 is inside the window
+	#		SQ(bbox_y1__lte=y1) & SQ(bbox_y1__gte=y0) & SQ(bbox_x0__gte=x0) & SQ(bbox_x0__lte=x1) | #check y0_x0 is inside the window
 	#		# then check if the bbox is including the window
-	#		SQ(bbox_left__lte=left) & SQ(bbox_right__gte=right) & SQ(bbox_bottom__lte=bottom) & SQ(bbox_top__gte=top)
+	#		SQ(bbox_x0__lte=x0) & SQ(bbox_x1__gte=x1) & SQ(bbox_y0__lte=y0) & SQ(bbox_y1__gte=y1)
 	#	)
 	
 	for i, result in enumerate(sqs):
