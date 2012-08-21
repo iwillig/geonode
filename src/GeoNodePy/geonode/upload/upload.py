@@ -28,6 +28,7 @@ import geoserver
 from geoserver.resource import Coverage
 from geoserver.resource import FeatureType
 from gsuploader.uploader import RequestFailed
+from gsuploader.uploader import BadRequest
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -40,6 +41,15 @@ import logging
 import uuid
 
 logger = logging.getLogger(__name__)
+
+class UploadException(Exception):
+    '''A handled exception meant to be presented to the user'''
+    
+    @staticmethod
+    def from_exc(msg, ex):
+        args = [msg]
+        args.extend(ex.args)
+        return UploadException(*args)
 
 
 class UploaderSession(object):
@@ -204,8 +214,6 @@ def save_step(user, layer, base_file, overwrite=True):
         # which potentially may reset the id - hopefully prevent this...
         next_id = Upload.objects.all().aggregate(Max('import_id')).values()[0]
         next_id = next_id + 1 if next_id else 1
-        # @todo - when importer is ready, remove the next line
-        next_id = None
 
         # @todo settings for use_url or auto detection if geoserver is
         # on same host
@@ -252,7 +260,8 @@ def run_import(upload_session, async):
             err = 'No projection found'
         else:
             err = item.state or 'Session not ready for import.'
-        raise Exception(err)
+        if err:
+            raise Exception(err)
 
     # if a target datastore is configured, ensure the datastore exists
     # in geoserver and set the uploader target appropriately
@@ -286,12 +295,8 @@ def time_step(upload_session, time_attribute, time_transform_type,
               end_time_transform_type=None,
               end_time_format=None,
               time_format=None,
-              srs=None,
               use_big_date=None):
     '''
-    Apply any time transformations, set dimension info, and SRS
-    (@todo SRS should be extracted to a different step)
-
     time_attribute - name of attribute to use as time
 
     time_transform_type - name of transform. either
@@ -307,7 +312,6 @@ def time_step(upload_session, time_attribute, time_transform_type,
     presentation_strategy - LIST, DISCRETE_INTERVAL, CONTINUOUS_INTERVAL
     precision_value - number
     precision_step - year, month, day, week, etc.
-    srs - optional srs to add to transformation
     '''
     resource = upload_session.import_session.tasks[0].items[0].resource
     transforms = []
@@ -374,22 +378,19 @@ def time_step(upload_session, time_attribute, time_transform_type,
     if transforms:
         logger.info('Setting transforms %s' % transforms)
         upload_session.import_session.tasks[0].items[0].set_transforms(transforms)
-        upload_session.import_session.tasks[0].items[0].save()
-
-    if srs:
-        srs = srs.strip().upper()
-        if not srs.startswith("EPSG:"):
-            srs = "EPSG:%s" % srs
-        logger.info('Setting SRS to %s', srs)
-        # this particular REST operation provides nice error handling
         try:
-            resource.set_srs(srs)
-        except RequestFailed, ex:
-            args = ex.args
-            if ex.args[1] == 400:
-                errors = json.loads(ex.args[2])
-                args = "\n".join(errors['errors'])
-            raise Exception(args)
+            upload_session.import_session.tasks[0].items[0].save()
+        except BadRequest, br:
+            raise UploadException.from_exc('Error configuring time:',br)
+
+
+def srs_step(upload_session, srs):
+    resource = upload_session.import_session.tasks[0].items[0].resource
+    srs = srs.strip().upper()
+    if not srs.startswith("EPSG:"):
+        srs = "EPSG:%s" % srs
+    logger.info('Setting SRS to %s', srs)
+    resource.set_srs(srs)
 
 
 def final_step(upload_session, user):

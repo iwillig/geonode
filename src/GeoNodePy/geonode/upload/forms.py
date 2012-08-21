@@ -2,7 +2,6 @@ from django import forms
 
 class TimeForm(forms.Form):
     presentation_strategy = forms.CharField(required=False)
-    srs = forms.CharField(required=False)
     precision_value = forms.IntegerField(required=False)
     precision_step = forms.ChoiceField(required=False, choices=[
         ('years',)*2,
@@ -25,6 +24,7 @@ class TimeForm(forms.Form):
         self._build_choice('end_text_attribute', text_names)
         if text_names:
             self.fields['text_attribute_format'] = forms.CharField(required=False)
+            self.fields['end_text_attribute_format'] = forms.CharField(required=False)
         self._build_choice('year_attribute', year_names)
         self._build_choice('end_year_attribute', year_names)
 
@@ -35,3 +35,7 @@ class TimeForm(forms.Form):
             self.fields[att] = forms.ChoiceField(
                 choices=choices, required=False)
     # @todo implement clean
+
+
+class SRSForm(forms.Form):
+    srs = forms.CharField(required=True)

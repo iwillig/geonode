@@ -68,6 +68,9 @@ class Uploader(object):
         return {'url':cl.service_url,'username':cl.username,'password':cl.password}
     def __setstate__(self,state):
         self.client = _Client(state['url'],state['username'],state['password'])
+        
+class BadRequest(Exception):
+    pass
             
 class RequestFailed(Exception):
     pass
@@ -105,20 +108,32 @@ class _Client(object):
 
     def post(self, url):
         return self._request(url, "POST")
+    
+    def delete(self, url):
+        return self._request(url, "DELETE")
         
     def put_json(self, url, data):
         return self._request(url, "PUT", data, {
             "Content-type" : "application/json"
         })
+        
+    def _parse_errors(self, content):
+        try:
+            resp = json.loads(content)
+        except ValueError:
+            return content
+        return resp['errors']
     
     def _request(self, url, method="GET", data=None, headers={}):
-        _logger.info("%s request to %s",method,url)
+        _logger.info("%s request to %s:\n%s",method,url,data)
         resp, content = self.http.request(url,method,data,headers)
         _debug(resp, content)
         if resp.status == 404:
             raise NotFound()
         if resp.status < 200 or resp.status > 299:
-            raise RequestFailed('Server error',resp.status,content)
+            if resp.status == 400:
+                raise BadRequest(*self._parse_errors(content))
+            raise RequestFailed(resp.status,content)
         return resp, content
     
     def post_upload_url(self, url, upload_url):
