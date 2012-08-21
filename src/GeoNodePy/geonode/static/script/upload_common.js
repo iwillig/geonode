@@ -2,7 +2,7 @@ function pollProgress(redirectTo, progressEndpoint, form) {
     var progress = Ext.MessageBox.progress("Please wait","Ingesting data"),
     formDom = form.dom;
     function success(response,redirectTo) {
-        var state, msg;
+        var percent, msg;
         response = Ext.decode(response.responseText);
         // response will contain state, one of :
         // PENDING, READY, RUNNING, NO_CRS, NO_BOUNDS, ERROR, COMPLETE
@@ -16,7 +16,9 @@ function pollProgress(redirectTo, progressEndpoint, form) {
             return;
         } else if ('progress' in response) {
             msg = 'Ingested ' + response.progress + " of " + response.total;
-            progress.updateProgress( response.progress/response.total, msg );
+            percent = response.progress/response.total;
+            percent = isNaN(percent) ? 0 : percent;
+            progress.updateProgress( percent, msg );
         } else {
             switch (response.state) {
                 // give it a chance to start running or return complete
