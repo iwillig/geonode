@@ -35,6 +35,7 @@ from django.contrib.auth.decorators import login_required
 
 import os
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +65,12 @@ def _error_response(req, exception=None, errors=None, force_ajax=False):
         logger.exception('Unexpected error in upload step')
     if req.is_ajax() or force_ajax:
         content_type = 'text/html' if not req.is_ajax() else None
+        if errors:
+            errors = '\n'.join(errors)
         return json_response('Unexpected error: %s', exception=exception, errors=errors,
                              content_type=content_type)
+    if errors:
+        exception = "<br>".join(errors)
     return render_to_response('upload/upload_error.html', RequestContext(req,{
         'error_msg' : 'Unexpected error : %s,' % exception
     }))
@@ -251,7 +256,7 @@ def csv_step_view(request, upload_session):
                      'lngField': lng_field,
                      }
         feature_type.set_srs('EPSG:4326')
-        item.set_transforms([transform])
+        item.add_transforms([transform])
         item.save()
         return _next_step_response(request, upload_session)
     else:
@@ -455,7 +460,9 @@ def view(req, step):
         if upload_session:
             # @todo probably don't want to do this
             upload_session.cleanup()
-        return _error_response(req, exception=e)
+        code = uuid.uuid4()
+        errors= 'Please report the following code: %s' % code
+        return _error_response(req, errors)
 
 
 @login_required
