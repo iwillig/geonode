@@ -62,7 +62,10 @@ function enableUploadProgress(uploadFormID) {
                 // IE8 event handling doesn't order the handlers properly
                 // if more than one is added to the form submit listeners
                 if ('beforeaction' in form) {
-                    form.beforeaction();
+                    if (form.beforeaction() == false) {
+                        ev.preventDefault();
+                        return;
+                    }
                 }
                 extForm.on('actioncomplete',function(form,xhrlike) {
                     var resp = Ext.decode(xhrlike.response.responseText);

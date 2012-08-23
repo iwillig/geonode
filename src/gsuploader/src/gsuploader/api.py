@@ -208,6 +208,7 @@ class FeatureType(_UploadBase):
         }
         if end_att_name:
             kw['endAttribute'] = end_att_name
+        print amt, period
         if amt and period:
             mult = {
                 'seconds': 1,
@@ -217,8 +218,7 @@ class FeatureType(_UploadBase):
                 'months': 2628000000, # this is the number geoserver computes for 1 month
                 'years': 31536000000
             }
-            kw['resolution'] = int(amt) * mult[period]
-        
+            kw['resolution'] = int(amt) * mult[period] * 1000 #yay millis
         self.add_meta_data_entry('time','dimensionInfo',**kw)
         
     def save(self):
