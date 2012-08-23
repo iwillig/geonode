@@ -61,7 +61,7 @@ def layer_type(filename):
         try:
             for n in zf.namelist():
                 b, e = os.path.splitext(n.lower())
-                if e in shp_exts or e in cov_exts:
+                if e in shp_exts or e in cov_exts or e in csv_exts:
                     base_name, extension = b,e
         finally:
             zf.close()
