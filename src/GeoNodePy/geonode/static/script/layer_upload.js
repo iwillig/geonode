@@ -297,7 +297,6 @@ function init(options) {
         function upload(formData) {
             var xhr = new XMLHttpRequest();
             var progress;
-
             xhr.upload.addEventListener('loadstart', function(ev) {
                 progress = Ext.MessageBox.progress("Please wait","Uploading your data...");
             }, false);
@@ -353,6 +352,7 @@ function init(options) {
             xhr.addEventListener('error', error, false);
 
             xhr.open("POST",options.form_target, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.send(formData);
         }
 
