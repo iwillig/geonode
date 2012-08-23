@@ -1,5 +1,8 @@
 from django import forms
+from django.conf import settings
 from geonode.maps.forms import JSONField
+import os
+import tempfile
 
 class LayerUploadForm(forms.Form):
     base_file = forms.FileField()
