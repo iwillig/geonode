@@ -92,6 +92,13 @@
       <version>${geoserver.version}</version>
       <scope>runtime</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>org.geoserver.extension</groupId>
+      <artifactId>wps-core</artifactId>
+      <version>${geoserver.version}</version>
+      <scope>runtime</scope>
+    </dependency>
 
     <dependency>
         <groupId>org.geotools</groupId>
