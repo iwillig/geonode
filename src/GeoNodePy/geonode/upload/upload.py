@@ -377,7 +377,7 @@ def time_step(upload_session, time_attribute, time_transform_type,
 
     if transforms:
         logger.info('Setting transforms %s' % transforms)
-        upload_session.import_session.tasks[0].items[0].set_transforms(transforms)
+        upload_session.import_session.tasks[0].items[0].add_transforms(transforms)
         try:
             upload_session.import_session.tasks[0].items[0].save()
         except BadRequest, br:
@@ -396,7 +396,7 @@ def srs_step(upload_session, srs):
 def final_step(upload_session, user):
     import_session = upload_session.import_session
     _log('Reloading session %s to check validity', import_session.id)
-    import_session = Layer.objects.gs_uploader.get_session(import_session.id)
+    import_session = import_session.reload()
     upload_session.import_session = import_session
 
     # the importer chooses an available featuretype name late in the game need
