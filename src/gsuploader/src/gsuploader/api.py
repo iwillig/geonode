@@ -208,7 +208,6 @@ class FeatureType(_UploadBase):
         }
         if end_att_name:
             kw['endAttribute'] = end_att_name
-        print amt, period
         if amt and period:
             mult = {
                 'seconds': 1,
