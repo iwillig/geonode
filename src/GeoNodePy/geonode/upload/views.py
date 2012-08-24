@@ -271,10 +271,6 @@ def csv_step_view(request, upload_session):
                     lng_candidate = candidate.name
         guessed_lat_or_lng = bool(lat_candidate or lng_candidate)
         present_choices = len(point_candidates) >= 2
-        if lat_candidate:
-            point_candidates.remove(lat_candidate)
-        if lng_candidate:
-            point_candidates.remove(lng_candidate)
         context = dict(present_choices=present_choices,
                        point_candidates=point_candidates,
                        async_upload=_is_async_step(upload_session),
