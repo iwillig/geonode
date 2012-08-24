@@ -241,47 +241,58 @@ def csv_step_view(request, upload_session):
                         if attr.binding in number_names]
     point_candidates.sort()
 
+    # form errors to display to user
+    error = None
+
+    lat_field = request.POST.get('lat', '')
+    lng_field = request.POST.get('lng', '')
+
     if request.method == 'POST':
-        lat_field = request.POST.get('lat', '')
-        lng_field = request.POST.get('lng', '')
         if not lat_field or not lng_field:
-            raise Exception('Missing latitude/longitude fields')
-        if (lat_field not in point_candidates
-            or lng_field not in point_candidates):
-            raise Exception('Invalid latitude/longitude fields')
-        if lat_field == lng_field:
-            raise Exception('Cannot choose same column for latitude and '
-                            'longitude')
-        transform = {'type': 'AttributesToPointGeometryTransform',
-                     'latField': lat_field,
-                     'lngField': lng_field,
-                     }
-        feature_type.set_srs('EPSG:4326')
-        item.add_transforms([transform])
-        item.save()
-        return _next_step_response(request, upload_session)
+            error = 'Missing latitude/longitude fields'
+        elif (lat_field not in point_candidates
+              or lng_field not in point_candidates):
+            error = 'Invalid latitude/longitude fields'
+        elif lat_field == lng_field:
+            error = 'Cannot choose same column for latitude and longitude'
+        if not error:
+            transform = {'type': 'AttributesToPointGeometryTransform',
+                         'latField': lat_field,
+                         'lngField': lng_field,
+                         }
+            feature_type.set_srs('EPSG:4326')
+            item.add_transforms([transform])
+            item.save()
+            return _next_step_response(request, upload_session)
+    # try to guess the lat/lng fields from the candidates
+    lat_candidate = None
+    lng_candidate = None
+    for candidate in attributes:
+        if candidate.name in point_candidates:
+            if is_latitude(candidate.name):
+                lat_candidate = candidate.name
+            elif is_longitude(candidate.name):
+                lng_candidate = candidate.name
+    if request.method == 'POST':
+        guessed_lat_or_lng = False
+        selected_lat = lat_field
+        selected_lng = lng_field
     else:
-        # try to guess the lat/lng fields from the candidates
-        lat_candidate = None
-        lng_candidate = None
-        for candidate in attributes:
-            if candidate.name in point_candidates:
-                if is_latitude(candidate.name):
-                    lat_candidate = candidate.name
-                elif is_longitude(candidate.name):
-                    lng_candidate = candidate.name
         guessed_lat_or_lng = bool(lat_candidate or lng_candidate)
-        present_choices = len(point_candidates) >= 2
-        context = dict(present_choices=present_choices,
-                       point_candidates=point_candidates,
-                       async_upload=_is_async_step(upload_session),
-                       lat_candidate=lat_candidate,
-                       lng_candidate=lng_candidate,
-                       guessed_lat_or_lng=guessed_lat_or_lng,
-                       layer_name = import_session.tasks[0].items[0].layer.name
-                       )
-        return render_to_response('upload/layer_upload_csv.html',
-                                  RequestContext(request, context))
+        selected_lat = lat_candidate
+        selected_lng = lng_candidate
+    present_choices = len(point_candidates) >= 2
+    context = dict(present_choices=present_choices,
+                   point_candidates=point_candidates,
+                   async_upload=_is_async_step(upload_session),
+                   selected_lat=selected_lat,
+                   selected_lng=selected_lng,
+                   guessed_lat_or_lng=guessed_lat_or_lng,
+                   layer_name = import_session.tasks[0].items[0].layer.name,
+                   error = error,
+                   )
+    return render_to_response('upload/layer_upload_csv.html',
+                              RequestContext(request, context))
 
 
 def time_step_view(request, upload_session):
