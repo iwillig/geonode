@@ -384,6 +384,19 @@ def time_step(upload_session, time_attribute, time_transform_type,
             raise UploadException.from_exc('Error configuring time:',br)
 
 
+def csv_step(upload_session, lat_field, lng_field):
+    import_session = upload_session.import_session
+    item = import_session.tasks[0].items[0]
+    feature_type = item.resource
+    transform = {'type': 'AttributesToPointGeometryTransform',
+                 'latField': lat_field,
+                 'lngField': lng_field,
+                 }
+    feature_type.set_srs('EPSG:4326')
+    item.add_transforms([transform])
+    item.save()
+
+
 def srs_step(upload_session, srs):
     resource = upload_session.import_session.tasks[0].items[0].resource
     srs = srs.strip().upper()
