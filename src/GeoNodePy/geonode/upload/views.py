@@ -256,13 +256,7 @@ def csv_step_view(request, upload_session):
         elif lat_field == lng_field:
             error = 'Cannot choose same column for latitude and longitude'
         if not error:
-            transform = {'type': 'AttributesToPointGeometryTransform',
-                         'latField': lat_field,
-                         'lngField': lng_field,
-                         }
-            feature_type.set_srs('EPSG:4326')
-            item.add_transforms([transform])
-            item.save()
+            upload.csv_step(upload_session, lat_field, lng_field)
             return _next_step_response(request, upload_session)
     # try to guess the lat/lng fields from the candidates
     lat_candidate = None
