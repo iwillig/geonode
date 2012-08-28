@@ -989,8 +989,9 @@ def json_response(body=None, errors=None, redirect_to=None, exception=None,
    """
    if content_type is None:
        content_type = "application/json"
-
    if errors:
+       if isinstance(errors, basestring):
+           errors = [errors]
        body = {
            'success' : False,
            'errors' : errors
