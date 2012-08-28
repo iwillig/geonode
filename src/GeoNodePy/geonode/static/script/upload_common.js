@@ -78,7 +78,7 @@ function enableUploadProgress(uploadFormID) {
                 });
                 extForm.on('actionfailed',function(form,xhrlike) {
                     var msg = "result" in xhrlike ? 
-                        xhrlike.result.errors.join("\n") : 
+                        xhrlike.result.errors.join("<br/>") : 
                         xhrlike.response.responseText;
                     Ext.MessageBox.show({
                         icon : Ext.MessageBox.ERROR,
