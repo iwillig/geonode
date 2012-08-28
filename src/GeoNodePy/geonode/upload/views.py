@@ -63,12 +63,13 @@ def _progress_redirect(step):
 def _error_response(req, exception=None, errors=None, force_ajax=False):
     if exception:
         logger.exception('Unexpected error in upload step')
+    else:
+        logger.warning('upload error: %s', errors)
     if req.is_ajax() or force_ajax:
         content_type = 'text/html' if not req.is_ajax() else None
-        if errors:
-            errors = '\n'.join(errors)
-        return json_response('Unexpected error: %s', exception=exception, errors=errors,
+        return json_response(exception=exception, errors=errors,
                              content_type=content_type)
+    # not sure if any responses will (ideally) ever be non-ajax
     if errors:
         exception = "<br>".join(errors)
     return render_to_response('upload/upload_error.html', RequestContext(req,{
@@ -408,7 +409,14 @@ def get_next_step(upload_session, offset = 1):
     index = -1
     if upload_session.completed_step and upload_session.completed_step != 'save':
         index = pages.index(upload_session.completed_step)
-    return pages[min(len(pages) - 1,index + offset)]
+    return pages[max(min(len(pages) - 1,index + offset),0)]
+
+
+def get_previous_step(upload_session, post_to):
+    pages = _pages[upload_session.upload_type]
+    index = pages.index(post_to) - 1
+    if index < 0: return 'save'
+    return pages[index]
 
 
 def advance_step(req, upload_session):
@@ -442,6 +450,12 @@ def view(req, step):
         upload_session = req.session[_SESSION_KEY]
 
     try:
+        if req.method == 'GET' and upload_session:
+            # set the current step to match the requested page - this
+            # could happen if the form is ajax w/ progress monitoring as
+            # the advance would have already happened @hacky
+            upload_session.completed_step = get_previous_step(upload_session, step)
+
         resp = _steps[step](req, upload_session)
         # must be put back to update object in session
         if upload_session:
@@ -460,8 +474,8 @@ def view(req, step):
             # @todo probably don't want to do this
             upload_session.cleanup()
         code = uuid.uuid4()
-        errors= 'Please report the following code: %s' % code
-        return _error_response(req, errors)
+        errors= ['Unexpected Error:','Please report the following code: %s' % code]
+        return _error_response(req, exception=e, errors=errors)
 
 
 @login_required
