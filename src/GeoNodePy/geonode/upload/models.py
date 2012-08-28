@@ -48,6 +48,9 @@ class Upload(models.Model):
     # hold a dict of any intermediate Layer metadata - not used for now
     metadata = models.TextField(null=True)
     
+    class Meta:
+        ordering = ['-date']
+    
     STATE_INVALID = 'INVALID'
     
     def get_session(self):
