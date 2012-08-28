@@ -10,6 +10,7 @@ import_link.allow_tags = True
 
 class UploadAdmin(admin.ModelAdmin):
     list_display = ('user','date', 'state', import_link)
-    
+    date_hierarchy = 'date'
+    list_filter = ('user','state')
     
 admin.site.register(Upload, UploadAdmin)
