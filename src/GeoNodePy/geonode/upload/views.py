@@ -24,6 +24,7 @@ from gsuploader import uploader
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.core.mail import mail_admins
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.utils.html import escape
@@ -35,6 +36,7 @@ from django.contrib.auth.decorators import login_required
 
 import os
 import logging
+import traceback
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -46,6 +48,14 @@ _ASYNC_UPLOAD = settings.DB_DATASTORE == True
 # at the moment, the various time support transformations require the database
 if _ALLOW_TIME_STEP and not _ASYNC_UPLOAD:
     raise Exception("To support the time step, you must enable DB_DATASTORE")
+
+_unexpected_error_msg = """
+An error occurred while trying to process your request.  Our administrator has
+been notified, but if you'd like, please note this error code 
+below and details on what you were doing when you encountered this error.  
+That information can help us identify the cause of the problem and help us with 
+fixing it.  Thank you!
+"""
 
 
 def _is_async_step(upload_session):
@@ -73,7 +83,7 @@ def _error_response(req, exception=None, errors=None, force_ajax=False):
     if errors:
         exception = "<br>".join(errors)
     return render_to_response('upload/upload_error.html', RequestContext(req,{
-        'error_msg' : 'Unexpected error : %s,' % exception
+        'error_msg' : '%s' % exception
     }))
 
 
@@ -142,7 +152,6 @@ def save_step_view(req, session):
         }))
         
     assert session is None
-
     form = NewLayerUploadForm(req.POST, req.FILES)
     tempdir = None
     if form.is_valid():
@@ -422,6 +431,29 @@ def get_previous_step(upload_session, post_to):
 
 def advance_step(req, upload_session):
     upload_session.completed_step = get_next_step(upload_session)
+    
+
+def notify_error(req, upload_session, msg):
+    upload_obj = None
+    if upload_session and upload_session.import_session and \
+       upload_session.import_session.id:
+        try:
+            upload_obj = Upload.objects.get(import_id = upload_session.import_session.id)
+        except Upload.DoesNotExist:
+            pass
+    message = """
+        Message: %(msg)s
+        
+        User: %(user)s
+        
+        Upload object id: %(id)s
+        
+        StackTrace: %(stack_trace)s
+    """ % dict( msg=msg,
+                user=req.user,
+                id=upload_obj.id if upload_obj else None,
+                stack_trace=''.join(traceback.format_exc()))
+    mail_admins('upload error', message)
 
 
 @login_required
@@ -475,7 +507,11 @@ def view(req, step):
             # @todo probably don't want to do this
             upload_session.cleanup()
         code = uuid.uuid4()
-        errors= ['Unexpected Error:','Please report the following code: %s' % code]
+        try:
+            notify_error(req, upload_session, 'Unhandled Exception %s' % code)
+        except:
+            logger.exception('ERROR IN MAIL HANDLER!')
+        errors= ['Sorry, but an error occurred:', _unexpected_error_msg, str(code)]
         return _error_response(req, exception=e, errors=errors)
 
 
