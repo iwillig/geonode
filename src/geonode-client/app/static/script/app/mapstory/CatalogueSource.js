@@ -32,9 +32,17 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
         var rec = this.store.getAt(idx);
         var url = rec.get('owsUrl');
         var name = config.name.indexOf(":") !== -1 ? config.name.split(":")[1] : config.name;
+        var restUrl;
+        for (var key in this.target.layerSources) {
+            var src= this.target.layerSources[key];
+            if (src.restUrl) {
+                restUrl = src.restUrl;
+            }
+        }
         var source = new gxp.plugins.WMSSource({
             isLazy: function() { return false; },
             hidden: true,
+            restUrl: restUrl,
             version: "1.1.1",
             id: Ext.id(),
             url: url
