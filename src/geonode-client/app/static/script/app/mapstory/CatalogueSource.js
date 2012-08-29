@@ -35,6 +35,7 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
         var source = new gxp.plugins.WMSSource({
             isLazy: function() { return false; },
             hidden: true,
+            version: "1.1.1",
             id: Ext.id(),
             url: url
         });
