@@ -383,6 +383,7 @@ def run_response(req, upload_session):
 
 
 def final_step_view(req, upload_session):
+    del req.session[_SESSION_KEY]
     saved_layer = upload.final_step(upload_session, req.user)
     return HttpResponseRedirect(saved_layer.get_absolute_url() + "?describe")
 
@@ -478,8 +479,8 @@ def view(req, step):
             del req.session[_SESSION_KEY]
 
     else:
-        # Should we use an exception here?
-        assert _SESSION_KEY in req.session, 'Expected uploader session for step %s' % step
+        if not _SESSION_KEY in req.session:
+            return render_to_response("upload/no_upload.html", RequestContext(req,{}))
         upload_session = req.session[_SESSION_KEY]
 
     try:
