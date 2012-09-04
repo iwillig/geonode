@@ -1890,6 +1890,10 @@ class Thumbnail(models.Model):
     def generate_thumbnail(self):
         http = httplib2.Http()
         url = "%srest/printng/render.png" % settings.GEOSERVER_BASE_URL
+        hostname = urlparse(settings.SITEURL).hostname
+        user, passwd = settings.GEOSERVER_CREDENTIALS
+        params = dict(width=256, height=128, auth="%s,%s,%s" % (hostname, user, passwd))
+        url = url + "?" + urllib.urlencode(params)
         http.add_credentials(_user, _password)
         netloc = urlparse(url).netloc
         http.authorizations.append(
@@ -1907,7 +1911,11 @@ class Thumbnail(models.Model):
         # to come from a &minus; entity in the html, but it gets converted
         # to a unicode en-dash but is not uncoded properly during transmission
         # 'ignore' the error for now as controls are not being rendered...
-        data = unicode(self.thumb_spec, errors='ignore').encode('UTF-8')
+        data = self.thumb_spec
+        if type(data) == unicode:
+            # make sure any stored bad values are wiped out
+            data = data.encode('ASCII',errors='ignore')
+        data = unicode(data, errors='ignore').encode('UTF-8')
         resp, content = http.request(url,"POST",data,{
             'Content-type':'text/html'
         })
