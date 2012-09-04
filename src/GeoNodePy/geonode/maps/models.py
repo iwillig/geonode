@@ -939,9 +939,14 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
     def maps(self):
         """Return a list of all the maps that use this layer"""
-        # @todo revist this - ows_url is not anything close to GEOSERVER_BASE_URL
         local_wms = "/geoserver/wms"
-        return set([layer.map for layer in MapLayer.objects.filter(ows_url=local_wms, name__endswith=self.name).select_related()])
+        # some paths may add the ows_url absolute or relative
+        layers = MapLayer.objects.filter(ows_url = local_wms) | \
+                 MapLayer.objects.filter(ows_url__startswith = settings.GEOSERVER_BASE_URL)
+        # and due to the virtual services stuff, the name or typename may be used
+        layers = layers & ( MapLayer.objects.filter(name=self.name) | \
+                 MapLayer.objects.filter(name=self.typename) )
+        return set([layer.map for layer in layers.select_related()])
 
     def metadata(self):
         wms = _get_wms(self.typename)
@@ -1355,7 +1360,9 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
 
     @property
     def local_layers(self):
-        return Layer.objects.filter(typename__in=MapLayer.objects.filter(map__id=self.id).values('name'))
+        layer_names = MapLayer.objects.filter(map__id=self.id).values('name')
+        return Layer.objects.filter(typename__in=layer_names) | \
+               Layer.objects.filter(name__in=layer_names)
 
     def json(self, layer_filter):
         map_layers = MapLayer.objects.filter(map=self.id)
@@ -1703,7 +1710,8 @@ class MapLayer(models.Model):
         """
         url = self.ows_url or  ' '
         if url[0] == '/' or url.startswith(settings.GEOSERVER_BASE_URL):
-            return Layer.objects.filter(typename=self.name).count() != 0
+            return (Layer.objects.filter(typename=self.name) | \
+                    Layer.objects.filter(name=self.name)).count() != 0
         else: 
             return False
  
@@ -1752,7 +1760,8 @@ class MapLayer(models.Model):
     @property
     def local_link(self): 
         if self.local():
-            layer = Layer.objects.get(typename=self.name)
+            layer = Layer.objects.get(typename=self.name) | \
+                    Layer.objects.get(name=self.name)
             link = "<a href=\"%s\">%s</a>" % (layer.get_absolute_url(),layer.title)
         else: 
             link = "<span>%s</span> " % self.name
