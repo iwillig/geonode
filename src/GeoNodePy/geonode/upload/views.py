@@ -323,9 +323,10 @@ def time_step_view(request, upload_session):
         raise Exception()
 
     form = _create_time_form(import_session, request.POST)
-    #@todo validation feedback
+    #@todo validation feedback, though we shouldn't get here
     if not form.is_valid():
-        raise Exception("form invalid")
+        logger.warning('Invalid upload form: %s', form.errors)
+        return _error_response(request, errors=["Invalid Submission"])
 
     cleaned = form.cleaned_data
 
