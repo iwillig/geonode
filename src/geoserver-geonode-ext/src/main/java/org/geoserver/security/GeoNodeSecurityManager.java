@@ -24,7 +24,7 @@ public class GeoNodeSecurityManager extends GeoServerSecurityManager {
         super.init(config);
         
         // inject our authentication provider
-        authProviders.add(new GeoNodeAuthenticationProvider(client));
+        getProviders().add(new GeoNodeAuthenticationProvider(client));
     }
 
     @Override
