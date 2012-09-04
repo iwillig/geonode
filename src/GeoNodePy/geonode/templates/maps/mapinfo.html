@@ -44,13 +44,16 @@ Ext.onReady(function() {
             }
         }
     });
-    var hasThumb = {% if map.get_thumbnail %}true{% else %}false{% endif %};
-    var thumbURL = "{% url geonode.maps.views.map_controller map.id %}?thumbnail";
-    {% include "maps/thumbnail_help.js" %}
 {% endif %}
 {% endautoescape %}
 });
-</script>
+var hasThumb = {% if map.get_thumbnail %}true{% else %}false{% endif %};
+var thumbURL = "{% url geonode.maps.views.map_controller map.id %}?thumbnail";
+</script>    
+{% if can_change_permissions %}
+<script type="text/javascript" src="{{ STATIC_URL }}script/thumbnail_help.js"></script>
+<% endif %}
+
 {% endblock %}
 
 {% block start_body_js %}
