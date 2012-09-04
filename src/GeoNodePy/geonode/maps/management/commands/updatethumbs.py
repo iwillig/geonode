@@ -10,4 +10,5 @@ class Command(BaseCommand):
         all = 'all' in args
         for t in Thumbnail.objects.all():
             if all or not os.path.exists(t.get_thumbnail_path()):
+                print "generate thumb for : %s" % t.content_object
                 t.generate_thumbnail()
