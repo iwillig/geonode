@@ -1760,8 +1760,8 @@ class MapLayer(models.Model):
     @property
     def local_link(self): 
         if self.local():
-            layer = Layer.objects.get(typename=self.name) | \
-                    Layer.objects.get(name=self.name)
+            q = models.Q(typename=self.name) | models.Q(name=self.name)
+            layer = Layer.objects.get(q)
             link = "<a href=\"%s\">%s</a>" % (layer.get_absolute_url(),layer.title)
         else: 
             link = "<span>%s</span> " % self.name
