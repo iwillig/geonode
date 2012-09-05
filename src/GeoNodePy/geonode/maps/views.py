@@ -607,7 +607,6 @@ def describemap(request, mapid):
         # Change metadata, return to map info page
         map_form = MapForm(request.POST, instance=map, prefix="map")
         if map_form.is_valid():
-            print 'bitched that up'
             map = map_form.save(commit=False)
             if map_form.cleaned_data["keywords"]:
                 map.keywords.add(*map_form.cleaned_data["keywords"])
