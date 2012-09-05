@@ -1923,7 +1923,9 @@ class Thumbnail(models.Model):
         data = self.thumb_spec
         if type(data) == unicode:
             # make sure any stored bad values are wiped out
-            data = data.encode('ASCII',errors='ignore')
+            # don't use keyword for errors - 2.6 compat
+            # though unicode accepts them (as seen below)
+            data = data.encode('ASCII','ignore')
         data = unicode(data, errors='ignore').encode('UTF-8')
         resp, content = http.request(url,"POST",data,{
             'Content-type':'text/html'
