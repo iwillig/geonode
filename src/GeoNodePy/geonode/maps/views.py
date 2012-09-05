@@ -93,7 +93,9 @@ class LayerForm(forms.ModelForm):
     metadata_author = forms.ModelChoiceField(empty_label = "Person outside GeoNode (fill form)",
                                              label = "Metadata Author", required=False,
                                              queryset = Contact.objects.exclude(user=None))
-    keywords = taggit.forms.TagField()
+    keywords = taggit.forms.TagField(required=False)
+    abstract = forms.CharField(required=False)
+
     class Meta:
         model = Layer
         exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename')
@@ -109,7 +111,8 @@ class PocForm(forms.Form):
 
 
 class MapForm(forms.ModelForm):
-    keywords = taggit.forms.TagField()
+    keywords = taggit.forms.TagField(required=False)
+    abstract = forms.CharField(required=False)
     class Meta:
         model = Map
         exclude = ('contact', 'zoom', 'projection', 'center_x', 'center_y', 'owner', 'portal_params', 'tools_params')
@@ -604,6 +607,7 @@ def describemap(request, mapid):
         # Change metadata, return to map info page
         map_form = MapForm(request.POST, instance=map, prefix="map")
         if map_form.is_valid():
+            print 'bitched that up'
             map = map_form.save(commit=False)
             if map_form.cleaned_data["keywords"]:
                 map.keywords.add(*map_form.cleaned_data["keywords"])
@@ -685,7 +689,7 @@ def fixdate(str):
 class LayerDescriptionForm(forms.Form):
     title = forms.CharField(300)
     abstract = forms.CharField(1000, widget=forms.Textarea, required=False)
-    keywords = taggit.forms.TagField()
+    keywords = taggit.forms.TagField(required=False)
 
 @login_required
 def layer_metadata(request, layername):
