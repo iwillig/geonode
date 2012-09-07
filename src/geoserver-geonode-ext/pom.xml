@@ -252,7 +252,7 @@
         <configuration>
           <stopPort>8890</stopPort>
           <stopKey>geonode-stop</stopKey>
-          <scanIntervalSeconds>30</scanIntervalSeconds>
+          <scanIntervalSeconds>-1</scanIntervalSeconds>
           <contextPath>/geoserver</contextPath>
           
           <systemProperties>
