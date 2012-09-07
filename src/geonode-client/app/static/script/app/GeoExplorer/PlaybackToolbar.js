@@ -138,7 +138,6 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             Ext.getBody().setStyle({overflow:''});
         }
         btn.el.removeClass('x-btn-pressed');
-        this.el.anchorTo(app.portal.el, 'bl-bl');
         window.scrollTo(0,0);
     },
     
