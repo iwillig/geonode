@@ -19,7 +19,7 @@ from geonode.upload.forms import TimeForm
 from geonode.upload.models import Upload, UploadFile
 from geonode.upload import upload
 from geonode.upload import utils
-from geonode.upload.forms import UploadFileForm 
+from geonode.upload.forms import UploadFileForm
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -32,6 +32,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.views.generic import CreateView, DeleteView
+from django.views.decorators.csrf import csrf_exempt
 
 import json
 import os
@@ -97,7 +98,7 @@ def _next_step_response(req, upload_session, force_ajax=False):
         return json_response(redirect_to=reverse('data_upload', args=[next]),
                              content_type=content_type)
     return HttpResponseRedirect(reverse('data_upload', args=[next]))
-    
+
 
 def _create_time_form(import_session, form_data):
     feature_type = import_session.tasks[0].items[0].resource
@@ -126,7 +127,7 @@ def save_step_view(req, session):
             'async_upload' : _ASYNC_UPLOAD,
             'incomplete' : Upload.objects.get_incomplete_uploads(req.user)
         }))
-        
+
     assert session is None
 
     form = NewLayerUploadForm(req.POST, req.FILES)
@@ -150,7 +151,7 @@ def save_step_view(req, session):
             import_sld_file = sld,
             upload_type = upload_type
         )
-        
+
         return _next_step_response(req, upload_session, force_ajax=True)
     else:
         errors = []
@@ -202,7 +203,7 @@ def time_step_view(request, upload_session):
                 return render_to_response('upload/upload_error.html', RequestContext(request,{
                     'error_msg' : msg
                 }))
-        
+
         return render_to_response('upload/layer_upload_time.html',
             RequestContext(
                 request,
@@ -275,7 +276,7 @@ def run_response(req, upload_session):
     if _ASYNC_UPLOAD:
         next = get_next_step(upload_session)
         return _progress_redirect(next)
-        
+
     return _next_step_response(req, upload_session)
 
 
@@ -318,6 +319,7 @@ def get_next_step(upload_session):
 
 
 @login_required
+@csrf_exempt
 def view(req, step):
     """Main uploader view"""
 
@@ -333,7 +335,7 @@ def view(req, step):
                 next = get_next_step(session)
                 return HttpResponseRedirect(reverse('data_upload', args=[next]))
 
-        
+
         step = 'save'
 
         # delete existing session
@@ -379,7 +381,7 @@ class UploadFileCreateView(CreateView):
         response = JSONResponse(data, {}, response_mimetype(self.request))
         response['Content-Disposition'] = 'inline; filename=files.json'
         return response
-    
+
     def form_invalid(self, form):
         data = [{}]
         response = JSONResponse(data, {}, response_mimetype(self.request))
