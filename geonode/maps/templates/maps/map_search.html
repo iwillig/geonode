@@ -1,8 +1,10 @@
-{% extends "maps/base.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 {% load bootstrap_tags %}
 
 {% block title %} {% trans "Search Maps" %} - {{ block.super }} {% endblock %}
+
+{% block body_class %}maps{% endblock %}
 
 {% block main %} 
   <h2>{% trans "Search" %} <span class="subtitle">{% trans "for maps" %}</span></h2>

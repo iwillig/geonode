@@ -131,6 +131,17 @@ img.olTileImage {
         color:@grayDark;
       }
     }
+
+    .btn {
+      background:@white;
+      color:@grayLight;
+      font-size:@baseFontSize;
+
+      &:hover {
+        background:@grayLighter;
+        color:@grayDark;
+      }
+    }
   }
 }
 
@@ -142,6 +153,7 @@ section.nav-block {
     border-bottom: 0;
     margin-bottom: 0;
   }
+}
 
   nav.main-nav ul li a {
     border:0;
@@ -150,6 +162,24 @@ section.nav-block {
     &.current {
       font-weight:bold;
     }
+   }
+
+section.nav-block {
+  background:@navBkgd;
+  margin-top:-8px;
+
+  .nav-box {
+    border-bottom: 0;
+    margin-bottom: 0;
+  }
+  
+  nav.main-nav ul li.current a {
+    font-weight:bold;
+  }
+  
+  nav.main-nav ul li a {
+    border:0;
+    color:#353535;
   }
 }
 
@@ -185,6 +215,14 @@ nav.main-nav  {
       }
     }
   }
+}
+
+nav.back {
+  text-align: right;
+  margin-bottom: 1em;
+}
+nav.back i {
+  margin-right: 4px;
 }
 
 ul.social {
@@ -392,6 +430,17 @@ aside .well {
   ul.sidenav {
     margin:13px 0 0;
 
+
+  h2 {
+    border-bottom: 1px solid #ccc;
+    margin:-10px -19px 0;
+    padding: 5px 19px;
+    #title;
+  }
+
+  ul.sidenav {
+    margin:13px 0 0;
+
     a {
       font-size:@baseFontSize + 4;
       font-weight:bold;
@@ -461,10 +510,17 @@ section.article-list {
   display:block;
   margin-bottom:15px;
 }
+.hd-actions a.btn-primary {
+  background-color: @orange;
+}
+.hd-actions a.btn-info {
+  background-color: @orangeLight;
+}
 
 h2.page-title {
   text-transform:uppercase;
-  font-size:22px;
+  font-size:36px;
+  font-weight: 100;
 }
 
 .strong {
@@ -532,7 +588,7 @@ ul.nav-pills.filter {
   padding-left:3px;
 }
 
-.pager a {
+.pager a, .pager span {
   padding:0 !important;
   border: 0 !important;
   display:inline-block;
@@ -541,8 +597,8 @@ ul.nav-pills.filter {
   text-indent:-9999px;
 }
 
-.pages a.prev { background:url(../../theme/img/arrows_gr_sm.png) no-repeat 0 0; }
-.pages a.next { background:url(../../theme/img/arrows_gr_sm.png) no-repeat -11px 0; }
+.pages .prev { background:url(../../theme/img/arrows_gr_sm.png) no-repeat 0 0; }
+.pages .next { background:url(../../theme/img/arrows_gr_sm.png) no-repeat -11px 0; }
 .pages a.prev:hover { background:url(../../theme/img/arrows_gr_sm.png) no-repeat 0 -15px; }
 .pages a.next:hover { background:url(../../theme/img/arrows_gr_sm.png) no-repeat -11px -15px; }
 
@@ -606,15 +662,27 @@ ul.space li {
 
 /** map actions **/
 .map-actions {
-  margin:0 0 20px;
+  margin:8px 0 20px;
+  float: left;
 
   a {
-    font-size:16px;
+    font-size:14px;
     padding-right:20px;
-
+    color: rgb(255, 70, 0);
     [class^="icon-"], [class*=" icon-"] {
       margin:2px 1px 0 0;
     }
+  }
+}
+.avg_rating {
+  float: right;
+  margin-top: 8px;
+  color: @graySp;
+
+  .overall_rating {
+    font-size: 18px;
+    padding-left: 6px;
+    color: @orange;
   }
 }
 
@@ -628,6 +696,21 @@ article.abstract {
 /** comments **/
 .comments {
   margin-top:20px;
+
+  header {
+    padding: 0.1em 1em;
+    background-color: @brown;
+    color: white;
+    margin-bottom: 1em;
+  }
+  header h3 {
+    margin-top: 10px;
+    text-transform: uppercase;
+    font-weight: normal;
+  }
+  header .total {
+    text-transform: lowercase;
+  }
 
   article {
     margin-bottom:15px;
@@ -752,7 +835,8 @@ body.explore-data article {
   }
 }
 
-body.layer-info .pointer {
+body.layer-info .pointer,
+body.map-info .pointer {
   width:17px;
   height:9px;
   background: url(../../theme/img/pointer.png) no-repeat 0 0;

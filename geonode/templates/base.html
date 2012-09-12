@@ -77,17 +77,18 @@
                           <a href="#" class="dropdown-toggle" data-toggle="dropdown">{% trans "Sign in" %}</a>
                           <ul class="dropdown-menu">
                             <li>
-                                <form action="" class="sign-in">
-                                    <label for="">Username:</label>
-                                    <input type="text" />
-                                    <label for="">Password:</label>
-                                    <input type="password" />
+                                <form action="{% url auth_login %}" method="post" class="sign-in">
+                                    {% csrf_token %}
+                                    <label for="id_username">{% trans "Username" %}:</label>
+                                    <input id="id_username" name="username" type="text" />
+                                    <label for="id_password">{% trans "Password" %}:</label>
+                                    <input id="id_password" name="password" type="password" />
                                     <label class="checkbox">
                                         <input type="checkbox" />
-                                        Remember me
+                                        {% trans "Remember Me" %}
                                     </label>
-                                    <button type="submit" class="btn pull-right">Sign In</button>
-                                    <div>Don't have an account yet? <a href="#">Register now</a></div>
+                                    <button type="submit" class="btn pull-right">{% trans "Sign in" %}</button>
+                                    <div>{% trans "Don't have an account yet?" %} <a href="{% url registration_register %}">{% trans "Register now" %}</a></div>
                                 </form>
                             </li>
                           </ul>
@@ -105,49 +106,53 @@
         </div>
       </div>
     </div>
+    <section class="nav-block">
+        <div class="container">
+          <div class="row nav-box">
+            <div class="span10">
+              <nav class="main-nav">
+                <ul>
+                  <li id="nav_home">
+                    <a href="{% url home %}">{% trans "Home" %}</a>
+                  </li>
+                  <li id="nav_data">
+                    <a href="{% url layer_browse %}">{% trans "Layers" %}</a>
+                  </li>
+                  <li id="nav_maps">
+                    <a href="{% url maps_browse %}">{% trans "Maps" %}</a>
+                  </li>
+                  <li id="nav_profiles">
+                    <a href="{% url profile_list_all %}">{% trans "Profiles" %}</a>
+                  </li>
+                  <li id="nav_search">
+                    <a href="{% url advanced_search %}">{% trans "Search" %}</a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+            <div class="span2">
+              <ul class="social">
+                <li><a href="#" class="fb">facebook</a></li>
+                <li><a href="#" class="tw">twitter</a></li>
+                <li><a href="#" class="gp">google+</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+    </section>
     <div class="content-wrap">
-    <div class="container">
-      <div class="row nav-box">
-        <div class="span10">
-          <nav class="main-nav">
-            <ul>
-              <li>
-                <a href="{% url home %}">{% trans "Home" %}</a>
-              </li>
-              <li>
-                <a href="{% url layer_browse %}">{% trans "Explore Data" %}</a>
-              </li>
-              <li>
-                <a href="{% url upload %}">{% trans "Upload Data" %}</a>
-              </li>
-              <li>
-                <a href="{% url maps_browse %}">{% trans "Explore Maps" %}</a>
-              </li>
-              <li>
-                <a href="{% url new_map %}" class="last">{% trans "Create a New Map" %}</a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-        <div class="span2">
-          <ul class="social">
-            <li><a href="#" class="fb">facebook</a></li>
-            <li><a href="#" class="tw">twitter</a></li>
-            <li><a href="#" class="gp">google+</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="row">
-        {% block body_outer %}
-          <div class="span8">
-            {% block main %}{% endblock %}
+        <div class="container">
+          <div class="row">
+            {% block body_outer %}
+              <div class="span8">
+                {% block main %}{% endblock %}
+              </div>
+              <div class="span4">
+                {% block sidebar %}{% endblock %}
+              </div>
+            {% endblock %}
           </div>
-          <div class="span4">
-            {% block sidebar %}{% endblock %}
-          </div>
-        {% endblock %}
-      </div>
-    </div>
+        </div>
     </div>
     <footer class="footer">
       <div class="container">
@@ -180,6 +185,12 @@
 
     <script src="{{ STATIC_URL }}jquery-1.8.0.js"></script>
     <script src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
+    <script src="{{ STATIC_URL }}datatables/js/jquery.dataTables.min.js"></script>
+    <script src="{{ STATIC_URL }}geonode/js/hogan.js"></script>
+    <script src="{{ STATIC_URL }}geonode/js/jquery.timeago.js"></script>
+    <script src="{{ STATIC_URL }}geonode/js/json2.js"></script>
+    <script src="{{ STATIC_URL }}geonode/js/utils.js"></script>
+    <script src="{{ STATIC_URL }}select2/select2.js"></script>
 
     <script src="{{ STATIC_URL }}geonode/select2/select2.js"></script>
     <script type="text/javascript">
@@ -288,6 +299,54 @@
     </script>
 
     {% block extra_script %}{% endblock extra_script %}
+    <script type="text/javascript">
+    $(function() {
+      $("input.user-select").select2({
+        placeholder: {title: '{% trans "Add User..." %}', id: ""},
+        minimumInputLength: 1,
+        multiple: true,
+        ajax: {
+          url: "{% url auth_ajax_lookup %}",
+          dataType: "json",
+          type: "POST",
+          data: function (term, page) {
+            return {
+              query: term,
+            };
+          },
+          results: function (data, page) {
+            return {results: data.users};
+          }
+        },
+        id: userID,
+        formatResult: userFormatResult,
+        formatSelection: userFormatSelection
+      });
+
+      function userID(user) {
+        return user.username
+      }
+
+      function userFormatResult(user) {
+        return user.username
+      }
+
+      function userFormatSelection(user) {
+          return user.username;
+      }
+
+      var toggle_buttons = function() {
+        if ($("input.asset-selector:checked").length) {
+          $(".asset-modifier").removeClass("disabled");
+        } else {
+          $(".asset-modifier").addClass("disabled");
+        }
+      };
+
+      $("input.asset-selector").live("change", toggle_buttons);
+      toggle_buttons();
+    });
+    </script>
 
     <script type="text/javascript" src="{% url django.views.i18n.javascript_catalog %}"></script>
     <script type="text/javascript" src="{% url lang %}"></script>

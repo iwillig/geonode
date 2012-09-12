@@ -99,6 +99,7 @@ setup(name='GeoNode',
         "django-hosts",
         "beautifulsoup4",
         "MultipartPostHandler",
+	    "django-pagination",
         # setup
         "Paver",
         # assembling javascript
