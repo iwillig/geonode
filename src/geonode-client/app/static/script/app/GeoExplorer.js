@@ -96,7 +96,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      *  ``RegExp``
      */
     urlPortRegEx: /^(http[s]?:\/\/[^:]*)(:80|:443)?\//,
-    
+
     //public variables for string literals needed for localization
     backgroundContainerText: "UT:Background",
     connErrorTitleText: "UT:Connection Error",
@@ -226,84 +226,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     var url = options.url;
                     if (response.status == 401 && url.indexOf("http" != 0) &&
                                             url.indexOf(this.proxy) === -1) {
-                        var submit = function() {
-                            form.getForm().submit({
-                                waitMsg: "Logging in...",
-                                success: function(form, action) {
-                                    this.setAuthorizedRoles(["ROLE_ADMINISTRATOR"]);
-                                    win.close();
-                                    document.cookie = action.response.getResponseHeader("Set-Cookie");
-                                    // resend the original request
-                                    Ext.Ajax.request(options);
-                                },
-                                failure: function(form, action) {
-                                    var username = form.items.get(0);
-                                    var password = form.items.get(1);
-                                    username.markInvalid();
-                                    password.markInvalid();
-                                    username.focus(true);
-                                },
-                                scope: this
-                            });
-                        }.createDelegate(this);
-                        var csrfToken, csrfMatch = document.cookie.match(/csrftoken=(\w+);/);
-                        if (csrfMatch && csrfMatch.length > 0) {
-                            csrfToken = csrfMatch[1];
-                        }
-                        var win = new Ext.Window({
-                            title: "GeoNode Login",
-                            modal: true,
-                            width: 230,
-                            autoHeight: true,
-                            layout: "fit",
-                            items: [{
-                                xtype: "form",
-                                autoHeight: true,
-                                labelWidth: 55,
-                                border: false,
-                                bodyStyle: "padding: 10px;",
-                                url: "/accounts/ajax_login",
-                                waitMsgTarget: true,
-                                errorReader: {
-                                    // teach ExtJS a bit of RESTfulness
-                                    read: function(response) {
-                                        return {
-                                            success: response.status == 200,
-                                            records: []
-                                        };
-                                    }
-                                },
-                                defaults: {
-                                    anchor: "100%"
-                                },
-                                items: [{
-                                    xtype: "textfield",
-                                    name: "username",
-                                    fieldLabel: "Username"
-                                }, {
-                                    xtype: "textfield",
-                                    name: "password",
-                                    fieldLabel: "Password",
-                                    inputType: "password"
-                                }, {
-                                    xtype: "hidden",
-                                    name: "csrfmiddlewaretoken",
-                                    value: csrfToken
-                                }, {
-                                    xtype: "button",
-                                    text: "Login",
-                                    inputType: "submit",
-                                    handler: submit
-                                }]
-                            }],
-                            keys: {
-                                "key": Ext.EventObject.ENTER,
-                                "fn": submit
-                            }
-                        });
-                        win.show();
-                        var form = win.items.get(0);
-                        form.items.get(0).focus(false, 100);
+                        this.authenticate(options);
                     } else if (response.status != 405 && url != "/geoserver/rest/styles") {
                         // 405 from /rest/styles is ok because we use it to
                         // test whether we're authenticated or not
@@ -1007,5 +930,91 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 scope: this
             });         
         }
+    },
+
+    /** private: method[authenticate]
+     * Show the login dialog for the user to login.
+     */
+    authenticate: function(options) {
+        var submit = function() {
+            form.getForm().submit({
+                  waitMsg: "Logging in...",
+                  success: function(form, action) {
+                      this.setAuthorizedRoles(["ROLE_ADMINISTRATOR"]);
+                      win.close();
+                      document.cookie = action.response.getResponseHeader("Set-Cookie");
+                      // resend the original request
+                      if (options) { 
+                          Ext.Ajax.request(options);
+                      }
+                  },
+                  failure: function(form, action) {
+                      var username = form.items.get(0);
+                      var password = form.items.get(1);
+                      username.markInvalid();
+                      password.markInvalid();
+                      username.focus(true);
+                  },
+                  scope: this
+              });
+          }.createDelegate(this);
+          var csrfToken, csrfMatch = document.cookie.match(/csrftoken=(\w+);/);
+          if (csrfMatch && csrfMatch.length > 0) {
+              csrfToken = csrfMatch[1];
+          }
+          var win = new Ext.Window({
+              title: "GeoNode Login",
+              modal: true,
+              width: 230,
+              autoHeight: true,
+              layout: "fit",
+              items: [{
+                  xtype: "form",
+                  autoHeight: true,
+                  labelWidth: 55,
+                  border: false,
+                  bodyStyle: "padding: 10px;",
+                  url: "/accounts/ajax_login",
+                  waitMsgTarget: true,
+                  errorReader: {
+                      // teach ExtJS a bit of RESTfulness
+                      read: function(response) {
+                          return {
+                              success: response.status == 200,
+                              records: []
+                          };
+                      }
+                  },
+                  defaults: {
+                      anchor: "100%"
+                  },
+                  items: [{
+                      xtype: "textfield",
+                      name: "username",
+                      fieldLabel: "Username"
+                  }, {
+                      xtype: "textfield",
+                      name: "password",
+                      fieldLabel: "Password",
+                      inputType: "password"
+                  }, {
+                      xtype: "hidden",
+                      name: "csrfmiddlewaretoken",
+                      value: csrfToken
+                  }, {
+                      xtype: "button",
+                      text: "Login",
+                      inputType: "submit",
+                      handler: submit
+                  }]
+              }],
+              keys: {
+                  "key": Ext.EventObject.ENTER,
+                  "fn": submit
+              }
+          });
+          win.show();
+          var form = win.items.get(0);
+          form.items.get(0).focus(false, 100);
     }
 });
