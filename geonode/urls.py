@@ -112,6 +112,9 @@ urlpatterns = patterns('',
                 {'template': 'upload/upload_info.html'}, name='upload_info'),
     url(r'^upload-permissions/$', 'django.views.generic.simple.direct_to_template',
                 {'template': 'upload/upload_permissions.html'}, name='upload_permissions'),
+
+    # Catalogue
+    (r'^catalogue/', include('geonode.catalogue.urls')),
     )
 
 
