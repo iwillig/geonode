@@ -5,6 +5,9 @@ from django.conf.urls.static import static
 from geonode.sitemap import LayerSitemap, MapSitemap
 import geonode.proxy.urls
 import geonode.maps.urls
+from django.views.decorators.cache import cache_page
+from django.views.generic.simple import direct_to_template
+from django.views.i18n import javascript_catalog
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -47,9 +50,9 @@ urlpatterns = patterns('',
     (r'^avatar/', include('avatar.urls')),
 
     # Meta
-    url(r'^lang\.js$', 'django.views.generic.simple.direct_to_template',
+    url(r'^lang\.js$', cache_page(3600)(direct_to_template),
          {'template': 'lang.js', 'mimetype': 'text/javascript'}, name='lang'),
-    url(r'^jsi18n/$', 'django.views.i18n.javascript_catalog',
+    url(r'^jsi18n/$', cache_page(3600)(javascript_catalog),
                                   js_info_dict, name='jscat'),
     url(r'^sitemap\.xml$', 'django.contrib.sitemaps.views.sitemap',
                                   {'sitemaps': sitemaps}, name='sitemap'),
