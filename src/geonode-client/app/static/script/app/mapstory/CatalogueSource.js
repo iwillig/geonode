@@ -59,8 +59,6 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
             },
             scope: this
         });
-        source.init(this.target);
-        this.target.layerSources[source.id] = source;
     }
 
 });
