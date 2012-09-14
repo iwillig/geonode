@@ -40,10 +40,12 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
             }
         }
 
-        var source = this.target.addLayerSource({
-            id: config.name + '-' + config.source,
+        var id = config.name + '-' + config.source
+        var source = this.target.layerSources[id] || this.target.addLayerSource({
+            "id": id,
             config: {
                 isLazy: OpenLayers.Function.False,
+                ptype: 'gxp_wmscsource'
                 hidden: true,
                 restUrl: restUrl,
                 version: "1.1.1",
