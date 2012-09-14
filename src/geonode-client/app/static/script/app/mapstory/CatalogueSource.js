@@ -45,7 +45,7 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
             "id": id,
             config: {
                 isLazy: OpenLayers.Function.False,
-                ptype: 'gxp_wmscsource'
+                ptype: 'gxp_wmscsource',
                 hidden: true,
                 restUrl: restUrl,
                 version: "1.1.1",
