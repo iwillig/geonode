@@ -39,13 +39,16 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
                 restUrl = src.restUrl;
             }
         }
-        var source = new gxp.plugins.WMSSource({
-            isLazy: function() { return false; },
-            hidden: true,
-            restUrl: restUrl,
-            version: "1.1.1",
-            id: Ext.id(),
-            url: url
+
+        var source = this.target.addLayerSource({
+            id: config.name + '-' + config.source,
+            config: {
+                isLazy: OpenLayers.Function.False,
+                hidden: true,
+                restUrl: restUrl,
+                version: "1.1.1",
+                url: url
+            }
         });
         source.on({
             "ready": function() {
