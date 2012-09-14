@@ -728,7 +728,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     uuid = models.CharField(max_length=36)
     typename = models.CharField(max_length=128, unique=True)
     owner = models.ForeignKey(User, blank=True, null=True)
-    map_config = models.TextField(null=True)
+    map_config = models.TextField(blank=True, null=True)
 
     contacts = models.ManyToManyField(Contact, through='ContactRole')
 
@@ -747,7 +747,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     # see poc property definition below
 
     # section 3
-    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
+    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
     keywords_region = models.CharField(_('keywords region'), max_length=3, choices= COUNTRIES, default = 'USA')
     constraints_use = models.CharField(_('constraints use'), max_length=255, choices = [(x, x) for x in CONSTRAINT_OPTIONS], default='copyright')
     constraints_other = models.TextField(_('constraints other'), blank=True, null=True)
