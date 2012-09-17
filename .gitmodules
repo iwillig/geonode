@@ -19,6 +19,3 @@
 [submodule "src/geonode-client/externals/buildkit"]
 	path = src/geonode-client/externals/buildkit
 	url = git://github.com/tschaub/buildkit.git
-[submodule "src/geonode-client/app/static/externals/TimeManager"]
-	path = src/geonode-client/app/static/externals/TimeManager
-	url = git://github.com/mpriour/TimeManager_OpenLayers-Addin.git
