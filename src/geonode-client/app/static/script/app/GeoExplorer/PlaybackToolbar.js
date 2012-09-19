@@ -185,7 +185,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             loader: {
                 baseAttrs: {
                     baseParams: {
-                        legend_options: "fontAntiAliasing:true;fontSize:11;fontName:Arial;fontColor:#FFFFFF"
+                        legend_options: "fontAntiAliasing:true;fontSize:11;fontName:Arial;fontColor:#FFA500;fontStyle:bold"
                     }
                 }
             },
