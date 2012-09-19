@@ -40,7 +40,7 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
             }
         }
 
-        var id = config.name + '-' + config.source
+        var id = config.name + '-' + config.source;
         var source = this.target.layerSources[id] || this.target.addLayerSource({
             "id": id,
             config: {
