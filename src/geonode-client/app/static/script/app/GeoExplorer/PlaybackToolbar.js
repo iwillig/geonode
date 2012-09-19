@@ -182,6 +182,13 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         var layerManager = new gxp.plugins.LayerManager({
             id:'layermanager-tool',
             outputTarget:'map',
+            loader: {
+                baseAttrs: {
+                    baseParams: {
+                        legend_options: "fontAntiAliasing:true;fontSize:11;fontName:Arial;fontColor:#FFFFFF"
+                    }
+                }
+            },
             overlayNodeText: this.overlayNodeText,
             outputConfig: {
                 hidden:true,
