@@ -65,6 +65,7 @@ LANGUAGES = (
     ('el', 'Ελληνικά'),
     ('id', 'Bahasa Indonesia'),
     ('zh', '中文'),
+    ('ja', '日本人'),
 )
 
 # If you set this to False, Django will make some optimizations so as not
@@ -205,7 +206,11 @@ LOGGING = {
         "owslib": {
             "handlers": ["console"],
             "level": "ERROR",
-        },    
+        },
+        "pycsw": {
+            "handlers": ["console"],
+            "level": "ERROR",
+        },
     },
 }
 
@@ -309,16 +314,8 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # Arguments for the test runner
 NOSE_ARGS = [
-      '--verbosity=2',
-      '--cover-erase',
       '--nocapture',
-      '--with-coverage',
-      '--cover-package=geonode',
-      '--cover-inclusive',
-      '--cover-tests',
       '--detailed-errors',
-      '--with-xunit',
-#      '--stop',
       ]
 
 #
@@ -345,13 +342,20 @@ GEOSERVER_PRINT_URL = "".join([GEOSERVER_BASE_URL, "rest/printng/render.pdf"])
 CATALOGUE = {
     'default': {
         # The underlying CSW implementation
+        # default is pycsw in local mode (tied directly to GeoNode Django DB)
         'ENGINE': 'geonode.catalogue.backends.pycsw_local',
+        # pycsw in non-local mode
+        #'ENGINE': 'geonode.catalogue.backends.pycsw',
+        # GeoNetwork opensource
+        #'ENGINE': 'geonode.catalogue.backends.geonetwork',
+        # deegree and others
+        #'ENGINE': 'geonode.catalogue.backends.generic',
 
         # The FULLY QUALIFIED base url to the CSW instance for this GeoNode
         'URL': '%scatalogue/csw' % SITEURL,
         #'URL': 'http://localhost:8080/geonetwork/srv/en/csw',
         #'URL': 'http://localhost:8080/deegree-csw-demo-3.0.4/services',
-    
+
         # login credentials (for GeoNetwork)
         'USER': 'admin',
         'PASSWORD': 'admin',
@@ -362,20 +366,6 @@ CATALOGUE = {
 PYCSW = {
     # pycsw configuration
     'CONFIGURATION': {
-        'server': {
-            'home': '.',
-            'url': CATALOGUE['default']['URL'],
-            'encoding': 'UTF-8',
-            'language': LANGUAGE_CODE,
-            'maxrecords': '10',
-            #'loglevel': 'DEBUG',
-            #'logfile': '/tmp/pycsw.log',
-            #'federatedcatalogues': 'http://geo.data.gov/geoportal/csw/discovery',
-            #'pretty_print': 'true',
-            #'domainquerytype': 'range',
-            #'domaincounts': 'true',
-           'profiles': 'apiso,atom,dif,ebrim,fgdc',
-        },
         'metadata:main': {
             'identification_title': '%s Catalogue' % SITENAME,
             'identification_abstract': 'GeoNode is an open source platform that facilitates the creation, sharing, and collaborative use of geospatial data',
@@ -399,10 +389,6 @@ PYCSW = {
             'contact_hours': 'Hours of Service',
             'contact_instructions': 'During hours of service. Off on weekends.',
             'contact_role': 'pointOfContact',
-        },
-        'repository': {
-            'source': 'geonode',
-            'mappings': 'geonode/catalogue/backends/pycsw_local.py',
         },
         'metadata:inspire': {
             'enabled': 'true',

@@ -100,6 +100,9 @@ setup(name='GeoNode',
         "beautifulsoup4",
         "MultipartPostHandler",
 	    "django-pagination",
+        #catalogue
+        "Shapely>=1.2.15",
+        "pycsw>=1.4.0",
         # setup
         "Paver",
         # assembling javascript
@@ -109,8 +112,8 @@ setup(name='GeoNode',
         # testing
         "django-nose",
         "nose>=1.0",
-        "Shapely>=1.2.15",
-        "pycsw>=1.4.0",
+        # translation
+        "transifex-client",
         ],
       zip_safe=False,
       )
