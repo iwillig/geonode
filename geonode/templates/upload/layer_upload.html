@@ -16,7 +16,11 @@
 {% block main %}
 <div class="twocol">
     <h2>{% trans "Add data" %}</h2>
+    
+    <a href="{% url data_upload_status %}">Go to your past uploads</a>
+
     {% if incomplete %}
+    
     <h3>Incomplete Uploads</h3>
     <p>You have the following incomplete uploads:</p>
     {% for u in incomplete %}
@@ -41,6 +45,7 @@
 
 {% if enough_storage %}
   <!-- Start of uploader form -->
+
   <div id="drop-zone"></div>
 
   <form id="file-uploader" method="post" enctype="multipart/form-data">
@@ -48,6 +53,7 @@
   </form>
 
   <div>
+    <ul id="global-errors"></ul>
     <h2>{% trans "Files to be uploaded" %}</h2>
     <div id="file-queue">
     </div>

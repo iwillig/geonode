@@ -421,7 +421,7 @@ def final_step(upload_session, user):
         base_file = upload_session.base_file
         sld_file = os.path.join(
             os.path.dirname(base_file), upload_session.import_sld_file
-            )
+        )
 
         f = open(sld_file, 'r')
         sld = f.read()
@@ -470,12 +470,16 @@ def final_step(upload_session, user):
             uuid=layer_uuid,
             abstract=abstract or '',
             owner=user,
-            )
         )
+    )
 
     # Should we throw a clearer error here?
     assert saved_layer is not None
 
+    # Associate the Upload session model with the layer
+    upload = Upload.objects.get(import_id=import_session.id)
+    upload.layer = saved_layer
+    upload.save()
     # @todo if layer was not created, need to ensure upload target is
     # same as existing target
 

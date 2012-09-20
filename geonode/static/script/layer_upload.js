@@ -25,12 +25,18 @@ var UPLOAD = (function () {
         get_name,
         group_files,
         layer_template,
+        error_template,
+        error_element,
+        log_error,
+        info_template,
+        info,
         shp,
         tif,
         csv,
         zip,
         types,
         remove_file,
+        host,
         build_file_info,
         display_files,
         do_uploads,
@@ -38,8 +44,19 @@ var UPLOAD = (function () {
         attach_events,
         file_queue;
 
+    // error template
+    error_template = underscore.template(
+        '<li class="alert alert-error">' +
+            '<button class="close" data-dismiss="alert">&times;</button>' +
+            '<strong><%= title %></strong><p><%= message %></p>' +
+         '</li>'
+    );
 
-    /* template for the layer info div */
+    info_template = underscore.template(
+        '<div class="alert <%= level %>"><p><%= message %></p></div>'
+    );
+
+    // template for the layer info div
     layer_template = underscore.template(
         '<div class="file-element" id="<%= name %>-element">' +
             '<div>' +
@@ -48,11 +65,26 @@ var UPLOAD = (function () {
             '</div>' +
             '<ul class="files"></ul>' +
             '<ul class="errors"></ul>' +
+            '<div id="status"></div>' +
             '</div>'
     );
 
-    /* In order to test easly, this function needs to be able to work
-     * on strings,  */
+    log_error = function (options) {
+        $('#global-errors').append(error_template(options));
+    };
+
+    /** Info function takes an object and returns a correctly
+     *  formatted bootstrap alert element.
+     * 
+     *  @returns {string}
+     */
+    info = function (options) {
+        return info_template(options);
+    };
+
+    /* 
+     * @returns {array}
+     */
 
     get_base = function (file) {
         return file.name.split('.');
@@ -102,14 +134,14 @@ var UPLOAD = (function () {
     shp = new FileType('ESRI Shapefile', 'shp', ['shp', 'prj', 'dbf', 'shx']);
     tif = new FileType('GeoTiff File', 'tif', ['tif']);
     csv = new FileType('Comma Separated File', 'csv', ['csv']);
-    zip = new FileType('Zip File', 'zip', ['zip']);
+    zip = new FileType('Zip Archives', 'zip', ['zip']);
 
     types = [shp, tif, csv, zip];
 
     /* Function to iterates through all of the known types and returns the
      * type if it matches, if not return null
-     *
-     * File object must have a name property.
+     * @params {File}
+     * @returns {object}
      */
     find_file_type = function (file) {
         var i, type;
@@ -128,16 +160,22 @@ var UPLOAD = (function () {
      *  @param {name, files}
      */
     LayerInfo = function (name, files) {
-        this.name    = name;
-        this.files   = files;
-        this.type    = null;
-        this.main    = null;
-        this.errors  = [];
 
+        this.name     = name;
+        this.files    = files;
+
+        this.type     = null;
+        this.main     = null;
+        this.errors   = [];
+        this.selector = '#' + this.name + '-element';
+        this.element  = null;
         this.check_type();
         this.collect_errors();
     };
 
+    /** Checks the type of the Layer.
+     *
+     */
     LayerInfo.prototype.check_type = function () {
         var self = this;
         $.each(this.files, function (idx, file) {
@@ -151,9 +189,16 @@ var UPLOAD = (function () {
         });
     };
 
+    /** Delegates to the Layer Type to find all of the errors
+     *  associated with this type.
+     */
     LayerInfo.prototype.collect_errors = function () {
-        this.errors = []; // hard reset of errors, FIXME
-        this.errors = this.type.find_type_errors(this.get_extensions());
+        if (this.type) {
+            this.errors = [];
+            this.errors = this.type.find_type_errors(this.get_extensions());
+        } else {
+            this.errors.push('Unknown type, please try again');
+        }
     };
 
     LayerInfo.prototype.get_extensions = function () {
@@ -171,7 +216,10 @@ var UPLOAD = (function () {
         return res;
     };
 
-
+    /** Build a new FormData object from the current state of the
+     *  LayerInfo object.
+     *  @returns {FromData}
+     */
     LayerInfo.prototype.prepare_form_data = function (form_data) {
         var i, ext, file, perm;
 
@@ -196,17 +244,53 @@ var UPLOAD = (function () {
         return form_data;
     };
 
-    LayerInfo.prototype.upload_files = function () {
-        var form_data = this.prepare_form_data();
+    LayerInfo.prototype.mark_success = function (resp) {
+        var self = this;
+        $.ajax({
+            url: resp.redirect_to
+        }).done(function (resp) {
+            var msg, status = self.element.find('#status'), a;
+            if (resp.success) {
+                a = $('<a/>', {href: host + '/data/geonode:' + resp.name, text: 'Your layer'});
+                msg = info({level: 'alert-success', message: 'Your file was successfully uploaded.'});
+                status.empty();
+                status.append(msg);
+                status.append(a);
+            } else {
+                msg = info({level: 'alert-error', message: 'Error, ' + resp.errors.join(' ,')});
+                status.empty(msg);
+                status.append(msg);
+            }
+        });
 
+    };
+
+    LayerInfo.prototype.mark_start = function () {
+        var msg = info({level: 'alert-info', message: 'Your upload has started.'});
+        this.element.find('#status').append(msg);
+    };
+
+    LayerInfo.prototype.upload_files = function () {
+        var form_data = this.prepare_form_data(),
+            self = this;
         $.ajax({
             url: "",
             type: "POST",
             data: form_data,
             processData: false, // make sure that jquery does not process the form data
-            contentType: false
+            contentType: false,
+            beforeSend: function () {
+                self.mark_start();
+            }
         }).done(function (resp) {
-            console.log(resp);
+            var status, msg;
+            if (resp.success === true) {
+                self.mark_success(resp);
+            } else {
+                status = self.element.find('#status');
+                msg = info({level: 'alert-error', message: 'Something went wrong' + resp.errors.join(',')});
+                status.append(msg);
+            }
         });
     };
 
@@ -220,6 +304,7 @@ var UPLOAD = (function () {
         file_queue.append(li);
         this.display_files();
         this.display_errors();
+        this.element = $(this.selector);
         return li;
     };
 
@@ -274,11 +359,11 @@ var UPLOAD = (function () {
         var length = this.files.length,
             i,
             file;
-
         for (i = 0; i < length; i += 1) {
             file = this.files[i];
             if (name === file.name) {
                 this.files.splice(i, 1);
+                break;
             }
         }
 
@@ -289,7 +374,6 @@ var UPLOAD = (function () {
 
         $.each(files, function (name, assoc_files) {
             if (layers.hasOwnProperty(name)) {
-                // check if the `LayerInfo` object already exists
                 info = layers[name];
                 $.merge(info.files, assoc_files);
                 info.display_refresh();
@@ -305,7 +389,15 @@ var UPLOAD = (function () {
     display_files = function () {
         file_queue.empty();
         $.each(layers, function (name, info) {
-            info.display();
+            if (!info.type) {
+                log_error({
+                    title: 'Unsupported type',
+                    message: 'File ' + info.name + ' is an unsupported file type, please select another file.'
+                });
+                delete layers[name];
+            } else {
+                info.display();
+            }
         });
     };
 
@@ -325,7 +417,7 @@ var UPLOAD = (function () {
 
     initialize = function (options) {
         var file_input = document.getElementById('file-input');
-
+        host = 'http://localhost:8000';
         file_queue = $(options.file_queue);
 
         $(options.form).change(function (event) {

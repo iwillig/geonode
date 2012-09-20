@@ -16,6 +16,11 @@ test('Test the FileType object', function () {
 
 });
 
+var make_shp_info = function () {
+    return new up.LayerInfo(
+        'nybb', [{name: 'nybb.shp'}, {name: 'nybb.dbf'}, {name: 'nybb.prj'}, {name: 'nybb.shx'}])
+};
+
 module('Test LayerInfo on Shapefile');
 test('Test LayerInfo object on a valid free Shapefile', function () {
     var shape_info = new up.LayerInfo(
@@ -46,11 +51,28 @@ test('Test LayerInfo object on a valid free Shapefile', function () {
 
 });
 
+test('Test removing a file from a LayerInfo object', function () {
+    var shape_info  = make_shp_info();
+    ok(shape_info instanceof up.LayerInfo);
+    strictEqual(shape_info.files.length, 4);
+
+    shape_info.remove_file('nybb.dbf');
+    strictEqual(shape_info.files.length, 3);
+
+});
+
 test('Test LayerInfo on an invalid shapefile', function () {
     var bad_info = new up.LayerInfo('nybb', [{name: 'nybb.shp'}]);
     strictEqual(bad_info.type, up.shp);
     strictEqual(bad_info.errors.length, 3);
 
+});
+
+module('Test LayerInfo with a unknown type');
+test('Test LayerInfo with an unknown type, a pdf', function () {
+    var unknown_type = new up.LayerInfo('pdf', [{name: 'test.pdf'}]);
+    ok(unknown_type instanceof up.LayerInfo, 'Make sure the constructor still works even if its an unknown type.');
+    strictEqual(unknown_type.errors.length, 1, 'There should be one error telling the users that this is an unsupport type.');
 });
 
 

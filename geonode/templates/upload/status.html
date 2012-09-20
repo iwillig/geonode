@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static from staticfiles %}
+
+{% block title %} {% trans "File Upload Status"  %} - {{ block.super }} {% endblock %}
+
+{% block head %}
+{{ block.super }}
+{% endblock %}
+
+{% block main %}
+
+<div class="row">
+  <div class="span2">
+    <a id="set-permissions" class="btn" href="#">{% trans "Set permissions" %}</a>
+  </div>
+  <div class="span1">
+    <a id="delete" class="btn" href="#">{% trans "Delete" %}</a>
+  </div>
+  <div class="span2 offset3">
+    <a class="btn" href="{% url data_upload %}">{% trans "Import New Layer" %}</a>
+  </div>
+</div>
+
+<div id="application">
+  <table id="session-table" class="table table-bordered">
+    <thead>
+      <tr>
+        <th></th>
+        <th>NAME/SOURCE FILE</th>
+        <th>METADATA</th>
+        <th>DATE</th>
+        <th>STATUS</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+
+{% block sidebar %}
+{% endblock %}
+
+
+
+{% block footer-extend %}
+
+<script src="{{ STATIC_URL }}underscore-min.js"></script>
+<script src="{{ STATIC_URL }}script/status.js"></script>
+
+<script type="text/javascript">
+{% autoescape off %}
+
+$(function() { 
+
+  STATUS.initialize({
+    user: '{{request.user}}',
+    status_url: '{% url show_upload_sessions %}',
+    table_selector: '#session-table',
+    delete_selector: '#delete',
+    permission_selector: '#set-permissions'
+  });
+
+});
+
+{% endautoescape %}
+</script>
+
+{% endblock %}

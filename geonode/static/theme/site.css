@@ -451,3 +451,9 @@ Comments
     height: 100px;
     background: #eee;
 }
+
+#global-errors {
+    list-style: none;
+};
+
+.file-element li { list-style: none };
