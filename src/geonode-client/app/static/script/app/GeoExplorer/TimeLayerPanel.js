@@ -30,7 +30,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
         playbackToolbar = playbackToolbar.length ? playbackToolbar[0] : app.tools['playback-tool'].playbackToolbar;
         var timeManager = playbackToolbar.timeManager;
         if(!timeManager) {
-            timeManager = app.mapPanel.map.getControlsByClass('OpenLayers.Control.TimeManager')[0];
+            timeManager = app.mapPanel.map.getControlsByClass('OpenLayers.Control.DimensionManager')[0];
         }
         this.playbackToolbar = playbackToolbar;
         this.timeManager = timeManager;
@@ -98,8 +98,8 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
 
     splitManagerAgents : function(layer, timeManager) {
         timeManager.removeAgentLayer(layer);
-        var newAgent = timeManager.buildTimeAgents([layer])[0];
-        timeManager.timeAgents.push(newAgent);
+        var newAgent = timeManager.buildAgents(layer)[0];
+        timeManager.agents.push(newAgent);
         return newAgent;
     },
     
@@ -135,7 +135,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
     
     getLayerAgent : function(layer,manager){
         layer = layer || this.layerRecord.getLayer();
-        var agents = (manager && manager.timeAgents) || this.timeManager.timeAgents || [];
+        var agents = (manager && manager.agents) || this.timeManager.agents || [];
         for(var i=0;i<agents.length;i++){
             if(agents[i].layers.indexOf(layer)>-1){
                 this._agent = agents[i];
