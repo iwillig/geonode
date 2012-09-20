@@ -43,7 +43,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from geonode.utils import http_client, _split_query, _get_basic_auth_info
-from geonode.layers.forms import LayerForm, LayerUploadForm, LayerMetadataUploadForm, NewLayerUploadForm, LayerAttributeForm
+from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm
 from geonode.layers.models import Layer, ContactRole, Attribute, TopicCategory
 from geonode.utils import default_map_config
 from geonode.utils import GXPLayer
