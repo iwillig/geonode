@@ -198,6 +198,7 @@
   <properties>
     <geotools.version>8.0</geotools.version>
     <geoserver-exts.version>2.2-SNAPSHOT</geoserver-exts.version>
+    <geoserver.version>2.2-SNAPSHOT</geoserver.version>
     <jetty.version>6.1.8</jetty.version>
     <maven.test.search.classdir>true</maven.test.search.classdir>
   </properties>
