@@ -137,6 +137,7 @@ INSTALLED_APPS = (
     'agon_ratings',
     'pagination',
     'taggit',
+    'taggit_templatetags',
     'south',
     'haystack',
     'relationships',
@@ -324,7 +325,7 @@ NOSE_ARGS = [
 
 SITENAME = "GeoNode"
 
-SITEURL = "http://localhost:8000/"
+SITEURL = "http://ui.dev.geonode.org/"
 
 # GeoServer information
 
@@ -389,6 +390,10 @@ PYCSW = {
             'contact_hours': 'Hours of Service',
             'contact_instructions': 'During hours of service. Off on weekends.',
             'contact_role': 'pointOfContact',
+        },
+        'repository': {
+            'source': 'geonode',
+            'mappings': '/home/geonode/geonode/geonode/catalogue/backends/pycsw_local.py',
         },
         'metadata:inspire': {
             'enabled': 'true',

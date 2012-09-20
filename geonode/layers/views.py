@@ -44,7 +44,7 @@ from django.shortcuts import get_object_or_404
 
 from geonode.utils import http_client, _split_query, _get_basic_auth_info
 from geonode.layers.forms import LayerForm, LayerUploadForm, NewLayerUploadForm, LayerAttributeForm
-from geonode.layers.models import Layer, ContactRole, Attribute
+from geonode.layers.models import Layer, ContactRole, Attribute, TopicCategory
 from geonode.utils import default_map_config
 from geonode.utils import GXPLayer
 from geonode.utils import GXPMap
@@ -92,12 +92,28 @@ def _resolve_layer(request, typename, permission='layers.change_layer',
 #### Basic Layer Views ####
 
 
-def data(request):
-    return render_to_response('data.html', RequestContext(request, {}))
-
-
 def layer_browse(request, template='layers/layer_list.html'):
-    return render_to_response(template, RequestContext(request, {}))
+    layer_list = Layer.objects.order_by("-date")[:8]
+    return render_to_response(
+        template,
+        RequestContext(request, {
+            "layer_list": layer_list
+            }
+        )
+    )
+
+
+def layer_category(request, slug, template='layers/layer_list.html'):
+    category = get_object_or_404(TopicCategory, slug=slug)
+    layer_list = category.layer_set.all()
+    return render_to_response(
+        template,
+        RequestContext(request, {
+            "layer_list": layer_list,
+            "layer_category": category
+            }
+        )
+    )
 
 
 @login_required
@@ -155,8 +171,8 @@ def layer_detail(request, layername, template='layers/layer_detail.html'):
 
 
 @login_required
-def layer_metadata(request, layername, template='layers/layer_metadata.html'):
-    layer = _resolve_layer(request, layername, 'layers.change_layer', _PERMISSION_MSG_METADATA) 
+def layer_metadata(request, layername, template='layers/layer_describe.html'):
+    layer = _resolve_layer(request, layername, 'layers.change_layer', _PERMISSION_MSG_METADATA)
     layer_attribute_set = inlineformset_factory(Layer, Attribute, extra=0, form=LayerAttributeForm, )
 
     poc = layer.poc
@@ -525,18 +541,6 @@ def get_query(query_string, search_fields):
         else:
             query = query & or_query
     return query
-
-
-def layer_search_result_detail(request, template='layers/layer_search_result_snippet.html'):
-    uuid = request.GET.get("uuid", None)
-    if  uuid is None:
-        return HttpResponse(status=400)
-
-    layer = get_object_or_404(Layer, uuid=uuid)
- 
-    return render_to_response(template, RequestContext(request, {
-        'layer': layer,
-    }))
 
 
 @require_POST
