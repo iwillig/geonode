@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layers/layer_base.html" %}
 {% load i18n %}
 {% load static from staticfiles %}
 
@@ -13,10 +13,14 @@
 {{ block.super }}
 {% endblock %}
 
-{% block main %}
-<div class="twocol">
-    <h2>{% trans "Add data" %}</h2>
-    
+{% block body_class %}data data-list upload{% endblock %}
+
+{% block body %}
+    <div class="twocol">
+    <div class="span12">
+      <h2 class="page-title">{% trans "Upload Layers" %}</h2>
+    </div>
+
     <a href="{% url data_upload_status %}">Go to your past uploads</a>
 
     {% if incomplete %}
