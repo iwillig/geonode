@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layers/layer_base.html" %}
 {% load i18n %}
 {% load static from staticfiles %}
 
@@ -8,7 +8,9 @@
 {{ block.super }}
 {% endblock %}
 
-{% block main %}
+{% block body_class %}data data-list upload{% endblock %}
+
+{% block body %}
 
 <div class="row">
   <div class="span2">
