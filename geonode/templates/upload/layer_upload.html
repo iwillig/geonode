@@ -5,10 +5,6 @@
 {% block title %} {% trans "Upload Layer"  %} - {{ block.super }} {% endblock %}
 
 {% block head %}
-{% include "geonode/ext_header.html" %}
-{% include "geonode/app_header.html" %}
-{% include "geonode/geo_header.html" %}
-<link rel="stylesheet" type="text/css" href="{{ GEONODE_CLIENT_LOCATION }}theme/ux/fileuploadfield/fileuploadfield.css"/>
 
 {{ block.super }}
 {% endblock %}
@@ -88,9 +84,8 @@
 
 {% block footer-extend %}
 
-<script src="{% static "underscore-min.js" %}"></script>
-<script src="{% static "fileupload/js/jquery.iframe-transport.js" %}"></script>
-<script src="{% static "script/layer_upload.js" %}"></script>
+<script src="{{ STATIC_URL }}libs/underscore-min.js"></script>
+<script src="{{ STATIC_URL }}js/layer_upload.js"></script>
 
 <script type="text/javascript">
 {% autoescape off %}
