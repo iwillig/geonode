@@ -4,22 +4,9 @@
 {% block title %} {% trans "Search Data" %} - {{ block.super }} {% endblock %}
 
 {% block head %}
-{% include "geonode/ext_header.html" %}
-{% include "geonode/app_header.html" %}
-{% include "geonode/geo_header.html" %}
-{{ block.super }}
-<script type="text/javascript">
-// Ext.onReady(function(){
-//    {% autoescape off %}
 
-//     var bbox = new GeoNode.BoundingBoxWidget({
-//          proxy: "/proxy/?url=",
-//          viewerConfig: {{ viewer_config }},
-//          renderTo: 'refine'
-//     });
-//     {% endautoescape %}
-// });
-</script>
+{{ block.super }}
+
 {% endblock %}
 
 {% block main %} 
