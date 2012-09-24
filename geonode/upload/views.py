@@ -410,10 +410,10 @@ def show_upload_sessions(request):
         user=request.user).order_by('-date')
     return JSONResponse([
         {'id': s.id,
-         'url': s.layer.get_absolute_url(),
+         'url': s.layer and s.layer.get_absolute_url(),
          'name': s.name,
-         'layer_id': s.layer.id,
-         'layer_name': s.layer.name,
+         'layer_id': s.layer and s.layer.id,
+         'layer_name': s.layer and s.layer.name,
          'state': s.state,
          'date': s.date.strftime('%B %d %H %M'),
          } for s in sessions])
