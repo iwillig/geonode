@@ -36,6 +36,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 import json
 import os
+import platform
+import ctypes
 import logging
 
 logger = logging.getLogger(__name__)
@@ -115,11 +117,20 @@ def _create_time_form(import_session, form_data):
         return TimeForm(form_data, **args)
     return TimeForm(**args)
 
+def _get_free_space(folder):
+    """ Return folder/drive free space (in bytes)
+    """
+    if platform.system() == 'Windows':
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+        return free_bytes.value / (1024. * 1024)
+    else:
+        s = os.statvfs(folder)
+        return s.f_frfree * s.f_bavail / (1024. * 1024)
 
 def save_step_view(req, session):
     if req.method == 'GET':
-        s = os.statvfs('/')
-        mb = s.f_bsize * s.f_bavail / (1024. * 1024)
+        mb = _get_free_space('/')
         return render_to_response('upload/layer_upload.html',
             RequestContext(req, {
             'storage_remaining': "%d MB" % mb,
