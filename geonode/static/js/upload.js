@@ -1,47 +1,41 @@
-/*global $:true, document:true  */
+/*global $:true, document:true, define: true, alert:true, requirejs: true  */
 
 'use strict';
 
-
-define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
-    function ($, _, LayerInfo, fileTypes) {
+define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileTypes'], function ($, _, LayerInfo, fileTypes) {
 
     var layers = {},
-    templates = {},
-        find_file_type,
+        templates = {},
+        findFileType,
         initialize,
-        layer_template,
-        error_template,
-        error_element,
         log_error,
-        info_template,
         info,
         types,
-        build_file_info,
-        display_files,
-        do_uploads,
-        do_successful_upload,
+        buildFileInfo,
+        displayFiles,
+        doUploads,
+        doSuccessfulUpload,
         attach_events,
         file_queue;
 
-    // error template
+           // error template
     templates.errorTemplate = _.template(
         '<li class="alert alert-error">' +
             '<button class="close" data-dismiss="alert">&times;</button>' +
             '<strong><%= title %></strong><p><%= message %></p>' +
-         '</li>'
+            '</li>'
     );
 
     templates.infoTemplate = _.template(
         '<div class="alert <%= level %>"><p><%= message %></p></div>'
     );
 
-    // template for the layer info div
+           // template for the layer info div
     templates.layerTemplate = _.template(
         '<div class="file-element" id="<%= name %>-element">' +
             '<div>' +
-               '<div><h3><%= name %></h3></div>' +
-               '<div><p><%= type %></p></div>' +
+            '<div><h3><%= name %></h3></div>' +
+            '<div><p><%= type %></p></div>' +
             '</div>' +
             '<ul class="files"></ul>' +
             '<ul class="errors"></ul>' +
@@ -50,7 +44,7 @@ define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
     );
 
     log_error = function (options) {
-        $('#global-errors').append(errorTemplate(options));
+        $('#global-errors').append(templates.errorTemplate(options));
     };
 
     /** Info function takes an object and returns a correctly
@@ -59,7 +53,7 @@ define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
      *  @returns {string}
      */
     info = function (options) {
-        return infoTemplate(options);
+        return templates.infoTemplate(options);
     };
 
     /* Function to iterates through all of the known types and returns the
@@ -67,18 +61,18 @@ define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
      * @params {File}
      * @returns {object}
      */
-    find_file_type = function (file) {
+    findFileType = function (file) {
         var i, type;
         for (i = 0; i < types.length; i += 1) {
             type = types[i];
-            if (type.is_type(file)) {
+            if (type.isType(file)) {
                 return {type: type, file: file};
             }
         }
     };
 
 
-    build_file_info = function (files) {
+    buildFileInfo = function (files) {
         var info;
 
         $.each(files, function (name, assoc_files) {
@@ -95,7 +89,7 @@ define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
 
     };
 
-    display_files = function () {
+    displayFiles = function () {
         file_queue.empty();
         $.each(layers, function (name, info) {
             if (!info.type) {
@@ -110,11 +104,7 @@ define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
         });
     };
 
-    do_successful_upload = function (response) {
-        console.log(response.redirect_to);
-    };
-
-    do_uploads = function () {
+    doUploads = function () {
         if ($.isEmptyObject(layers)) {
             alert('You must select some files first.');
         } else {
@@ -125,18 +115,17 @@ define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
     };
 
     initialize = function (options) {
-        var file_input = document.getElementById('file-input');
-        host = 'http://localhost:8000';
-        file_queue = $(options.file_queue);
+        var file_input = document.getElementById('file-input'),
+            file_queue = $(options.file_queue);
 
         $(options.form).change(function (event) {
             // this is a mess
-            var files = group_files(file_input.files);
-            build_file_info(files);
-            display_files();
+            var files = _.groupBy(file_input.files, LayerInfo.getName);
+            buildFileInfo(files);
+            displayFiles();
         });
 
-        $(options.upload_button).on('click', do_uploads);
+        $(options.upload_button).on('click', doUploads);
     };
 
     // public api
