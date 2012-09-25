@@ -1,6 +1,6 @@
 /*global gn:true, $:true, FormData: true */
 
-define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileTypes){
+define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, fileTypes){
     'use strict';
 
     /** Creates an instance of a LayerInfo
@@ -32,12 +32,15 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
      * @returns {object}
      */
     LayerInfo.prototype.findFileType = function (file) {
-        var i, type;
-        $.each(FileTypes, function (name, type) {
+        var i, type, res;
+
+        $.each(fileTypes, function (name, type) {
             if (type.isType(file)) {
-                return {type: type, file: file};
+                res = {type: type, file: file};
+                return false;
             }
         });
+        return res;
     };
 
 
@@ -48,7 +51,7 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
         var self = this;
 
         $.each(this.files, function (idx, file) {
-            var results = this.findFileType(file);
+            var results = self.findFileType(file);
             // if we find the type of the file, we also find the "main"
             // file
             if (results) {
@@ -62,24 +65,38 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
      *  associated with this type.
      */
     LayerInfo.prototype.collectErrors = function () {
+        var errors = [];
         if (this.type) {
-            var errors = [];
-            errors = this.type.find_type_errors(this.getExtensions());
+            errors = this.type.findTypeErrors(this.getExtensions());
         } else {
-            this.errors.push('Unknown type, please try again');
+            errors.push('Unknown type, please try again');
         }
+        return errors;
     };
+
+    LayerInfo.prototype.layerTemplate = _.template(
+        '<div class="file-element" id="<%= name %>-element">' +
+            '<div>' +
+            '<div><h3><%= name %></h3></div>' +
+            '<div><p><%= type %></p></div>' +
+            '</div>' +
+            '<ul class="files"></ul>' +
+            '<ul class="errors"></ul>' +
+            '<div id="status"></div>' +
+            '</div>'
+    );
+
 
     LayerInfo.prototype.getExtensions = function () {
         var files = this.files,
-        extension,
-        file,
-        res = [],
-        i;
+            extension,
+            file,
+            res = [],
+            i;
 
         for (i = 0; i < files.length; i += 1) {
             file = files[i];
-            extension = this.getExt(file);
+            extension = LayerInfo.getExt(file);
             res.push(extension);
         }
         return res;
@@ -105,7 +122,7 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
         for (i = 0; i < this.files.length; i += 1) {
             file = this.files[i];
             if (file.name !== this.main.name) {
-                ext = this.getExt(file);
+                ext = LayerInfo.getExt(file);
                 form_data.append(ext + '_file', file);
             }
         }
@@ -115,33 +132,29 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
 
     LayerInfo.prototype.markSuccess = function (resp) {
         var self = this;
+
         $.ajax({
             url: resp.redirect_to
         }).done(function (resp) {
             var msg, status = self.element.find('#status'), a;
             if (resp.success) {
-                a = $('<a/>', {href: host + '/data/geonode:' + resp.name, text: 'Your layer'});
-                msg = info({level: 'alert-success', message: 'Your file was successfully uploaded.'});
                 status.empty();
-                status.append(msg);
-                status.append(a);
+                status.append('Your file was uploaded');
             } else {
-                msg = info({level: 'alert-error', message: 'Error, ' + resp.errors.join(' ,')});
                 status.empty(msg);
-                status.append(msg);
+                status.append('Error');
             }
         });
 
     };
 
     LayerInfo.prototype.markStart = function () {
-        var msg = info({level: 'alert-info', message: 'Your upload has started.'});
-        this.element.find('#status').append(msg);
+        this.element.find('#status').append('Your upload has started');
     };
 
     LayerInfo.prototype.uploadFiles = function () {
-        var form_data = this.prepare_form_data(),
-        self = this;
+        var form_data = this.prepareFormData(),
+            self = this;
 
         $.ajax({
             url: "",
@@ -150,64 +163,59 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
             processData: false, // make sure that jquery does not process the form data
             contentType: false,
             beforeSend: function () {
-                self.mark_start();
+                self.markStart();
             }
         }).done(function (resp) {
             var status, msg;
             if (resp.success === true) {
-                self.mark_success(resp);
+                self.markSuccess(resp);
             } else {
                 status = self.element.find('#status');
-                msg = info({level: 'alert-error', message: 'Something went wrong' + resp.errors.join(',')});
-                status.append(msg);
+                console.log(status);
             }
         });
     };
 
-    LayerInfo.prototype.display  = function () {
-        var li = layer_template({
+    LayerInfo.prototype.display  = function (file_queue) {
+        var li = this.layerTemplate({
             name: this.name,
             type: this.type.name,
             files: this.files
         });
-
         file_queue.append(li);
-        this.display_files();
-        this.display_errors();
+        this.displayFiles();
+        this.displayErrors();
         this.element = $(this.selector);
         return li;
     };
 
     LayerInfo.prototype.removeFile = function (event) {
         var target = $(event.target),
-        layer_info,
-        layer_name = target.data('layer'),
-        file_name  = target.data('file');
+            layer_info,
+            layer_name = target.data('layer'),
+            file_name  = target.data('file');
 
-        layer_info = layers[layer_name];
+        this.removeFile(file_name);
+        this.displayRefresh();
 
-        if (layer_info) {
-            layer_info.remove_file(file_name);
-            layer_info.display_refresh();
-        }
 
     };
 
     LayerInfo.prototype.displayFiles = function () {
         var self = this,
-        ul = $('#' + this.name + '-element .files');
+            ul = $('#' + this.name + '-element .files');
 
         ul.empty();
 
         $.each(this.files, function (idx, file) {
             var li = $('<li/>').appendTo(ul),
-            p = $('<p/>', {text: file.name}).appendTo(li),
-            a  = $('<a/>', {text: ' Remove'});
+                p = $('<p/>', {text: file.name}).appendTo(li),
+                a  = $('<a/>', {text: ' Remove'});
 
             a.data('layer', self.name);
             a.data('file',  file.name);
             a.appendTo(p);
-            a.on('click', remove_file);
+            a.on('click', this.removeFile);
         });
 
     };
@@ -222,15 +230,15 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
     };
 
     LayerInfo.prototype.displayRefresh = function () {
-        this.collect_errors();
-        this.display_files();
-        this.display_errors();
+        this.collectErrors();
+        this.displayFiles();
+        this.displayErrors();
     };
 
     LayerInfo.prototype.removeFile = function (name) {
         var length = this.files.length,
-        i,
-        file;
+            i,
+            file;
 
         for (i = 0; i < length; i += 1) {
             file = this.files[i];
@@ -248,7 +256,7 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, FileType
     //TODO use regex to get filename parts
 
     LayerInfo.getBase = function (file) {
-        return file.name.match(/(\w+).(\w+)/)
+        return file.name.match(/(\w+)\.(\w+)/);
     };
 
     LayerInfo.getExt = function (file) {

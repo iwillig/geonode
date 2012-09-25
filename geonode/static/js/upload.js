@@ -15,8 +15,7 @@ define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileType
         displayFiles,
         doUploads,
         doSuccessfulUpload,
-        attach_events,
-        file_queue;
+        attach_events;
 
            // error template
     templates.errorTemplate = _.template(
@@ -31,17 +30,6 @@ define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileType
     );
 
            // template for the layer info div
-    templates.layerTemplate = _.template(
-        '<div class="file-element" id="<%= name %>-element">' +
-            '<div>' +
-            '<div><h3><%= name %></h3></div>' +
-            '<div><p><%= type %></p></div>' +
-            '</div>' +
-            '<ul class="files"></ul>' +
-            '<ul class="errors"></ul>' +
-            '<div id="status"></div>' +
-            '</div>'
-    );
 
     log_error = function (options) {
         $('#global-errors').append(templates.errorTemplate(options));
@@ -73,23 +61,29 @@ define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileType
 
 
     buildFileInfo = function (files) {
-        var info;
+        var name, info;
 
-        $.each(files, function (name, assoc_files) {
-            if (layers.hasOwnProperty(name)) {
-                info = layers[name];
-                $.merge(info.files, assoc_files);
-                info.display_refresh();
-            } else {
-                info = new LayerInfo(name, assoc_files);
-                layers[name] = info;
-                info.collect_errors();
+        for (name in files) {
+            // filter out the prototype properties
+            if (files.hasOwnProperty(name)) {
+                // check to see if the layer was already defined
+                if (layers.hasOwnProperty(name)) {
+                    info = layers[name];
+                    $.merge(info.files, files[name]);
+                    info.displayFiles();
+                } else {
+                    info = new LayerInfo({
+                        name: name,
+                        files: files[name]
+                    });
+                    info.collectErrors();
+                    layers[name] = info;
+                }
             }
-        });
-
+        }
     };
 
-    displayFiles = function () {
+    displayFiles = function (file_queue) {
         file_queue.empty();
         $.each(layers, function (name, info) {
             if (!info.type) {
@@ -99,7 +93,7 @@ define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileType
                 });
                 delete layers[name];
             } else {
-                info.display();
+                info.display(file_queue);
             }
         });
     };
@@ -109,7 +103,7 @@ define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileType
             alert('You must select some files first.');
         } else {
             $.each(layers, function (name, layerinfo) {
-                layerinfo.upload_files();
+                layerinfo.uploadFiles();
             });
         }
     };
@@ -120,9 +114,8 @@ define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileType
 
         $(options.form).change(function (event) {
             // this is a mess
-            var files = _.groupBy(file_input.files, LayerInfo.getName);
-            buildFileInfo(files);
-            displayFiles();
+            buildFileInfo(_.groupBy(file_input.files, LayerInfo.getName));
+            displayFiles(file_queue);
         });
 
         $(options.upload_button).on('click', doUploads);
