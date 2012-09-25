@@ -84,33 +84,7 @@ gn.upload = (function () {
         return info_template(options);
     };
 
-    /*
-     * @returns {array}
-     */
-
-    get_base = function (file) {
-        return file.name.split('.');
-    };
-
-    get_ext = function (file) {
-        var parts = get_base(file);
-        return parts[parts.length - 1];
-    };
-
-    get_name = function (file) { return get_base(file)[0]; };
-
-    group_files = function (files) {
-        return underscore.groupBy(files, get_name);
-    };
-    // public api
-    return {
-        layers: layers,
-        initialize: initialize
-    };
-
-
-
-    types = {shp:gn.uploader.FileType.SHP, tif, csv, zip];
+    types = {shp:gn.uploader.FileType.SHP, tif:gn.uploader.FileType.TIF, csv:gn.uploader.FileType.CSV, zip:gn.uploader.FileType.ZIP};
 
     /* Function to iterates through all of the known types and returns the
      * type if it matches, if not return null
