@@ -1,14 +1,16 @@
 /*global gn:true, $:true, FormData: true */
 
+define(['jquery', 'underscore'], function($, _){
+    'use strict';
 /** Creates an instance of a LayerInfo
  *  @constructor
  *  @author Ivan Willig
  *  @this {LayerInfo}
  *  @param {name, files}
  */
-'use strict';
 
-gn.uploader.LayerInfo = function (options) {
+
+var LayerInfo = function (options) {
 
     this.name     = null;
     this.files    = null;
@@ -28,10 +30,10 @@ gn.uploader.LayerInfo = function (options) {
 /** Checks the type of the Layer.
  *
  */
-gn.uploader.LayerInfo.prototype.guessFileType = function () {
+LayerInfo.prototype.guessFileType = function () {
     var self = this;
     $.each(this.files, function (idx, file) {
-        var results = gn.uploader.find_file_type(file);
+        var results = this.findFileType(file);
         // if we find the type of the file, we also find the "main"
         // file
         if (results) {
@@ -44,7 +46,7 @@ gn.uploader.LayerInfo.prototype.guessFileType = function () {
 /** Delegates to the Layer Type to find all of the errors
  *  associated with this type.
  */
-gn.uploader.LayerInfo.prototype.collectErrors = function () {
+LayerInfo.prototype.collectErrors = function () {
     if (this.type) {
         var errors = [];
         errors = this.type.find_type_errors(this.getExtensions());
@@ -53,7 +55,7 @@ gn.uploader.LayerInfo.prototype.collectErrors = function () {
     }
 };
 
-gn.uploader.LayerInfo.prototype.getExtensions = function () {
+LayerInfo.prototype.getExtensions = function () {
     var files = this.files,
         extension,
         file,
@@ -62,7 +64,7 @@ gn.uploader.LayerInfo.prototype.getExtensions = function () {
 
     for (i = 0; i < files.length; i += 1) {
         file = files[i];
-        extension = get_ext(file);
+        extension = this.getExt(file);
         res.push(extension);
     }
     return res;
@@ -72,7 +74,7 @@ gn.uploader.LayerInfo.prototype.getExtensions = function () {
  *  LayerInfo object.
  *  @returns {FromData}
  */
-gn.uploader.LayerInfo.prototype.prepare_form_data = function (form_data) {
+LayerInfo.prototype.prepareFormData = function (form_data) {
     var i, ext, file, perm;
 
     if (!form_data) {
@@ -88,7 +90,7 @@ gn.uploader.LayerInfo.prototype.prepare_form_data = function (form_data) {
     for (i = 0; i < this.files.length; i += 1) {
         file = this.files[i];
         if (file.name !== this.main.name) {
-            ext = get_ext(file);
+            ext = this.getExt(file);
             form_data.append(ext + '_file', file);
         }
     }
@@ -96,7 +98,7 @@ gn.uploader.LayerInfo.prototype.prepare_form_data = function (form_data) {
     return form_data;
 };
 
-gn.uploader.LayerInfo.prototype.mark_success = function (resp) {
+LayerInfo.prototype.markSuccess = function (resp) {
     var self = this;
     $.ajax({
         url: resp.redirect_to
@@ -117,12 +119,12 @@ gn.uploader.LayerInfo.prototype.mark_success = function (resp) {
 
 };
 
-gn.uploader.LayerInfo.prototype.mark_start = function () {
-    var msg = gn.uploader.info({level: 'alert-info', message: 'Your upload has started.'});
+LayerInfo.prototype.markStart = function () {
+    var msg = info({level: 'alert-info', message: 'Your upload has started.'});
     this.element.find('#status').append(msg);
 };
 
-gn.uploader.LayerInfo.prototype.upload_files = function () {
+LayerInfo.prototype.uploadFiles = function () {
     var form_data = this.prepare_form_data(),
         self = this;
 
@@ -147,7 +149,7 @@ gn.uploader.LayerInfo.prototype.upload_files = function () {
     });
 };
 
-gn.uploader.LayerInfo.prototype.display  = function () {
+LayerInfo.prototype.display  = function () {
     var li = layer_template({
         name: this.name,
         type: this.type.name,
@@ -161,7 +163,7 @@ gn.uploader.LayerInfo.prototype.display  = function () {
     return li;
 };
 
-remove_file = function (event) {
+LayerInfo.prototype.removeFile = function (event) {
     var target = $(event.target),
         layer_info,
         layer_name = target.data('layer'),
@@ -176,7 +178,7 @@ remove_file = function (event) {
 
 };
 
-gn.uploader.LayerInfo.prototype.display_files = function () {
+LayerInfo.prototype.displayFiles = function () {
     var self = this,
         ul = $('#' + this.name + '-element .files');
 
@@ -195,7 +197,7 @@ gn.uploader.LayerInfo.prototype.display_files = function () {
 
 };
 
-gn.uploader.LayerInfo.prototype.display_errors = function () {
+LayerInfo.prototype.displayErrors = function () {
     var ul = $('#' + this.name + '-element .errors').first();
     ul.empty();
 
@@ -204,13 +206,13 @@ gn.uploader.LayerInfo.prototype.display_errors = function () {
     });
 };
 
-gn.uploader.LayerInfo.prototype.display_refresh = function () {
+LayerInfo.prototype.displayRefresh = function () {
     this.collect_errors();
     this.display_files();
     this.display_errors();
 };
 
-gn.uploader.LayerInfo.prototype.remove_file = function (name) {
+LayerInfo.prototype.removeFile = function (name) {
     var length = this.files.length,
         i,
         file;
@@ -230,17 +232,21 @@ gn.uploader.LayerInfo.prototype.remove_file = function (name) {
 
 //TODO use regex to get filename parts
 
-gn.uploader.LayerInfo.prototype.get_base = function (file) {
+LayerInfo.prototype.getBase = function (file) {
     return file.name.split('.');
 };
 
-gn.uploader.LayerInfo.prototype.get_ext = function (file) {
-    var parts = get_base(file);
+LayerInfo.prototype.getExt = function (file) {
+    var parts = this.getBase(file);
     return parts[parts.length - 1];
 };
 
-gn.uploader.LayerInfo.prototype.get_name = function (file) { return get_base(file)[0]; };
+LayerInfo.prototype.getName = function (file) { return this.getBase(file)[0]; };
 
-gn.uploader.LayerInfo.prototype.group_files = function (files) {
-    return _.groupBy(files, get_name);
+LayerInfo.prototype.groupFiles = function (files) {
+    return _.groupBy(files, this.getName);
 };
+
+return LayerInfo;
+
+});

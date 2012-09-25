@@ -2,13 +2,12 @@
 
 'use strict';
 
-var underscore = _.noConflict(); // make jslint less angry about `_`
 
-gn = window.gn || {};
-
-gn.upload = (function () {
+define(['jquery','underscore','upload/LayerInfo','upload/FileTypes'],
+    function ($, _, LayerInfo, fileTypes) {
 
     var layers = {},
+    templates = {},
         find_file_type,
         initialize,
         layer_template,
@@ -26,19 +25,19 @@ gn.upload = (function () {
         file_queue;
 
     // error template
-    error_template = underscore.template(
+    templates.errorTemplate = _.template(
         '<li class="alert alert-error">' +
             '<button class="close" data-dismiss="alert">&times;</button>' +
             '<strong><%= title %></strong><p><%= message %></p>' +
          '</li>'
     );
 
-    info_template = underscore.template(
+    templates.infoTemplate = _.template(
         '<div class="alert <%= level %>"><p><%= message %></p></div>'
     );
 
     // template for the layer info div
-    layer_template = underscore.template(
+    templates.layerTemplate = _.template(
         '<div class="file-element" id="<%= name %>-element">' +
             '<div>' +
                '<div><h3><%= name %></h3></div>' +
@@ -51,7 +50,7 @@ gn.upload = (function () {
     );
 
     log_error = function (options) {
-        $('#global-errors').append(error_template(options));
+        $('#global-errors').append(errorTemplate(options));
     };
 
     /** Info function takes an object and returns a correctly
@@ -60,14 +59,7 @@ gn.upload = (function () {
      *  @returns {string}
      */
     info = function (options) {
-        return info_template(options);
-    };
-
-    types = {
-        shp: gn.uploader.FileType.SHP,
-        tif: gn.uploader.FileType.TIF,
-        csv: gn.uploader.FileType.CSV,
-        zip: gn.uploader.FileType.ZIP
+        return infoTemplate(options);
     };
 
     /* Function to iterates through all of the known types and returns the
@@ -150,10 +142,7 @@ gn.upload = (function () {
     // public api
 
     return {
-        layers: layers,
-        types: types,
-        find_file_type: find_file_type,
         initialize: initialize
     };
 
-}());
+});
