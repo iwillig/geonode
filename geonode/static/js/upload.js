@@ -1,13 +1,4 @@
-/*global $:true, FileReader:true, window:true, XMLHttpRequest:true, FormData:true, document:true, alert:true, File:true  */
-
-/*
- * TODO, when removing a .prj from a shape file.. we should give the
- * user an warning, not an error.
- * 1. Add templates
- * 2. Fix csrf_token
- * 3. Move class defs into their own files
- * 4. Put everything into a namespace
- */
+/*global $:true, document:true  */
 
 'use strict';
 
@@ -18,27 +9,15 @@ gn = window.gn || {};
 gn.upload = (function () {
 
     var layers = {},
-        FileType,
-        LayerInfo,
         find_file_type,
         initialize,
-        get_base,
-        get_ext,
-        get_name,
-        group_files,
         layer_template,
         error_template,
         error_element,
         log_error,
         info_template,
         info,
-        shp,
-        tif,
-        csv,
-        zip,
         types,
-        remove_file,
-        host,
         build_file_info,
         display_files,
         do_uploads,
@@ -84,7 +63,12 @@ gn.upload = (function () {
         return info_template(options);
     };
 
-    types = {shp:gn.uploader.FileType.SHP, tif:gn.uploader.FileType.TIF, csv:gn.uploader.FileType.CSV, zip:gn.uploader.FileType.ZIP};
+    types = {
+        shp: gn.uploader.FileType.SHP,
+        tif: gn.uploader.FileType.TIF,
+        csv: gn.uploader.FileType.CSV,
+        zip: gn.uploader.FileType.ZIP
+    };
 
     /* Function to iterates through all of the known types and returns the
      * type if it matches, if not return null
@@ -164,15 +148,9 @@ gn.upload = (function () {
     };
 
     // public api
+
     return {
-        // expose these types for testing
-        shp: shp,
-        tif: tif,
-        csv: csv,
-        zip: zip,
         layers: layers,
-        LayerInfo: LayerInfo,
-        FileType: FileType,
         types: types,
         find_file_type: find_file_type,
         initialize: initialize

@@ -84,24 +84,23 @@
 
 {% block footer-extend %}
 
-<script src="{{ STATIC_URL }}libs/underscore-min.js"></script>
-<script src="{{ STATIC_URL }}js/layer_upload.js"></script>
+<script data-main="{{ STATIC_URL}}js/upload" src="{{ STATIC_URL}}libs/require-jquery.js"></script>
 
 <script type="text/javascript">
 {% autoescape off %}
 
-$(function() { 
+// $(function() { 
 
-  UPLOAD.initialize({
-     csrf_token : "{{ csrf_token }}",
-     form_target : "{% url data_upload %}",
-     user_lookup : "{% url geonode.views.ajax_lookup %}",
-     upload_button: "#upload-button",
-     file_queue: "#file-queue",
-     form: "#file-uploader"
-  });
+//   UPLOAD.initialize({
+//      csrf_token : "{{ csrf_token }}",
+//      form_target : "{% url data_upload %}",
+//      user_lookup : "{% url geonode.views.ajax_lookup %}",
+//      upload_button: "#upload-button",
+//      file_queue: "#file-queue",
+//      form: "#file-uploader"
+//   });
 
-});
+// });
 
 {% endautoescape %}
 </script>
