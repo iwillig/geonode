@@ -1,13 +1,16 @@
 /*globals define: true, requirejs: true */
 
 requirejs.config({
+    baseUrl: '/static/libs',
     shim: {
-        '../../libs/underscore': { exports: '_'}
+        'underscore': { exports: '_'}
+    },
+    paths: {
+        'upload': '../js/upload'
     }
-
 });
 
-define(['jquery', '../upload'], function ($, upload) {
+define(['jquery', 'upload/upload'], function ($, upload) {
     'use strict';
 
     $(function () {
