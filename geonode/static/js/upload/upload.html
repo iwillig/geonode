@@ -1,0 +1,24 @@
+
+<script type='text/html' id='errorTemplate'>
+  <li class='alert alert-error'>
+    <button class='close' data-dismiss='alert'>&times;</button>
+    <strong><%= title %></strong><p><%= message %></p>
+  </li>
+</script>
+
+<script type='text/html' id='infoTemplate'>
+  <div class='alert <%= level %><p><%= message %></p></div>
+</script>
+
+<script type='text/html' id='layerTemplate'>
+  <div class='file-element' id='<%= name %>-element'>
+    <div>
+
+      <div><h3><%= name %></h3></div>
+      <div><p><%= type %></p></div>
+      <ul class='files'></ul>
+      <ul class='errors'></ul>
+      <div id='status'></div>
+    </div>
+  </div>
+</script>
