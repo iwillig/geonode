@@ -2,7 +2,11 @@
 
 'use strict';
 
-define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileTypes'], function ($, _, LayerInfo, fileTypes) {
+define(['jquery',
+        'underscore',
+        'upload/LayerInfo',
+        'upload/FileTypes',
+        'text!upload/upload.html'], function ($, _, LayerInfo, fileTypes, upload) {
 
     var layers = {},
         templates = {},
@@ -17,19 +21,11 @@ define(['jquery', '../libs/underscore', './upload/LayerInfo', './upload/FileType
         doSuccessfulUpload,
         attach_events;
 
-           // error template
-    templates.errorTemplate = _.template(
-        '<li class="alert alert-error">' +
-            '<button class="close" data-dismiss="alert">&times;</button>' +
-            '<strong><%= title %></strong><p><%= message %></p>' +
-            '</li>'
-    );
+    $('body').append(upload);
 
-    templates.infoTemplate = _.template(
-        '<div class="alert <%= level %>"><p><%= message %></p></div>'
-    );
+    templates.errorTemplate = _.template($('#errorTemplate').html());
 
-           // template for the layer info div
+    templates.infoTemplate = _.template($('#infoTemplate').html());
 
     log_error = function (options) {
         $('#global-errors').append(templates.errorTemplate(options));
