@@ -1,6 +1,6 @@
-/*global gn:true, $:true, FormData: true */
+/*global define: true, gn:true, $:true, FormData: true */
 
-define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, fileTypes){
+define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, upload){
     'use strict';
 
     /** Creates an instance of a LayerInfo
@@ -73,19 +73,6 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, fileType
         }
         return errors;
     };
-
-    LayerInfo.prototype.layerTemplate = _.template(
-        '<div class="file-element" id="<%= name %>-element">' +
-            '<div>' +
-            '<div><h3><%= name %></h3></div>' +
-            '<div><p><%= type %></p></div>' +
-            '</div>' +
-            '<ul class="files"></ul>' +
-            '<ul class="errors"></ul>' +
-            '<div id="status"></div>' +
-            '</div>'
-    );
-
 
     LayerInfo.prototype.getExtensions = function () {
         var files = this.files,
@@ -177,11 +164,13 @@ define(['jquery', '../../libs/underscore', 'FileTypes'], function($, _, fileType
     };
 
     LayerInfo.prototype.display  = function (file_queue) {
-        var li = this.layerTemplate({
-            name: this.name,
-            type: this.type.name,
-            files: this.files
-        });
+        var layerTemplate =_.template($('#layerTemplate').html()),
+            li = layerTemplate({
+                name: this.name,
+                type: this.type.name,
+                files: this.files
+            });
+
         file_queue.append(li);
         this.displayFiles();
         this.displayErrors();
