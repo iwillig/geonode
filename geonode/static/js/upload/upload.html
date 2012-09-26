@@ -22,3 +22,20 @@
     </div>
   </div>
 </script>
+
+
+<script type='text/html' id='progressTemplate'>
+  <div class='alert <%= alertLevel %>'>
+    <p><%= message %></p>
+  </div>
+</script>
+
+
+<script type='text/html' id='successTemplate'>
+
+  <div class='alert alert-success'>
+    <p>Your layer has been upload successfully</p>
+    <a href="/data/geonode:<%= name %>" class='btn'>Layer page</a>
+  </div>
+
+</script>
