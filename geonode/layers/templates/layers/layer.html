@@ -31,12 +31,12 @@
                 localGeoServerBaseUrl: "{{GEOSERVER_BASE_URL}}",
                 authorizedRoles: "{{ user.is_authenticated|yesno:"ROLE_ADMINISTRATOR,ROLE_ANONYMOUS" }}",
 
-                /* The URL to a REST map configuration service.  This service 
-                 * provides listing and, with an authenticated user, saving of 
+                /* The URL to a REST map configuration service.  This service
+                 * provides listing and, with an authenticated user, saving of
                  * maps on the server for sharing and editing.
                  */
                 rest: "/maps/",
-                
+
                 portalConfig: {
                     renderTo: "preview_map",
                     height: 350
@@ -68,7 +68,7 @@
             config = Ext.apply(config, {{ viewer|safe }});
 
             app = new GeoExplorer.Viewer(config);
-           
+
             Ext.get(Ext.DomQuery.select("input[@name='style']")).on("click", function(evt, elem) {
                 app.selectedLayer.getLayer().mergeNewParams({
                     "STYLES": elem.value,
@@ -92,7 +92,7 @@
         });
 
         function showStyle(styleName) {
-            
+
             if (!styleName) {
                 Ext.ComponentMgr.all.on("add", function(index, object) {
                     if (object instanceof gxp.WMSStylesDialog) {
@@ -109,16 +109,7 @@
     </script>
 {% endblock %}
 
-{% block start_body_js %}
-<div id="fb-root"></div>
-<script>(function(d, s, id) {
-  var js, fjs = d.getElementsByTagName(s)[0];
-  if (d.getElementById(id)) {return;}
-  js = d.createElement(s); js.id = id;
-  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
-  fjs.parentNode.insertBefore(js, fjs);
-}(document, 'script', 'facebook-jssdk'));</script>
-{% endblock %}
+{% include "facebook_sdk.html" %}
 
 
 {% block main %}
@@ -138,7 +129,7 @@
   {% if layer.topic_category %}<p> <strong>{% trans "Topic Category" %}:</strong> {{ layer.topic_category }}</p>{% endif %}
 
   {% if layer.constraints_use or layer.constraints_other %}
-  <p> <strong>{% trans "Citation" %}:</strong> 
+  <p> <strong>{% trans "Citation" %}:</strong>
       {{ layer.constraints_use}} {{ layer.contraints_other}}
   </p>
   {% endif %}
@@ -178,13 +169,13 @@
 
 
 	{% if layer.supplemental_information %}
-	<p> <strong>{% trans "Supplemental Information" %}:</strong> 
+	<p> <strong>{% trans "Supplemental Information" %}:</strong>
 	    {{ layer.supplemental_information }}
 	</p>
 	{% endif %}
 
 	{% if layer.data_quality_statement %}
-	<p> <strong>{% trans "Data Quality Statement" %}:</strong> 
+	<p> <strong>{% trans "Data Quality Statement" %}:</strong>
 	    {{ layer.data_quality_statement }}
 	</p>
 	{% endif %}
@@ -199,7 +190,7 @@
 	        <div class="comment">
 	            <p class="comment_author">{{ comment.author.get_full_name|default:comment.author|capfirst }}</p>
 	            <div class="comment_content">
-	                {{ comment.comment|escape|urlize|safe }} &mdash; 
+	                {{ comment.comment|escape|urlize|safe }} &mdash;
 	                <span class="comment_ago">
 	                {% blocktrans with comment.submit_date|timesince as age %}
 	                {{ age }} ago
@@ -264,7 +255,7 @@
     {% endfor %}
 
     <li class="nav-header">{% trans "The following maps use this data set" %}</li>
-    {% for map in layer.maps %} 
+    {% for map in layer.maps %}
       <li><a href="{{ map.get_absolute_url }}">{{ map.title }}</a></li>
     {% empty %}
       <li>{% trans "This layer is not currently used in any maps." %}</li>
@@ -288,7 +279,7 @@
      {% endif %}
     </label>
     <a href="{{ GEOSERVER_BASE_URL }}styles/{{ layer.default_style.name }}.sld">SLD</a><br/>
-    {% for style in layer.styles %} 
+    {% for style in layer.styles %}
       <input type="radio" name="style" id="{{style.name}}" value="{{style.name}}"/>
       <label for="{{style.name}}" class="style-title">
        {% if style.sld_title %}
@@ -306,7 +297,7 @@
       <option value="{{layer.publishing.default_style.name}}" selected="selected">
         {{layer.publishing.default_style.name|title}}
       </option>
-      {% for style in layer.styles %} 
+      {% for style in layer.styles %}
         <option value="{{style.name}}"> {{ style.name|title }} </option>
       {% endfor %}
     </select><br />
