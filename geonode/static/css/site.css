@@ -1,6 +1,7 @@
 /*-----------------------
 Boilerplate overrides
 -----------------------*/
+
 body {
     padding-top: 80px; /* 60px to make the container go all the way to the bottom of the topbar */
 }
@@ -476,12 +477,40 @@ Comments
 }
 
 #drop-zone {
+    text-align:center;
     height: 100px;
     background: #eee;
+}
+#drop-zone h3 {
+    color: #464646;
+    padding-top: 30px;
 }
 
 #global-errors {
     list-style: none;
-};
+}
 
-.file-element li { list-style: none };
+
+#supported-files {
+    border: 1px solid #ddd;
+    border-radius: 6px 6px 6px 6px;
+}
+
+#supported-files h3 {
+    border-bottom: 1px solid #ddd;
+    margin: 5px;
+}
+#supported-files p {
+    margin: 5px;
+}
+
+
+.section h2 {
+    background: none repeat scroll 0 0 #464646;
+    margin: 0px 0px 8px 0px;
+    border-radius: 6px 6px 6px 6px;
+    color: #FFFFFF;
+    font-weight: normal;
+    padding: 10px 15px;
+    text-transform: uppercase;
+}
