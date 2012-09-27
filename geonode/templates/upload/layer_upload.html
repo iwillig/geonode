@@ -16,7 +16,7 @@
     <h2>{% trans "SELECT LAYER FILES" %}</h2>
   </div>
     {% if incomplete %}
-    
+
     <h3>Incomplete Uploads</h3>
     <p>You have the following incomplete uploads:</p>
     {% for u in incomplete %}
@@ -66,7 +66,7 @@
 
 
 {% block sidebar %}
-<div class="threecol">    
+<div class="threecol">
 {% if enough_storage %}
 
 <a href="{% url data_upload_status %}">Go to your past uploads</a>
@@ -89,6 +89,8 @@
 
 {% block footer-extend %}
 
+{% block require_script %}
 <script data-main="{{ STATIC_URL}}js/upload/main" src="{{ STATIC_URL}}libs/require-jquery.js"></script>
+{% endblock require_script %}
 
 {% endblock %}

@@ -168,6 +168,7 @@ def map_remove(request, mapid, template='maps/map_remove.html'):
         return render_to_response(template, RequestContext(request, {
             "map": map_obj
         }))
+
     elif request.method == 'POST':
         layers = map_obj.layer_set.all()
         for layer in layers:
@@ -510,7 +511,10 @@ def maps_search_page(request, template='maps/maps_search.html'):
 
     return render_to_response(template, RequestContext(request, {
         'init_search': json.dumps(params or {}),
-         "site" : settings.SITEURL
+        "site" : settings.SITEURL,
+        "search_api": reverse("maps_search_api"),
+        "search_action": reverse("maps_search"),
+        "search_type": "map"
     }))
 
 
@@ -518,16 +522,16 @@ def maps_search(request):
     """
     handles a basic search for maps using the Catalogue.
 
-    the search accepts: 
+    the search accepts:
     q - general query for keywords across all fields
     start - skip to this point in the results
     limit - max records to return
     sort - field to sort results on
     dir - ASC or DESC, for ascending or descending order
 
-    for ajax requests, the search returns a json structure 
-    like this: 
-    
+    for ajax requests, the search returns a json structure
+    like this:
+
     {
     'total': <total result count>,
     'next': <url for next batch if exists>,

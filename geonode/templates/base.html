@@ -34,7 +34,7 @@
           </a>
           <div class="nav-collapse">
             <ul class="nav">
-              
+
               <li>
                 <a href="{% url home %}">{% trans "Home" %}</a>
               </li>
@@ -119,72 +119,15 @@
       </footer>
     </div>
 
-    <script src="{{ STATIC_URL }}libs/jquery-1.8.0.js"></script>
-    <script src="{{ STATIC_URL }}libs/bootstrap/js/bootstrap.min.js"></script>
-    <script src="{{ STATIC_URL }}libs/datatables/js/jquery.dataTables.min.js"></script>
-    <script src="{{ STATIC_URL }}libs/hogan.js"></script>
-    <script src="{{ STATIC_URL }}libs/jquery.timeago.js"></script>
-    <script src="{{ STATIC_URL }}libs/json2.js"></script>
-    <script src="{{ STATIC_URL }}libs/select2/select2.js"></script>
+    {% block require_script %}{% endblock require_script %}
 
-    <script src="{{ STATIC_URL }}js/utils.js"></script>
     {% block extra_script %}{% endblock extra_script %}
-    <script type="text/javascript">
-
-    // $(function() {
-    //   $("input.user-select").select2({
-    //     placeholder: {title: '{% trans "Add User..." %}', id: ""},
-    //     minimumInputLength: 1,
-    //     multiple: true,
-    //     ajax: {
-    //       url: "{% url auth_ajax_lookup %}",
-    //       dataType: "json",
-    //       type: "POST",
-    //       data: function (term, page) {
-    //         return {
-    //           query: term,
-    //         };
-    //       },
-    //       results: function (data, page) {
-    //         return {results: data.users};
-    //       }
-    //     },
-    //     id: userID,
-    //     formatResult: userFormatResult,
-    //     formatSelection: userFormatSelection
-    //   });
-
-    //   function userID(user) {
-    //     return user.username
-    //   }
-
-    //   function userFormatResult(user) {
-    //     return user.username
-    //   }
-
-    //   function userFormatSelection(user) {
-    //       return user.username;
-    //   }
-
-    //   var toggle_buttons = function() {
-    //     if ($("input.asset-selector:checked").length) {
-    //       $(".asset-modifier").removeClass("disabled");
-    //     } else {
-    //       $(".asset-modifier").addClass("disabled");
-    //     }
-    //   };
-
-    //   $("input.asset-selector").live("change", toggle_buttons);
-    //   toggle_buttons();
-    // });
-
-    </script>
 
     <script type="text/javascript" src="{% url django.views.i18n.javascript_catalog %}"></script>
     <script type="text/javascript" src="{% url lang %}"></script>
 
     {% block footer-extend %}
-    
+
     {% endblock %}
 
   </body>
