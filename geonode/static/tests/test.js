@@ -117,6 +117,39 @@ define(['jquery', '../js/upload/FileType', '../js/upload/LayerInfo', '../js/uplo
 
     });
 
+    describe('The LayerInfo type on a Tiff file', function () {
+        var tifInfo = new LayerInfo({name: 'test-tif', files: [{name: 'test.tif'}]});
+
+        it('Should return the correcet class', function () {
+            expect(tifInfo instanceof LayerInfo).toBeTruthy();
+        });
+
+        it('Should return the correct file type', function () {
+            expect(tifInfo.type).toEqual(FileTypes.TIF);
+        });
+
+        it('Should return no errors', function () {
+            expect(tifInfo.errors.length).toEqual(0);
+        });
+    });
+
+    describe('The LayerInfo type on a Zip file', function () {
+        var tifInfo = new LayerInfo({name: 'test-zip', files: [{name: 'test.zip'}]});
+
+        it('Should return the correcet class', function () {
+            expect(tifInfo instanceof LayerInfo).toBeTruthy();
+        });
+
+        it('Should return the correct file type', function () {
+            expect(tifInfo.type).toEqual(FileTypes.ZIP);
+        });
+
+        it('Should return no errors', function () {
+            expect(tifInfo.errors.length).toEqual(0);
+        });
+    });
+
+
     jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
     jasmine.getEnv().execute();
 
