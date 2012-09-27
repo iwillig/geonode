@@ -17,13 +17,24 @@ define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, u
         this.type     = null;
         this.main     = null;
 
-        this.selector = '#' + this.name + '-element';
+
         this.element  = null;
         $.extend(this, options || {});
         if (!this.main || !this.type) {
             this.guessFileType();
         }
+        this.selector = '#' + this.name + '-element';
         this.errors = this.collectErrors();
+    };
+
+    LayerInfo.prototype.progressTemplate  = function (options) {
+        var template =  _.template($('#progressTemplate').html());
+        return template(options);
+    };
+
+    LayerInfo.prototype.successTemplate = function (options) {
+        var template = _.template($('#successTemplate').html());
+        return template(options);
     };
 
     /* Function to iterates through all of the known types and returns the
@@ -123,20 +134,33 @@ define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, u
         $.ajax({
             url: resp.redirect_to
         }).done(function (resp) {
-            var msg, status = self.element.find('#status'), a;
+            var status = self.element.find('#status'), a;
             if (resp.success) {
                 status.empty();
-                status.append('Your file was uploaded');
+                // At this point we need access to the host name
+                // Not sure the best way to access
+                status.append(self.successTemplate({
+                    name: resp.name
+                }));
             } else {
-                status.empty(msg);
-                status.append('Error');
+                status.empty();
+                status.append(self.progressTemplate({
+                    level: 'alert-error',
+                    message: 'There was an error in uploading your file, ' + resp.errors.join(', ')
+                }));
             }
         });
 
     };
 
     LayerInfo.prototype.markStart = function () {
-        this.element.find('#status').append('Your upload has started');
+
+        this.element.find('#status').append(
+            this.progressTemplate({
+                message: 'Your upload has started.',
+                alertLevel: 'alert-success'
+            })
+        );
     };
 
     LayerInfo.prototype.uploadFiles = function () {
@@ -164,11 +188,11 @@ define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, u
     };
 
     LayerInfo.prototype.display  = function (file_queue) {
-        var layerTemplate =_.template($('#layerTemplate').html()),
-            li = layerTemplate({
+        var layerTemplate =_.template($('#layerTemplate').html());
+
+        var li = layerTemplate({
                 name: this.name,
                 type: this.type.name,
-                files: this.files
             });
 
         file_queue.append(li);
@@ -204,7 +228,16 @@ define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, u
             a.data('layer', self.name);
             a.data('file',  file.name);
             a.appendTo(p);
-            a.on('click', this.removeFile);
+            a.on('click', function (event) {
+                var target = $(event.target),
+                    layer_info,
+                    layer_name = target.data('layer'),
+                    file_name  = target.data('file');
+
+                self.removeFile(file_name);
+                self.displayRefresh();
+            });
+
         });
 
     };
@@ -219,7 +252,8 @@ define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, u
     };
 
     LayerInfo.prototype.displayRefresh = function () {
-        this.collectErrors();
+
+        this.errors = this.collectErrors();
         this.displayFiles();
         this.displayErrors();
     };
