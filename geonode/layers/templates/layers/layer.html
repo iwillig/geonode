@@ -339,11 +339,7 @@
 {% endblock %}
 
 {% block extra_script %}
-  <script>
-    $(function() {
-      $("#permission_form").submit(layer_perms_submit);
-    });
-  </script>
+
 
 	{% if request.user.is_authenticated %}
 		{% user_rating_js request.user layer "layer" %}
@@ -366,4 +362,8 @@
 			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 		})();
 	</script>
+{% endblock %}
+
+{% block require_script %}
+<script data-main="{{ STATIC_URL}}js/geodetails" src="{{ STATIC_URL}}libs/require-jquery.js"></script>
 {% endblock %}
