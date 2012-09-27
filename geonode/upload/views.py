@@ -126,7 +126,7 @@ def _get_free_space(folder):
         return free_bytes.value / (1024. * 1024)
     else:
         s = os.statvfs(folder)
-        return s.f_frfree * s.f_bavail / (1024. * 1024)
+        return s.f_ffree * s.f_bavail / (1024. * 1024)
 
 def save_step_view(req, session):
     if req.method == 'GET':
