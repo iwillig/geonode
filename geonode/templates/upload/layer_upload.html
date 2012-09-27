@@ -12,11 +12,11 @@
 {% block main %}
 <div class="twocol">
     <h2>{% trans "Add data" %}</h2>
-    
+
     <a href="{% url data_upload_status %}">Go to your past uploads</a>
 
     {% if incomplete %}
-    
+
     <h3>Incomplete Uploads</h3>
     <p>You have the following incomplete uploads:</p>
     {% for u in incomplete %}
@@ -64,9 +64,9 @@
 
 
 {% block sidebar %}
-<div class="threecol">    
+<div class="threecol">
 {% if enough_storage %}
-<div>
+<div class="ivan">
   <h3>Supported Files</h3>
   <p><strong>ZIP:</strong> vector or raster layers</p>
   <p><strong>Vector layers:</strong>SHP, DBF, SHX are required. PRJ
@@ -84,6 +84,8 @@
 
 {% block footer-extend %}
 
+{% block require_script %}
 <script data-main="{{ STATIC_URL}}js/upload/main" src="{{ STATIC_URL}}libs/require-jquery.js"></script>
+{% endblock require_script %}
 
 {% endblock %}

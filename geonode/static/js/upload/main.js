@@ -6,7 +6,8 @@ requirejs.config({
         'underscore': { exports: '_'}
     },
     paths: {
-        'upload': '../js/upload'
+        'upload': '../js/upload',
+        'templates': '../js/templates'
     }
 });
 

@@ -6,7 +6,7 @@ define(['jquery',
         'underscore',
         'upload/LayerInfo',
         'upload/FileTypes',
-        'text!upload/upload.html'], function ($, _, LayerInfo, fileTypes, upload) {
+        'text!templates/upload.html'], function ($, _, LayerInfo, fileTypes, upload) {
 
     var layers = {},
         templates = {},
