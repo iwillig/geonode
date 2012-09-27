@@ -1,6 +1,6 @@
 /*global define: true, gn:true, $:true, FormData: true */
 
-define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, upload){
+define(['jquery', 'underscore', './FileTypes'], function($, _, fileTypes, upload){
     'use strict';
 
     /** Creates an instance of a LayerInfo
