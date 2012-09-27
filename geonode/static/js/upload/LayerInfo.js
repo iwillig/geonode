@@ -145,7 +145,7 @@ define(['jquery', 'underscore', 'upload/FileTypes'], function($, _, fileTypes, u
             } else {
                 status.empty();
                 status.append(self.progressTemplate({
-                    level: 'alert-error',
+                    alertLevel: 'alert-error',
                     message: 'There was an error in uploading your file, ' + resp.errors.join(', ')
                 }));
             }
