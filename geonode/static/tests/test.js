@@ -4,7 +4,11 @@ requirejs.config({
 });
 
 
-define(['jquery', '../js/upload/FileType', '../js/upload/LayerInfo', '../js/upload/FileTypes'], function ($, FileType, LayerInfo, FileTypes) {
+define(['jquery',
+        '../js/upload/FileType',
+        '../js/upload/LayerInfo',
+        '../js/upload/FileTypes',
+        '../js/status/UploadSession'], function ($, FileType, LayerInfo, FileTypes, UploadSession) {
 
     'use strict';
 
@@ -149,6 +153,22 @@ define(['jquery', '../js/upload/FileType', '../js/upload/LayerInfo', '../js/uplo
         });
     });
 
+    describe('The UploadSession should be able', function () {
+        var ses = new UploadSession({
+            name: 'test session',
+            id: 1,
+            layer_name: 'test',
+            layer_id: 1,
+            state: 'PEDDING',
+            url: '',
+            date: 'Date',
+        });
+
+        it('Should return the correct class', function () {
+            expect(ses instanceof UploadSession).toBeTruthy();
+        });
+
+    });
 
     jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
     jasmine.getEnv().execute();

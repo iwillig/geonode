@@ -43,29 +43,11 @@
 {% block sidebar %}
 {% endblock %}
 
-
-
 {% block footer-extend %}
 
-<script src="{{ STATIC_URL }}libs/underscore-min.js"></script>
-<script src="{{ STATIC_URL }}js/status.js"></script>
+{% block require_script %}
+<script data-main="{{ STATIC_URL}}js/status/main" src="{{ STATIC_URL}}libs/require-jquery.js"></script>
+{% endblock require_script %}
 
-<script type="text/javascript">
-{% autoescape off %}
-
-$(function() { 
-
-  STATUS.initialize({
-    user: '{{request.user}}',
-    status_url: '{% url show_upload_sessions %}',
-    table_selector: '#session-table',
-    delete_selector: '#delete',
-    permission_selector: '#set-permissions'
-  });
-
-});
-
-{% endautoescape %}
-</script>
 
 {% endblock %}
