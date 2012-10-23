@@ -25,6 +25,7 @@ from gsuploader import uploader
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.core.mail import mail_admins
+from django import db  
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.utils.html import escape
@@ -436,6 +437,9 @@ def advance_step(req, upload_session):
     
 
 def notify_error(req, upload_session, msg):
+    # make sure the connection gets reset in case an earlier error broke it
+    db.close_connection()
+
     upload_obj = None
     if upload_session and upload_session.import_session and \
        upload_session.import_session.id:
