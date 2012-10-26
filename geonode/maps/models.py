@@ -1,25 +1,52 @@
 # -*- coding: utf-8 -*-
+#########################################################################
+#
+# Copyright (C) 2012 OpenPlans
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#########################################################################
+
 import logging
+import math
 import errno
 
 from django.conf import settings
 from django.db import models
+from django.db.models import signals
 from django.utils import simplejson as json
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 
-from geonode.layers.models import Layer
+from geonode.layers.models import Layer, TopicCategory
+from geonode.maps.signals import map_changed_signal
 from geonode.security.models import PermissionLevelMixin
 from geonode.security.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.utils import GXPMapBase
 from geonode.utils import GXPLayerBase
 from geonode.utils import layer_from_viewer_config
+from geonode.utils import default_map_config
+from geonode.utils import forward_mercator
 
 from taggit.managers import TaggableManager
 
 from geoserver.catalog import Catalog
 from geoserver.layer import Layer as GsLayer
-from django.db.models import signals
+from agon_ratings.models import OverallRating
 
 logger = logging.getLogger("geonode.maps.models")
 
@@ -60,6 +87,11 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
     
     keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
 
+    category = models.ForeignKey(TopicCategory, help_text=_('high-level geographic data thematic classification to assist in the grouping and search of available geographic data sets.'), null=True)
+
+    popular_count = models.IntegerField(default=0)
+    share_count = models.IntegerField(default=0)
+    
     def __unicode__(self):
         return '%s by %s' % (self.title, (self.owner.username if self.owner else "<Anonymous>"))
 
@@ -78,7 +110,9 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
 
     @property
     def local_layers(self): 
-        return True
+        layer_names = MapLayer.objects.filter(map__id=self.id).values('name')
+        return Layer.objects.filter(typename__in=layer_names) | \
+               Layer.objects.filter(name__in=layer_names)
 
     def json(self, layer_filter):
         map_layers = MapLayer.objects.filter(map=self.id)
@@ -138,6 +172,7 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
             return conf["sources"][layer["source"]]
 
         layers = [l for l in conf["map"]["layers"]]
+        layer_names = set([l.typename for l in self.local_layers])
         
         for layer in self.layer_set.all():
             layer.delete()
@@ -149,6 +184,10 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
                 layer_from_viewer_config(
                     MapLayer, layer, source_for(layer), ordering
             ))
+
+        if layer_names != set([l.typename for l in self.local_layers]):
+            map_changed_signal.send_robust(sender=self,what_changed='layers')
+
         self.save()
 
     def keyword_list(self):
@@ -159,7 +198,7 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
             return []
 
     def get_absolute_url(self):
-        return '/maps/%i' % self.id
+        return reverse('geonode.maps.views.map_detail', None, [str(self.id)]) 
         
     class Meta:
         # custom permissions, 
@@ -187,6 +226,68 @@ class Map(models.Model, PermissionLevelMixin, GXPMapBase):
         if self.owner:
             self.set_user_level(self.owner, self.LEVEL_ADMIN)    
 
+    def create_from_layer_list(self, user, layers, title, abstract):
+        self.owner = user
+        self.title = title
+        self.abstract = abstract
+        self.projection="EPSG:900913"
+        self.zoom = 0
+        self.center_x = 0
+        self.center_y = 0
+        map_layers = []
+        bbox = None
+        index = 0
+
+        DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config()
+        
+        for layer in layers:
+            try:
+                layer = Layer.objects.get(typename=layer)
+            except ObjectDoesNotExist:
+                continue # Raise exception?
+            
+            if not user.has_perm('maps.view_layer', obj=layer):
+                # invisible layer, skip inclusion or raise Exception?
+                continue # Raise Exception
+            
+            layer_bbox = layer.bbox
+            if bbox is None:
+                bbox = list(layer_bbox[0:4])
+            else:
+                bbox[0] = min(bbox[0], layer_bbox[0])
+                bbox[1] = max(bbox[1], layer_bbox[1])
+                bbox[2] = min(bbox[2], layer_bbox[2])
+                bbox[3] = max(bbox[3], layer_bbox[3])
+
+            map_layers.append(MapLayer(
+                map = self,
+                name = layer.typename,
+                ows_url = settings.GEOSERVER_BASE_URL + "wms",  
+                stack_order = index,
+                visibility = True
+            ))
+            
+        
+            if bbox is not None:
+                minx, maxx, miny, maxy = [float(c) for c in bbox]
+                x = (minx + maxx) / 2
+                y = (miny + maxy) / 2
+                (self.center_x,self.center_y) = forward_mercator((x,y))
+
+                width_zoom = math.log(360 / (maxx - minx), 2)
+                height_zoom = math.log(360 / (maxy - miny), 2)
+
+                self.zoom = math.ceil(min(width_zoom, height_zoom))
+            index += 1
+
+        self.save()
+        for bl in DEFAULT_BASE_LAYERS:
+            bl.map = self
+            #bl.save()
+
+        for ml in map_layers:
+            ml.map = self # update map_id after saving map
+            ml.save()
 
 class MapLayer(models.Model, GXPLayerBase):
     """
@@ -285,5 +386,11 @@ def pre_save_maplayer(instance, sender, **kwargs):
             logger.warn(msg, e)
         else:
             raise e
+        
+def pre_delete_map(instance, sender, **kwrargs):
+    ct = ContentType.objects.get_for_model(instance)
+    OverallRating.objects.filter(content_type = ct, object_id = instance.id).delete()
 
 signals.pre_save.connect(pre_save_maplayer, sender=MapLayer)
+signals.pre_delete.connect(pre_delete_map, sender=Map)
+

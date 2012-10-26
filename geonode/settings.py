@@ -1,9 +1,25 @@
 # -*- coding: utf-8 -*-
+#########################################################################
+#
+# Copyright (C) 2012 OpenPlans
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#########################################################################
+
 # Django settings for the GeoNode project.
 import os
-
-# Do not delete the development database when running tests.
-os.environ['REUSE_DB'] = "1"
 
 #
 # General Django development settings
@@ -17,12 +33,15 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 # present pretty error pages.
 DEBUG = TEMPLATE_DEBUG = True
 
+# This is needed for integration tests, they require
+# geonode to be listening for GeoServer auth requests.
+os.environ['DJANGO_LIVE_TEST_SERVER_ADDRESS'] = 'localhost:8000'
+
 # Defines settings for development
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(PROJECT_ROOT, 'development.db'),
-        'TEST_NAME': os.path.join(PROJECT_ROOT, 'development.db'),
     }
 }
 
@@ -46,6 +65,7 @@ LANGUAGES = (
     ('el', 'Ελληνικά'),
     ('id', 'Bahasa Indonesia'),
     ('zh', '中文'),
+    ('ja', '日本人'),
 )
 
 # If you set this to False, Django will make some optimizations so as not
@@ -109,13 +129,14 @@ INSTALLED_APPS = (
 
     # Third party apps
     'django_forms_bootstrap',
-    'django_extensions',
     'registration',
     'profiles',
     'avatar',
     'dialogos',
     'agon_ratings',
+    'pagination',
     'taggit',
+    'taggit_templatetags',
     'south',
 
     # GeoNode internal apps
@@ -125,25 +146,33 @@ INSTALLED_APPS = (
     'geonode.people',
     'geonode.proxy',
     'geonode.security',
+    'geonode.search',
     'geonode.catalogue',
 )
-
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "null": {
-            "level": "DEBUG",
-            "class": "django.utils.log.NullHandler",
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
+        'simple': {
+            'format': '%(message)s',        },
+    },
+    'handlers': {
+        'null': {
+            'level':'DEBUG',
+            'class':'django.utils.log.NullHandler',
         },
-        "mail_admins": {
-            "level": "ERROR",
-            "class": "django.utils.log.AdminEmailHandler",
+        'console':{
+            'level':'DEBUG',
+            'class':'logging.StreamHandler',
+            'formatter': 'simple'
         },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+        }
     },
     "loggers": {        
         "django": {
@@ -164,9 +193,16 @@ LOGGING = {
             "handlers": ["console"],
             "level": "ERROR",
         },
+        "owslib": {
+            "handlers": ["console"],
+            "level": "ERROR",
+        },
+        "pycsw": {
+            "handlers": ["console"],
+            "level": "ERROR",
+        },
     },
 }
-
 
 #
 # Customizations to built in Django settings required by GeoNode
@@ -192,6 +228,7 @@ MIDDLEWARE_CLASSES = (
     # The setting below makes it possible to serve different languages per
     # user depending on things like headers in HTTP requests.
     'django.middleware.locale.LocaleMiddleware',
+    'pagination.middleware.PaginationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
@@ -226,7 +263,7 @@ AGON_RATINGS_CATEGORY_CHOICES = {
     "maps.Map": {
         "map": "How good is this map?"
     },
-    "maps.Layer": {
+    "layers.Layer": {
         "layer": "How good is this layer?"
     },
 }
@@ -253,16 +290,8 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # Arguments for the test runner
 NOSE_ARGS = [
-      '--verbosity=2',
-      '--cover-erase',
       '--nocapture',
-      '--with-coverage',
-      '--cover-package=geonode',
-      '--cover-inclusive',
-      '--cover-tests',
       '--detailed-errors',
-      '--with-xunit',
-      '--stop',
       ]
 
 #
@@ -276,30 +305,75 @@ SITEURL = "http://localhost:8000/"
 # GeoServer information
 
 # The FULLY QUALIFIED url to the GeoServer instance for this GeoNode.
-GEOSERVER_BASE_URL = "http://localhost:8001/geoserver/"
+GEOSERVER_BASE_URL = "http://localhost:8080/geoserver/"
 
 # The username and password for a user that can add and
 # edit layer details on GeoServer
-GEOSERVER_CREDENTIALS = "geoserver_admin", SECRET_KEY
+GEOSERVER_CREDENTIALS = "admin", "geoserver"
 
 # CSW settings
 CATALOGUE = {
     'default': {
         # The underlying CSW implementation
-        'ENGINE': 'geonode.catalogue.backends.geonetwork',
-
-        # enabled formats
-        #'formats': ['DIF', 'Dublin Core', 'FGDC', 'TC211'],
-        'FORMATS': ['TC211'],
+        # default is pycsw in local mode (tied directly to GeoNode Django DB)
+        'ENGINE': 'geonode.catalogue.backends.pycsw_local',
+        # pycsw in non-local mode
+        #'ENGINE': 'geonode.catalogue.backends.pycsw_http',
+        # GeoNetwork opensource
+        #'ENGINE': 'geonode.catalogue.backends.geonetwork',
+        # deegree and others
+        #'ENGINE': 'geonode.catalogue.backends.generic',
 
         # The FULLY QUALIFIED base url to the CSW instance for this GeoNode
-        #'url': 'http://localhost/pycsw/trunk/csw.py',
-        'URL': 'http://localhost:8001/geonetwork/srv/en/csw',
-        #'url': 'http://localhost:8001/deegree-csw-demo-3.0.4/services',
-    
+        'URL': '%scatalogue/csw' % SITEURL,
+        #'URL': 'http://localhost:8080/geonetwork/srv/en/csw',
+        #'URL': 'http://localhost:8080/deegree-csw-demo-3.0.4/services',
+
         # login credentials (for GeoNetwork)
         'USER': 'admin',
-        'PASSWORD': 'admin'
+        'PASSWORD': 'admin',
+    }
+}
+
+# pycsw settings
+PYCSW = {
+    # pycsw configuration
+    'CONFIGURATION': {
+        'metadata:main': {
+            'identification_title': '%s Catalogue' % SITENAME,
+            'identification_abstract': 'GeoNode is an open source platform that facilitates the creation, sharing, and collaborative use of geospatial data',
+            'identification_keywords': '%s,sdi,catalogue,discovery,metadata,GeoNode' % SITENAME,
+            'identification_keywords_type': 'theme',
+            'identification_fees': 'None',
+            'identification_accessconstraints': 'None',
+            'provider_name': 'Organization Name',
+            'provider_url': SITEURL,
+            'contact_name': 'Lastname, Firstname',
+            'contact_position': 'Position Title',
+            'contact_address': 'Mailing Address',
+            'contact_city': 'City',
+            'contact_stateorprovince': 'Administrative Area',
+            'contact_postalcode': 'Zip or Postal Code',
+            'contact_country': 'Country',
+            'contact_phone': '+xx-xxx-xxx-xxxx',
+            'contact_fax': '+xx-xxx-xxx-xxxx',
+            'contact_email': 'Email Address',
+            'contact_url': 'Contact URL',
+            'contact_hours': 'Hours of Service',
+            'contact_instructions': 'During hours of service. Off on weekends.',
+            'contact_role': 'pointOfContact',
+        },
+        'metadata:inspire': {
+            'enabled': 'true',
+            'languages_supported': 'eng,gre',
+            'default_language': 'eng',
+            'date': 'YYYY-MM-DD',
+            'gemet_keywords': 'Utility and governmental services',
+            'conformity_service': 'notEvaluated',
+            'contact_name': 'Organization Name',
+            'contact_email': 'Email Address',
+            'temp_extent': 'YYYY-MM-DD/YYYY-MM-DD',
+        }
     }
 }
 
@@ -316,13 +390,13 @@ DEFAULT_MAP_CENTER = (0, 0)
 # maximum zoom is between 12 and 15 (for Google Maps, coverage varies by area)
 DEFAULT_MAP_ZOOM = 0
 
-DEFAULT_LAYER_SOURCE = {
-    "ptype": "gxp_wmscsource",
-    "url": "/geoserver/wms",
-    "restUrl": "/gs/rest"
-}
-
 MAP_BASELAYERS = [{
+    "source": {
+        "ptype": "gxp_wmscsource",
+        "url": GEOSERVER_BASE_URL + "wms",
+        "restUrl": "/gs/rest"
+     }
+  },{
     "source": {"ptype": "gx_olsource"},
     "type":"OpenLayers.Layer",
     "args":["No background"],
@@ -382,12 +456,14 @@ GEONODE_CLIENT_LOCATION = "/static/geonode/"
 DB_DATASTORE = False
 
 #Database datastore connection settings
-DB_DATASTORE_NAME = ''
+DB_DATASTORE_DATABASE = ''
 DB_DATASTORE_USER = ''
 DB_DATASTORE_PASSWORD = ''
 DB_DATASTORE_HOST = ''
 DB_DATASTORE_PORT = ''
 DB_DATASTORE_TYPE = ''
+#The name of the store in Geoserver
+DB_DATASTORE_NAME = ''
 
 UPLOADER_SHOW_TIME_STEP = False
 

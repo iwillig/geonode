@@ -1,4 +1,23 @@
 # -*- coding: utf-8 -*-
+#########################################################################
+#
+# Copyright (C) 2012 OpenPlans
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#########################################################################
+
 import os
 import tempfile
 import taggit
@@ -6,7 +25,7 @@ import taggit
 from django import forms
 from django.utils import simplejson as json
 
-from geonode.layers.models import Layer
+from geonode.layers.models import Layer, Attribute
 from geonode.people.models import Contact
 
 
@@ -36,14 +55,17 @@ class LayerForm(forms.ModelForm):
     keywords = taggit.forms.TagField()
     class Meta:
         model = Layer
-        exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename')
-
+        exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename',
+                   'bbox_x0', 'bbox_x1', 'bbox_y0', 'bbox_y1', 'srid',
+                   'csw_typename', 'csw_schema', 'csw_mdsource', 'csw_type',
+                   'csw_wkt_geometry', 'metadata_uploaded', 'metadata_xml', 'csw_anytext')
 
 class LayerUploadForm(forms.Form):
     base_file = forms.FileField()
     dbf_file = forms.FileField(required=False)
     shx_file = forms.FileField(required=False)
     prj_file = forms.FileField(required=False)
+    xml_file = forms.FileField(required=False)
 
     spatial_files = ("base_file", "dbf_file", "shx_file", "prj_file")
 
@@ -72,6 +94,12 @@ class LayerUploadForm(forms.Form):
                     raise forms.ValidationError("It looks like you're "
                         "uploading components from different Shapefiles. "
                         "Please double-check your file selections.")
+            if cleaned["xml_file"] is not None:
+                xml_file = cleaned["xml_file"].name
+                if os.path.splitext(xml_file)[0] != base_name:
+                    if xml_file.find('.shp') != -1:
+                        # force rename of file so that file.shp.xml doesn't overwrite as file.shp
+                        cleaned["xml_file"].name = '%s.xml' % base_name
         return cleaned
 
     def write_files(self):
@@ -90,15 +118,28 @@ class LayerUploadForm(forms.Form):
 
 class NewLayerUploadForm(LayerUploadForm):
     sld_file = forms.FileField(required=False)
+    xml_file = forms.FileField(required=False)
 
     abstract = forms.CharField(required=False)
     layer_title = forms.CharField(required=False)
     permissions = JSONField()
 
-    spatial_files = ("base_file", "dbf_file", "shx_file", "prj_file", "sld_file")
+    spatial_files = ("base_file", "dbf_file", "shx_file", "prj_file", "sld_file", "xml_file")
 
 
 class LayerDescriptionForm(forms.Form):
     title = forms.CharField(300)
     abstract = forms.CharField(1000, widget=forms.Textarea, required=False)
     keywords = forms.CharField(500, required=False)
+
+
+class LayerAttributeForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(LayerAttributeForm, self).__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        self.fields['attribute'].widget.attrs['readonly'] = True
+        self.fields['display_order'].widget.attrs['size'] = 3
+
+    class Meta:
+        model = Attribute
+        exclude = ('attribute_type',)

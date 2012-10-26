@@ -1,4 +1,24 @@
-"""GeoNode SDK for managing GeoNode layers and users
+# -*- coding: utf-8 -*-
+#########################################################################
+#
+# Copyright (C) 2012 OpenPlans
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#########################################################################
+
+"""Utilities for managing GeoNode layers
 """
 
 # Standard Modules
@@ -13,7 +33,7 @@ import string
 import urllib2
 from lxml import etree
 import glob
-import math
+import sys
 
 # Django functionality
 from django.contrib.auth.models import User
@@ -23,9 +43,9 @@ from django.conf import settings
 # Geonode functionality
 from geonode import GeoNodeException
 from geonode.utils import check_geonode_is_up
-from geonode.catalogue import get_catalogue
 from geonode.people.utils import get_valid_user
 from geonode.layers.models import Layer
+from geonode.layers.metadata import set_metadata
 from geonode.people.models import Contact
 from geonode.gs_helpers import cascading_delete, get_sld_for, delete_from_postgis
 from geonode.security.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
@@ -129,6 +149,11 @@ def get_files(filename):
         raise GeoNodeException(msg)
 
     matches = glob.glob(base_name + ".[xX][mM][lL]")
+
+    # shapefile XML metadata is sometimes named base_name.shp.xml
+    # try looking for filename.xml if base_name.xml does not exist
+    if len(matches) == 0:
+        matches = glob.glob(filename + ".[xX][mM][lL]")
 
     if len(matches) == 1:
         files['xml'] = matches[0]
@@ -234,9 +259,11 @@ def cleanup(name, uuid):
    logger.warning('Deleting dangling Catalogue record for [%s] '
                   '(no Django record to match)', name)
 
-   catalogue = get_catalogue()
-   catalogue.remove_record(uuid)
-   logger.warning('Finished cleanup after failed Catalogue/Django '
+   if 'geonode.catalogue' in settings.INSTALLED_APPS:
+       from geonode.catalogue import get_catalogue
+       catalogue = get_catalogue()
+       catalogue.remove_record(uuid)
+       logger.warning('Finished cleanup after failed Catalogue/Django '
                   'import for layer: %s', name)
 
 def save(layer, base_file, user, overwrite = True, title=None,
@@ -394,7 +421,7 @@ def save(layer, base_file, user, overwrite = True, title=None,
         minx, maxx, miny, maxy = [float(a) for a in box]
         if -180 <= minx <= 180 and -180 <= maxx <= 180 and \
            -90  <= miny <= 90  and -90  <= maxy <= 90:
-            logger.warn('GeoServer failed to detect the projection for layer '
+            logger.info('GeoServer failed to detect the projection for layer '
                         '[%s]. Guessing EPSG:4326', name)
             # If GeoServer couldn't figure out the projection, we just
             # assume it's lat/lon to avoid a bad GeoServer configuration
@@ -406,7 +433,7 @@ def save(layer, base_file, user, overwrite = True, title=None,
             msg = ('GeoServer failed to detect the projection for layer '
                    '[%s]. It doesn\'t look like EPSG:4326, so backing out '
                    'the layer.')
-            logger.warn(msg, name)
+            logger.info(msg, name)
             cascading_delete(cat, gs_resource)
             raise GeoNodeException(msg % name)
 
@@ -451,7 +478,7 @@ def save(layer, base_file, user, overwrite = True, title=None,
                                                        workspace=gs_resource.store.workspace.name,
                                                        defaults=defaults)
 
-    
+
     saved_layer.keywords.add(*keywords)
 
     # Step 9. Create the points of contact records for the layer
@@ -467,6 +494,24 @@ def save(layer, base_file, user, overwrite = True, title=None,
 
     saved_layer.poc = poc_contact
     saved_layer.metadata_author = author_contact
+
+    logger.info('>>> Step XML. If an XML metadata document was passed, process it')
+    # Step XML. If an XML metadata document is uploaded,
+    # parse the XML metadata and update uuid and URLs as per the content model
+
+    if 'xml' in files:
+        saved_layer.metadata_uploaded = True
+        # get model properties from XML
+        vals, keywords = set_metadata(open(files['xml']).read())
+
+        # set taggit keywords
+        saved_layer.keywords.add(*keywords)
+
+        # set model properties
+        for (key, value) in vals.items():
+            setattr(saved_layer, key, value)
+
+        saved_layer.save()
 
     # Step 11. Set default permissions on the newly created layer
     # FIXME: Do this as part of the post_save hook
@@ -519,59 +564,16 @@ def save(layer, base_file, user, overwrite = True, title=None,
 def get_default_user():
     """Create a default user
     """
-    try:
-        return User.objects.get(is_superuser=True)
-    except User.DoesNotExist:
+    superusers = User.objects.filter(is_superuser=True).order_by('id')
+    if superusers.count() > 0:
+        # Return the first created superuser
+        return superusers[0]
+    else:
         raise GeoNodeException('You must have an admin account configured '
                                'before importing data. '
                                'Try: django-admin.py createsuperuser')
-    except User.MultipleObjectsReturned:
-        raise GeoNodeException('You have multiple admin accounts, '
-                               'please specify which I should use.')
 
-def get_valid_user(user=None):
-    """Gets the default user or creates it if it does not exist
-    """
-    if user is None:
-        theuser = get_default_user()
-    elif isinstance(user, basestring):
-        theuser = User.objects.get(username=user)
-    elif user.is_anonymous():
-        raise GeoNodeException('The user uploading files must not '
-                               'be anonymous')
-    else:
-        theuser = user
-
-    #FIXME: Pass a user in the unit tests that is not yet saved ;)
-    assert isinstance(theuser, User)
-
-    return theuser
-
-
-def check_geonode_is_up():
-    """Verifies all of geonetwork, geoserver and the django server are running,
-       this is needed to be able to upload.
-    """
-    try:
-        Layer.objects.gs_catalog.get_workspaces()
-    except Exception, e:
-        # Cannot connect to GeoNode
-        from django.conf import settings
-
-        msg = ('Cannot connect to the GeoServer at %s\nPlease make sure you '
-               'have started GeoNode.' % settings.GEOSERVER_BASE_URL)
-        raise GeoNodeException(msg)
-
-    try:
-        Layer.objects.gn_catalog.login()
-    except:
-        from django.conf import settings
-        msg = ('Cannot connect to the GeoNetwork at %s\n'
-               'Please make sure you have started '
-               'GeoNetwork.' % settings.GEONETWORK_BASE_URL)
-        raise GeoNodeException(msg)
-
-def file_upload(filename, user=None, title=None, overwrite=True, keywords=[]):
+def file_upload(filename, user=None, title=None, skip=True, overwrite=False, keywords=()):
     """Saves a layer in GeoNode asking as little information as possible.
        Only filename is required, user and title are optional.
     """
@@ -601,25 +603,31 @@ def file_upload(filename, user=None, title=None, overwrite=True, keywords=[]):
     return new_layer
 
 
-def upload(incoming, user=None, overwrite=True, keywords = ()):
+def upload(incoming, user=None, overwrite=False, keywords = (), skip=True,
+        ignore_errors=True, verbosity=1, console=None):
     """Upload a directory of spatial data files to GeoNode
 
        This function also verifies that each layer is in GeoServer.
 
        Supported extensions are: .shp, .tif, and .zip (of a shapfile).
        It catches GeoNodeExceptions and gives a report per file
-       >>> batch_upload('/tmp/mydata')
-           [{'file': 'data1.tiff', 'name': 'geonode:data1' },
-           {'file': 'data2.shp', 'errors': 'Shapefile requires .prj file'}]
     """
+    if verbosity > 1:
+        print >> console, "Verifying that GeoNode is running ..."
     check_geonode_is_up()
 
+    if console is None:
+        console = open(os.devnull, 'w')
+
+    potential_files = []
     if os.path.isfile(incoming):
-        layer = file_upload(incoming,
-                            user=user,
-                            overwrite=overwrite,
-                            keywords = keywords)
-        return [{'file': incoming, 'name': layer.name}]
+        ___, short_filename = os.path.split(incoming)
+        basename, extension = os.path.splitext(short_filename)
+        filename = incoming
+
+        if extension in ['.tif', '.shp', '.zip']:
+            potential_files.append((basename, filename))
+
     elif not os.path.isdir(incoming):
         msg = ('Please pass a filename or a directory name as the "incoming" '
                'parameter, instead of %s: %s' % (incoming, type(incoming)))
@@ -634,22 +642,67 @@ def upload(incoming, user=None, overwrite=True, keywords = ()):
                 basename, extension = os.path.splitext(short_filename)
                 filename = os.path.join(root, short_filename)
                 if extension in ['.tif', '.shp', '.zip']:
-                    try:
-                        layer = file_upload(filename,
-                                            user=user,
-                                            title=basename,
-                                            overwrite=overwrite,
-                                            keywords=keywords
-                                           )
+                    potential_files.append((basename, filename))
 
-                    except GeoNodeException, e:
-                        msg = ('[%s] could not be uploaded. Error was: '
-                               '%s' % (filename, str(e)))
-                        logger.info(msg)
-                        results.append({'file': filename, 'errors': msg})
-                    else:
-                        results.append({'file': filename, 'name': layer.name})
-        return results
+    # After gathering the list of potential files, let's process them one by one.
+    number = len(potential_files)
+    if verbosity > 1:
+        msg =  "Found %d potential layers, importing now ..." % number
+        print >> console, msg
+
+    output = []
+    for i, file_pair in enumerate(potential_files):
+        basename, filename = file_pair
+
+        existing_layers = Layer.objects.filter(name=basename)
+
+        if existing_layers.count() > 0:
+            existed = True
+        else:
+            existed = False
+
+        if existed and skip:
+            save_it = False
+            status = 'skipped'
+            layer = existing_layers[0]
+        else:
+            save_it = True
+
+        if save_it:
+            try:
+                layer = file_upload(filename,
+                                    user=user,
+                                    title=basename,
+                                    overwrite=overwrite,
+                                    keywords=keywords
+                                   )
+                if not existed:
+                    status = 'created'
+                else:
+                    status = 'updated'
+            except Exception, e:
+                if ignore_errors:
+                    status = 'failed'
+                    exception_type, error, traceback = sys.exc_info()
+                else:
+                    if verbosity > 0:
+                        msg = "Stopping process because --ignore-errors was not set and an error was found."
+                        print >> sys.stderr, msg
+                        raise Exception('Failed to process %s' % filename, e), None, sys.exc_info()[2]
+
+        msg = "[%s] Layer for '%s' (%d/%d)" % (status, filename, i+1, number)
+        info = {'file': filename, 'status': status}
+        if status == 'failed':
+            info['traceback'] = traceback
+            info['exception_type'] = exception_type
+            info['error'] = error
+        else:
+            info['name'] = layer.name
+
+        output.append(info)
+        if verbosity > 0:
+            print >> console, msg
+    return output
 
 def _create_db_featurestore(name, data, overwrite = False, charset = None):
     """Create a database store then use it to import a shapefile.
@@ -674,7 +727,7 @@ def _create_db_featurestore(name, data, overwrite = False, charset = None):
 
     try:
         cat.add_data_to_store(ds, name, data,
-            overwrite=overwrite, charset=charset)        
+            overwrite=overwrite, charset=charset)
         return ds, cat.get_resource(name, store=ds)
     except Exception:
         delete_from_postgis(name)

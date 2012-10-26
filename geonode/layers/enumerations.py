@@ -1,20 +1,59 @@
 # -*- coding: utf-8 -*-
+#########################################################################
+#
+# Copyright (C) 2012 OpenPlans
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#########################################################################
+
 from django.utils.translation import ugettext_lazy as _
 
-UPDATE_FREQUENCIES = [
-    'annually',
-    'asNeeded',
-    'biannually',
-    'continual',
-    'daily',
-    'fortnightly',
-    'irregular',
-    'monthly',
-    'notPlanned',
-    'quarterly',
-    'unknown',
-    'weekly'
-]
+HIERARCHY_LEVELS = (
+    ('series', _('series')),
+    ('software', _('computer program or routine')),
+    ('featureType', _('feature type')),
+    ('model', _('copy or imitation of an existing or hypothetical object')),
+    ('collectionHardware', _('collection hardware')),
+    ('collectionSession', _('collection session')),
+    ('nonGeographicDataset', _('non-geographic data')),
+    ('propertyType', _('property type')),
+    ('fieldSession', _('field session')),
+    ('dataset', _('dataset')),
+    ('service', _('service interfaces')),
+    ('attribute', _('attribute class')),
+    ('attributeType', _('characteristic of a feature')),
+    ('tile', _('tile or spatial subset of geographic data')),
+    ('feature', _('feature')),
+    ('dimensionGroup', _('dimension group')),
+)
+
+UPDATE_FREQUENCIES = (
+    ('unknown', _('frequency of maintenance for the data is not known')),
+    ('continual', _('data is repeatedly and frequently updated')),
+    ('notPlanned', _('there are no plans to update the data')),
+    ('daily', _('data is updated each day')),
+    ('annually', _('data is updated every year')),
+    ('asNeeded', _('data is updated as deemed necessary')),
+    ('monthly', _('data is updated each month')),
+    ('fortnightly', _('data is updated every two weeks')),
+    ('irregular',
+        _('data is updated in intervals that are uneven in duration')),
+    ('weekly', _('data is updated on a weekly basis')),
+    ('biannually', _('data is updated twice each year')),
+    ('quarterly', _('data is updated every three months')),
+)
 
 CONSTRAINT_OPTIONS = [
     'copyright',
@@ -27,48 +66,64 @@ CONSTRAINT_OPTIONS = [
     'trademark'
 ]
 
-SPATIAL_REPRESENTATION_TYPES = [
-    'grid', 'steroModel', 'textTable', 'tin', 'vector'
-]
+SPATIAL_REPRESENTATION_TYPES = (
+    ('grid', _('grid data')),
+    ('stereoModel',
+        _('three-dimensional view formed by the intersecting homologous\
+           rays of an overlapping pair of images')),
+    ('textTable', _('textual or tabular data')),
+    ('tin', _('triangulated irregular network')),
+    ('vector', _('vector data')),
+)
 
-TOPIC_CATEGORIES = [
-    'biota',
-    'boundaries',
-    'climatologyMeteorologicalAtmosphere',
-    'economy',
-    'elevation',
-    'environment',
-    'farming',
-    'geoscientificInformation',
-    'health',
-    'imageryBaseMapsEarthCover',
-    'inlandWaters',
-    'intelligenceMilitary',
-    'location',
-    'oceans',
-    'planningCadastre'
-    'society',
-    'structure',
-    'transportation',
-    'utilitiesCommunication'
-]
+TOPIC_CATEGORIES = (
+    ('geoscientificInformation',
+        _('information pertaining to earth sciences')),
+    ('farming', _('rearing of animals and/or cultivation of plants')),
+    ('elevation', _('height above or below sea level')),
+    ('utilitiesCommunication',
+        _('energy, water and waste systems and communications infrastructure\
+           and services')),
+    ('oceans', 
+        _('features and characteristics of salt water bodies (excluding\
+           inland waters)')),
+    ('boundaries', _('legal land descriptions')),
+    ('inlandWaters',
+        _('inland water features, drainage systems and\
+           their characteristics')),
+    ('intelligenceMilitary', _('military bases, structures, activities')),
+    ('environment', _('environmental resources, protection and conservation')),
+    ('location', _('positional information and services')),
+    ('economy', _('economic activities, conditions and employment')),
+    ('planningCadastre',
+        _('information used for appropriate actions for future use of the\
+           land')),
+    ('biota', _('flora and/or fauna in natural environment')),
+    ('health', _('health, health services, human ecology, and safety')),
+    ('imageryBaseMapsEarthCover', _('base maps')),
+    ('transportation', _('means and aids for conveying persons and/or goods')),
+    ('society', _('characteristics of society and cultures')),
+    ('structure', _('man-made construction')),
+    ('climatologyMeteorologyAtmosphere',
+        _('processes and phenomena of the atmosphere')),
+)
 
 CONTACT_FIELDS = [
-    "name",
-    "organization",
-    "position",
-    "voice",
-    "facsimile",
-    "delivery_point",
-    "city",
-    "administrative_area",
-    "postal_code",
-    "country",
-    "email",
-    "role"
+    'name',
+    'organization',
+    'position',
+    'voice',
+    'facsimile',
+    'delivery_point',
+    'city',
+    'administrative_area',
+    'postal_code',
+    'country',
+    'email',
+    'role'
 ]
 
-DEFAULT_SUPPLEMENTAL_INFORMATION=_(
+DEFAULT_SUPPLEMENTAL_INFORMATION = _(
     _('No information provided')
 )
 

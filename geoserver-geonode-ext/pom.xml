@@ -3,7 +3,7 @@
   <groupId>org.opengeo</groupId>
   <artifactId>geonode-geoserver-ext</artifactId>
   <packaging>jar</packaging>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.3</version>
   <name>GeoNode GeoServer Extensions</name>
 
   <repositories>
@@ -199,8 +199,8 @@
     </dependency>
   </dependencies>
   <properties>
-    <geotools.version>8-SNAPSHOT</geotools.version>
-    <geoserver.version>2.2-SNAPSHOT</geoserver.version>
+    <geotools.version>8.2</geotools.version>
+    <geoserver.version>2.2</geoserver.version>
     <jetty.version>6.1.8</jetty.version>
     <maven.test.search.classdir>true</maven.test.search.classdir>
   </properties>
@@ -269,17 +269,7 @@
           <scanIntervalSeconds>30</scanIntervalSeconds>
           <contextPath>/geoserver</contextPath>
           
-          <systemProperties>
-            <systemProperty>
-              <name>GEOSERVER_DATA_DIR</name>
-              <value>../../gs-data/</value>
-            </systemProperty>
-          </systemProperties>
-
           <webApp>${project.build.directory}/geoserver</webApp>
-          
-          <!-- configure the container                 -->
-          <jettyConfig>jetty.xml</jettyConfig>
         </configuration>
       </plugin>
 
