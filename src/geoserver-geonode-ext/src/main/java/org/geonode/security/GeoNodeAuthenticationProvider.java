@@ -26,8 +26,8 @@ public class GeoNodeAuthenticationProvider extends GeoServerAuthenticationProvid
 
     private GeonodeSecurityClient client;
 
-    public GeoNodeAuthenticationProvider(GeonodeSecurityClient client) {
-        this.client = client;
+    public GeoNodeAuthenticationProvider(GeoNodeSecurityClientProvider clientProvider) {
+        this.client = clientProvider.getSecurityClient();
     }
 
     @Override

@@ -21,7 +21,9 @@ import net.sf.json.JSONSerializer;
 
 import org.apache.commons.codec.binary.Base64;
 import org.geonode.security.LayersGrantedAuthority.LayerMode;
+import org.geoserver.catalog.ResourceInfo;
 import org.geoserver.platform.GeoServerExtensions;
+import org.geoserver.security.AccessMode;
 import org.geotools.util.logging.Logging;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -29,9 +31,9 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.GrantedAuthorityImpl;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.util.Assert;
 
 /**
@@ -172,13 +174,13 @@ public class DefaultSecurityClient implements GeonodeSecurityClient, Application
             authorities.add(new LayersGrantedAuthority(rwLayers, LayerMode.READ_WRITE));
         }
         if (json.getBoolean("is_superuser")) {
-            authorities.add(new GrantedAuthorityImpl(GeoNodeDataAccessManager.ADMIN_ROLE));
+            authorities.add(GeoNodeDataAccessManager.ADMIN_AUTHORITY);
         }
 
         final Authentication authentication;
 
         if (json.getBoolean("is_anonymous")) {
-            authorities.add(new GrantedAuthorityImpl("ROLE_ANONYMOUS"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_ANONYMOUS"));
             String key = "geonode";
             Object principal = "anonymous";
 
@@ -194,6 +196,20 @@ public class DefaultSecurityClient implements GeonodeSecurityClient, Application
         }
         return authentication;
     }
+    
+    static String getBaseUrl(ApplicationContext applicationContext) throws BeansException {
+        // determine where geonode is
+        String baseUrl = GeoServerExtensions.getProperty("GEONODE_BASE_URL", applicationContext);
+        if (baseUrl == null) {
+            LOGGER.log(Level.WARNING, "GEONODE_BASE_URL is not set, "
+                    + "assuming http://localhost:8000/");
+            baseUrl = "http://localhost:8000/";
+        }
+        if (!baseUrl.endsWith("/")) {
+            baseUrl += "/";
+        }
+        return baseUrl;
+    }
 
     /**
      * Looks up for the {@code GEONODE_BASE_URL} property (either a System property, a servlet
@@ -207,16 +223,32 @@ public class DefaultSecurityClient implements GeonodeSecurityClient, Application
      * @see GeoServerExtensions#getProperty(String, ApplicationContext)
      */
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        // determine where geonode is
-        this.baseUrl = GeoServerExtensions.getProperty("GEONODE_BASE_URL", applicationContext);
-        if (baseUrl == null) {
-            LOGGER.log(Level.WARNING, "GEONODE_BASE_URL is not set, "
-                    + "assuming http://localhost:8000/");
-            baseUrl = "http://localhost:8000/";
+        this.baseUrl = getBaseUrl(applicationContext);
+    }
+    
+    public boolean authorize(Authentication user, ResourceInfo resource, AccessMode mode) {
+        return authorizeUsingAuthorities(user, resource, mode);
+    }
+    
+    static boolean authorizeUsingAuthorities(Authentication user, ResourceInfo resource, AccessMode mode) {
+        boolean authorized = false;
+        if (user != null && user.getAuthorities() != null) {
+            for (GrantedAuthority ga : user.getAuthorities()) {
+                if (ga instanceof LayersGrantedAuthority) {
+                    LayersGrantedAuthority lga = ((LayersGrantedAuthority) ga);
+                    // see if the layer is contained in the granted authority list with
+                    // sufficient privileges
+                    if (mode == AccessMode.READ
+                            || ((mode == AccessMode.WRITE) && lga.getAccessMode() == LayersGrantedAuthority.LayerMode.READ_WRITE)) {
+                        if (lga.getLayerNames().contains(resource.getPrefixedName())) {
+                            authorized = true;
+                            break;
+                        }
+                    }
+                }
+            }
         }
-        if (!baseUrl.endsWith("/")) {
-            baseUrl += "/";
-        }
+        return authorized;
     }
 
 }

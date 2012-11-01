@@ -24,6 +24,7 @@ urlpatterns = patterns('geonode.maps.views',
 
 datapatterns = patterns('geonode.maps.views',
   url(r'^$', 'browse_data', name='data_home'),
+  url(r'^user_name$', 'user_name', name='user_name'),
   url(r'^acls/?$', 'layer_acls', name='data_acls'),
   url(r'^search/?$', 'search_page', name='data_search'),
   url(r'^search/api/?$', 'metadata_search', name='data_search_api'),

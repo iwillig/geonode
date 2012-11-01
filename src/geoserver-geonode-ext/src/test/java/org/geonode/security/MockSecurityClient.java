@@ -14,6 +14,8 @@ import org.springframework.security.core.authority.GrantedAuthorityImpl;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.geonode.security.LayersGrantedAuthority.LayerMode;
+import org.geoserver.catalog.ResourceInfo;
+import org.geoserver.security.AccessMode;
 
 /**
  * A mock security client used to test
@@ -76,7 +78,7 @@ public class MockSecurityClient implements GeonodeSecurityClient {
             List<String> readOnlyLayers, List<String> readWriteLayers) {
         List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
         if (admin) {
-            authorities.add(new GrantedAuthorityImpl(GeoNodeDataAccessManager.ADMIN_ROLE));
+            authorities.add(GeoNodeDataAccessManager.ADMIN_AUTHORITY);
         }
         if (readOnlyLayers != null && readOnlyLayers.size() > 0) {
             authorities.add(new LayersGrantedAuthority(readOnlyLayers, LayerMode.READ_ONLY));
@@ -95,7 +97,7 @@ public class MockSecurityClient implements GeonodeSecurityClient {
         List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
         authorities.add(new GrantedAuthorityImpl("ROLE_ANONYMOUS"));
         if (admin) {
-            authorities.add(new GrantedAuthorityImpl(GeoNodeDataAccessManager.ADMIN_ROLE));
+            authorities.add(GeoNodeDataAccessManager.ADMIN_AUTHORITY);
         }
         if (readOnlyLayers != null && readOnlyLayers.size() > 0) {
             authorities.add(new LayersGrantedAuthority(readOnlyLayers, LayerMode.READ_ONLY));
@@ -109,5 +111,9 @@ public class MockSecurityClient implements GeonodeSecurityClient {
 
     public Authentication authenticateAnonymous() throws AuthenticationException, IOException {
         return anonymousAuth;
+    }
+
+    public boolean authorize(Authentication user, ResourceInfo resource, AccessMode mode) {
+        return DefaultSecurityClient.authorizeUsingAuthorities(user, resource, mode);
     }
 }
