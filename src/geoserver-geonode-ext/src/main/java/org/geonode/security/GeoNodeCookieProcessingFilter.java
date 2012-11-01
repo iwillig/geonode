@@ -39,8 +39,8 @@ public class GeoNodeCookieProcessingFilter implements Filter {
 
     private GeonodeSecurityClient client;
 
-    public GeoNodeCookieProcessingFilter(GeonodeSecurityClient client) {
-        this.client = client;
+    public GeoNodeCookieProcessingFilter(GeoNodeSecurityClientProvider clientProvider) {
+        this.client = clientProvider.getSecurityClient();
     }
 
     /**

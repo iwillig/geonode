@@ -202,7 +202,7 @@
   </bean>
   
   <!-- The client talking to GeoNode to get authentications from cookies and username/password -->
-  <bean id="geonodeSecurityClient" class="org.geonode.security.DefaultSecurityClient">
+  <bean id="geonodeSecurityClient" class="org.geonode.security.GeoNodeSecurityClientProvider">
     <!-- We probably need to add a reference to the data directory here -->
     <constructor-arg ref="geonodeHttpClient"/>
   </bean>
@@ -219,7 +219,9 @@
   
   <!-- The custom data access manager using the GeoNode granted authorities -->
   <!-- GEONODE: this is picked up via a spring context lookup for the interface -->
-  <bean id="geonodeAccessManager" class="org.geonode.security.GeoNodeDataAccessManager"/>
+  <bean id="geonodeAccessManager" class="org.geonode.security.GeoNodeDataAccessManager">
+    <constructor-arg index="0" ref="geonodeSecurityClient"/>
+  </bean>
   
   <!-- 
     This entry point gets called when basic authentication is needed 
