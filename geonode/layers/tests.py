@@ -323,12 +323,20 @@ class LayersTest(TestCase):
         lyr = Layer.objects.get(pk=1)
         #There should be a total of 3 attributes
         self.assertEqual(len(lyr.attribute_set.all()), 3)
-        #Two out of 3 attributes should be visible
+        #2 out of 3 attributes should be visible
         custom_attributes = lyr.attribute_set.visible()
         self.assertEqual(len(custom_attributes), 2)
         #place_ name should come before description
         self.assertEqual(custom_attributes[0].attribute_label, "Place Name")
         self.assertEqual(custom_attributes[1].attribute_label, "Description")
+
+    def test_layer_attribute_config(self):
+        lyr = Layer.objects.get(pk=1)
+        custom_attributes = (lyr.attribute_config())["getFeatureInfo"]
+        self.assertEqual(custom_attributes["fields"],["place_name","description"])
+        self.assertEqual(custom_attributes["propertyNames"]["description"], "Description")
+        self.assertEqual(custom_attributes["propertyNames"]["place_name"], "Place Name")
+
 
     def test_layer_save(self):
         lyr = Layer.objects.get(pk=1)
@@ -719,3 +727,47 @@ class LayersTest(TestCase):
         #Check there are no ratings matching the remove layer
         rating = OverallRating.objects.filter(category=2,object_id=layer_id)
         self.assertEquals(rating.count(),0)
+
+
+    def test_feature_edit_check(self):
+        """Verify that the feature_edit_check view is behaving as expected
+        """
+
+        # Setup some layer names to work with
+        valid_layer_typename = Layer.objects.all()[0].typename
+        invalid_layer_typename = "n0ch@nc3"
+
+        c = Client()
+
+        # Test that an invalid layer.typename is handled for properly
+        response = c.post(reverse('feature_edit_check', args=(invalid_layer_typename,)))
+        self.assertEquals(response.status_code, 404)
+
+
+        # First test un-authenticated
+        response = c.post(reverse('feature_edit_check', args=(valid_layer_typename,)))
+        self.assertEquals(response.status_code, 401)
+
+        # Next Test with a user that does NOT have the proper perms
+        logged_in = c.login(username='bobby', password='bob')
+        self.assertEquals(logged_in, True)
+        response = c.post(reverse('feature_edit_check', args=(valid_layer_typename,)))
+        self.assertEquals(response.status_code, 401)
+
+        # Login as a user with the proper permission and test the endpoint
+        logged_in = c.login(username='admin', password='admin')
+        self.assertEquals(logged_in, True)
+
+        response = c.post(reverse('feature_edit_check', args=(valid_layer_typename,)))
+
+        # Test that the method returns 401 because it's not a datastore
+        self.assertEquals(response.status_code, 401)
+
+        layer = Layer.objects.all()[0]
+        layer.storeType = "dataStore"
+        layer.save()
+
+        response = c.post(reverse('feature_edit_check', args=(valid_layer_typename,)))
+
+        # Test that the method returns 401 if it's a datastore
+        self.assertEquals(response.status_code, 200)

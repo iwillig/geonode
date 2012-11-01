@@ -54,6 +54,9 @@
                           {% if user.is_staff %}
                             <li><a href="{% url admin:index %}"><i class="icon-cog"></i> {% trans "Admin" %}</a></li>
                           {% endif %}
+                          {% if user.is_superuser %}
+                            <li><a href="{{ GEOSERVER_BASE_URL }}"><i class="icon-globe"></i> {% trans "GeoServer" %}</a></li>
+                          {% endif %}
                           <li class="divider"></li>
                           <li><a href="{% url auth_logout %}"><i class="icon-off"></i> {% trans "Log out" %}</a></li>
                         </ul>
@@ -85,7 +88,9 @@
                                         {% trans "Remember Me" %}
                                     </label>
                                     <button type="submit" class="btn pull-right">{% trans "Sign in" %}</button>
+                                    {% if REGISTRATION_OPEN %}
                                     <div>{% trans "Don't have an account yet?" %} <a href="{% url registration_register %}">{% trans "Register now" %}</a></div>
+                                    {% endif %}
                                 </form>
                             </li>
                           </ul>

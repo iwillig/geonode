@@ -219,6 +219,7 @@ def map_view(request, mapid, template='maps/map_view.html'):
     config = map_obj.viewer_json()
     return render_to_response(template, RequestContext(request, {
         'config': json.dumps(config),
+        'DB_DATASTORE' : settings.DB_DATASTORE
     }))
 
 
@@ -264,6 +265,7 @@ def new_map(request, template='maps/map_view.html'):
     else:
         return render_to_response(template, RequestContext(request, {
             'config': config,
+            'DB_DATASTORE' : settings.DB_DATASTORE
         }))
 
 
@@ -355,6 +357,7 @@ def new_map_config(request):
                     map = map_obj,
                     name = layer.typename,
                     ows_url = settings.GEOSERVER_BASE_URL + "wms",
+                    layer_params=json.dumps( layer.attribute_config()),
                     visibility = True
                 ))
 
@@ -462,6 +465,15 @@ def map_download_check(request):
         logger.warn("User tried to check status, but has no download in progress.")
     return HttpResponse(content=content,status=status)
 
+def map_wmc(request, mapid, template="maps/wmc.xml"):
+    """Serialize an OGC Web Map Context Document (WMC) 1.1"""
+
+    mapObject = _resolve_map(request, mapid, 'maps.view_map')
+
+    return render_to_response(template, RequestContext(request, {
+        'map': mapObject,
+        'siteurl': settings.SITEURL,
+    }), mimetype='text/xml')
 
 #### MAPS PERMISSIONS ####
 
@@ -673,3 +685,9 @@ def _maps_search(query, start, limit, sort_field, sort_dir):
         result['next'] = reverse('maps_search') + '?' + params
 
     return result
+
+
+def maplayer_attributes(request, layername):
+    #Return custom layer attribute labels/order in JSON format
+    layer = Layer.objects.get(typename=layername)
+    return HttpResponse(json.dumps(layer.attribute_config()), mimetype="application/json")

@@ -184,10 +184,10 @@ def layer_upload(request, template='layers/layer_upload.html'):
 def layer_detail(request, layername, template='layers/layer_detail.html'):
     layer = _resolve_layer(request, layername, 'layers.view_layer', _PERMISSION_MSG_VIEW)
 
-    maplayer = GXPLayer(name = layer.typename, ows_url = settings.GEOSERVER_BASE_URL + "wms")
+    maplayer = GXPLayer(name = layer.typename, ows_url = settings.GEOSERVER_BASE_URL + "wms", layer_params=json.dumps( layer.attribute_config()))
 
-    layer.popular_count += 1
-    layer.save()
+    #layer.popular_count += 1
+    #layer.save()
 
     # center/zoom don't matter; the viewer will center on the layer bounds
     map_obj = GXPMap(projection="EPSG:900913")
@@ -245,6 +245,7 @@ def layer_metadata(request, layername, template='layers/layer_metadata.html'):
             the_layer = layer_form.save(commit=False)
             the_layer.poc = new_poc
             the_layer.metadata_author = new_author
+            the_layer.keywords.clear()
             the_layer.keywords.add(*new_keywords)
             the_layer.save()
             return HttpResponseRedirect(reverse('layer_detail', args=(layer.typename,)))
@@ -658,3 +659,13 @@ def layer_acls(request):
     }
 
     return HttpResponse(json.dumps(result), mimetype="application/json")
+
+def feature_edit_check(request, layername):
+    """
+    If the layer is not a raster and the user has edit permission, return a status of 200 (OK).
+    Otherwise, return a status of 401 (unauthorized).
+    """
+    layer = get_object_or_404(Layer, typename=layername);
+    return HttpResponse(
+        status=200 if request.user.has_perm('maps.change_layer', obj=layer) and layer.storeType == 'dataStore' else 401
+    )
