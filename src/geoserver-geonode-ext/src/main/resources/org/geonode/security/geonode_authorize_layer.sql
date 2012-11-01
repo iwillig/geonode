@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION geonode_authorize_layer(username varchar, typename varchar) RETURNS varchar AS $$
+CREATE OR REPLACE FUNCTION geonode_authorize_layer(username varchar, typename varchar) RETURNS varchar AS $$
 
 DECLARE
 view_perm integer;
