@@ -263,17 +263,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
         
-        //allow dynamic testing of client side techniques
-        var tests = OpenLayers.Util.getParameters(location.href).tests || [];
-        if(!Ext.isArray(tests)){
-            tests = [tests];
-        }
-        this.tests = {
-            dropFrames: tests.indexOf('1')>-1,
-            forceTiles: tests.indexOf('2')>-1,
-            delayTiles: tests.indexOf('3')>-1
-        };
-
         GeoExplorer.superclass.constructor.apply(this, [config]);
         
     },
@@ -535,37 +524,32 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         this.mapPanel.layers.on({
             "add": function(store, records) {
                 var layer;
-                for (var i=records.length-1; i>= 0; i--) {
+                for(var i = records.length - 1; i >= 0; i--) {
                     layer = records[i].getLayer();
-                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
-                        if(this.tests.forceTiles){
-                            layer.addOptions({
-                                singleTile: false,
-                                transitionEffect: 'resize'
-                            });
-                            if(layer.params){layer.params.TILED = true;}
+                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)) {
+                        layer.addOptions({
+                            singleTile: false,
+                            transitionEffect: 'resize'
+                        });
+                        if(layer.params) {
+                            layer.params.TILED = true;
                         }
-                        else if(layer.params){
-                            layer.params.TILED = false;
-                        }
-                    }
-                    if(this.tests.delayTiles && !layer.isBaseLayer){
                         layer.events.on({
-                            'tileloaded':function(evt){
+                            'tileloaded': function(evt) {
                                 var img = evt.tile.imgDiv;
                                 img.style.visibility = 'hidden';
                                 img.style.opacity = 0;
                             },
-                            'loadend':function(evt){
+                            'loadend': function(evt) {
                                 var grid = evt.object.grid;
                                 var layer = evt.object;
-                                for(var i = 0, rlen = grid.length;i<rlen;i++){
-                                    for(var j = 0, clen = grid[i].length; j<clen; j++){
+                                for(var i = 0, rlen = grid.length; i < rlen; i++) {
+                                    for(var j = 0, clen = grid[i].length; j < clen; j++) {
                                         var img = grid[i][j].imgDiv;
-                                        if(img){
+                                        if(img) {
                                             img.style.visibility = 'inherit';
                                             img.style.opacity = layer.opacity;
-                                        } 
+                                        }
                                     }
                                 }
                             },
@@ -576,7 +560,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             },
             scope: this
         });
-        
     },
     
     /**

@@ -142,18 +142,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
         
-        var tests = OpenLayers.Util.getParameters(location.href).tests || [];
-        if(!Ext.isArray(tests)){
-            tests = [tests];
-        }
-        
         GeonodeViewer.superclass.constructor.apply(this, [config]);
-
-        this.tests = {
-            dropFrames: tests.indexOf('1')>-1,
-            forceTiles: tests.indexOf('2')>-1,
-            delayTiles: tests.indexOf('3')>-1
-        };
     },
     
     loadConfig: function(config, callback){
@@ -233,18 +222,11 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                 for (var i=records.length-1; i>= 0; i--) {
                     layer = records[i].getLayer();
                     if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
-                        if(this.tests.forceTiles){
-                            layer.addOptions({
-                                singleTile: false,
-                                transitionEffect: 'resize'
-                            });
-                            if(layer.params){layer.params.TILED = true;}
-                        }
-                        else if(layer.params){
-                            layer.params.TILED = false;
-                        }
-                    }
-                    if(this.tests.delayTiles && !layer.isBaseLayer){
+                        layer.addOptions({
+                            singleTile: false,
+                            transitionEffect: 'resize'
+                        });
+                        if(layer.params){layer.params.TILED = true;}
                         layer.events.on({
                             'tileloaded':function(evt){
                                 var img = evt.tile.imgDiv;
