@@ -534,7 +534,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         if(layer.params) {
                             layer.params.TILED = true;
                         }
-                        layer.events.on({
+                        /*layer.events.on({
                             'tileloaded': function(evt) {
                                 var img = evt.tile.imgDiv;
                                 img.style.visibility = 'hidden';
@@ -554,7 +554,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                 }
                             },
                             scope: layer
-                        });
+                        });*/
                     }
                 }
             },

@@ -227,7 +227,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                             transitionEffect: 'resize'
                         });
                         if(layer.params){layer.params.TILED = true;}
-                        layer.events.on({
+                        /*layer.events.on({
                             'tileloaded':function(evt){
                                 var img = evt.tile.imgDiv;
                                 img.style.visibility = 'hidden';
@@ -247,7 +247,7 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                                 }
                             },
                             scope: layer
-                        });
+                        });*/
                     }
                 }
             },
