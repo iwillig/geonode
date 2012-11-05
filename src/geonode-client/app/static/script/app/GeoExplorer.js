@@ -56,6 +56,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     localGeoServerBaseUrl: "",
 
     /**
+     * api: config[cachedSourceMatch]
+     * ``RegExp`` pattern to match the layer url to for adding extra subdomains
+     */
+    cachedSourceMatch: /dev\.mapstory/,
+
+    /**
+     * api: config[cachedSubdomains]
+     * @type {Array} extra subdomains to be tacked onto existing url
+     */
+    cachedSubdomains: ['t1', 't2', 't3', 't4'],
+
+    /**
      * private: property[toggleGroup]
      * ``String``
      */
@@ -531,6 +543,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             singleTile: false,
                             transitionEffect: 'resize'
                         });
+                        if(Ext.isString(layer.url) && layer.url.test(this.cachedSourceMatch) && this.cachedSubdomains){
+                            var uparts = layer.url.split('://');
+                            var urls = [];
+                            for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains; j<len; j++){
+                                if(uparts.length>1){
+                                    urls.push(uparts[0] + this.cachedSubdomains[j] + '.' + h);
+                                } else {
+                                    urls.push(this.cachedSubdomains[j] + '.' + h);
+                                }
+                            }
+                            layer.url = urls.concat[layer.url];
+                        }
                         if(layer.params) {
                             layer.params.TILED = true;
                         }
