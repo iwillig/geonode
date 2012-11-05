@@ -543,7 +543,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             singleTile: false,
                             transitionEffect: 'resize'
                         });
-                        if(Ext.isString(layer.url) && layer.url.test(this.cachedSourceMatch) && this.cachedSubdomains){
+                        if(Ext.isString(layer.url) && layer.url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
                             var uparts = layer.url.split('://');
                             var urls = [];
                             for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains; j<len; j++){
