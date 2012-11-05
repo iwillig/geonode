@@ -551,7 +551,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                                     (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
                                 );
                             }
-                            layer.url = urls.concat[layer.url];
+                            layer.url = urls.concat([layer.url]);
                         }
                         if(layer.params) {
                             layer.params.TILED = true;
