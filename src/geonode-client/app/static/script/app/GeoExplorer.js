@@ -59,7 +59,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
      * api: config[cachedSourceMatch]
      * ``RegExp`` pattern to match the layer url to for adding extra subdomains
      */
-    cachedSourceMatch: /dev\.mapstory/,
+    cachedSourceMatch: /mapstory\.dev/,
 
     /**
      * api: config[cachedSubdomains]
@@ -547,11 +547,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             var uparts = layer.url.split('://');
                             var urls = [];
                             for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains; j<len; j++){
-                                if(uparts.length>1){
-                                    urls.push(uparts[0] + this.cachedSubdomains[j] + '.' + h);
-                                } else {
-                                    urls.push(this.cachedSubdomains[j] + '.' + h);
-                                }
+                                urls.push(
+                                    (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
+                                );
                             }
                             layer.url = urls.concat[layer.url];
                         }
