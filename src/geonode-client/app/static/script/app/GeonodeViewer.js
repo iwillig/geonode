@@ -248,28 +248,30 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                             }
                             layer.url = urls.concat([layer.url]);
                         }
-                        if(layer.params){layer.params.TILED = true;}
-                        /*layer.events.on({
-                            'tileloaded':function(evt){
+                        if(layer.params) {
+                            layer.params.TILED = true;
+                        }
+                        layer.events.on({
+                            'tileloaded': function(evt) {
                                 var img = evt.tile.imgDiv;
                                 img.style.visibility = 'hidden';
                                 img.style.opacity = 0;
                             },
-                            'loadend':function(evt){
+                            'loadend': function(evt) {
                                 var grid = evt.object.grid;
                                 var layer = evt.object;
-                                for(var i = 0, rlen = grid.length;i<rlen;i++){
-                                    for(var j = 0, clen = grid[i].length; j<clen; j++){
+                                for(var i = 0, rlen = grid.length; i < rlen; i++) {
+                                    for(var j = 0, clen = grid[i].length; j < clen; j++) {
                                         var img = grid[i][j].imgDiv;
-                                        if(img){
+                                        if(img) {
                                             img.style.visibility = 'inherit';
                                             img.style.opacity = layer.opacity;
-                                        } 
+                                        }
                                     }
                                 }
                             },
                             scope: layer
-                        });*/
+                        });
                     }
                 }
             },
