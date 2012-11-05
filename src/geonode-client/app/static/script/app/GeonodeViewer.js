@@ -229,13 +229,20 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
         //add listeners to layer store (doesn't exist until after the superclass's function is called)
         this.mapPanel.layers.on({
             "add": function(store, records) {
-                // check selected layer status
                 var layer;
-                for (var i=records.length-1; i>= 0; i--) {
+                //if the map starts out with more than 5 temporal wms-ish layers, then they will all be
+                //single tile layers. If layers are added to exceed the 5 layer limit, then only layers
+                //6+ will be single tile layers. dynamically changing all the layers when adding or removing
+                //layers introduced all kinds of potential error and issues
+                var forceSingleTile = store.queryBy(function(rec){
+                    var lyr = rec.getLayer();
+                    return lyr.dimensions && lyr.dimensions.time && (lyr instanceof OpenLayers.Layer.Grid);
+                }).getCount()>5;
+                for(var i = records.length - 1; i >= 0; i--) {
                     layer = records[i].getLayer();
-                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
+                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)) {
                         layer.addOptions({
-                            singleTile: false,
+                            singleTile: forceSingleTile,
                             transitionEffect: 'resize'
                         });
                         if(Ext.isString(layer.url) && layer.url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
