@@ -1,15 +1,14 @@
-{% extends "page_layout.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 {% load static from staticfiles %}
 
-{% block title %} {% trans "Upload Layer"  %} - {{ block.super }} {% endblock %}
-
-{% block head %}
+{% block title %} {% trans "Upload Layer"  %} - {{ block.super }}  {% endblock %}
+{% block extra_head %}
 {% include "geonode/ext_header.html" %}
 {% include "geonode/app_header.html" %}
 {% include "geonode/geo_header.html" %}
 <link rel="stylesheet" type="text/css" href="{{ GEONODE_CLIENT_LOCATION }}theme/ux/fileuploadfield/fileuploadfield.css"/>
-{{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}fileupload/css/style.css"/>
 {% endblock %}
 
 {% block main %}

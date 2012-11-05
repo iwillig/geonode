@@ -114,6 +114,7 @@ ROOT_URLCONF = 'geonode.urls'
 # Site id in the Django sites framework
 SITE_ID = 1
 
+USE_NEW_UPLOAD = False
 
 INSTALLED_APPS = (
 
@@ -149,6 +150,13 @@ INSTALLED_APPS = (
     'geonode.search',
     'geonode.catalogue',
 )
+
+if 'USE_NEW_UPLOAD' in os.environ:
+    USE_NEW_UPLOAD = True
+
+if USE_NEW_UPLOAD:
+    INSTALLED_APPS += ('geonode.upload',)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,

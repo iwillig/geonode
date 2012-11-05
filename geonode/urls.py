@@ -24,6 +24,7 @@ from django.conf.urls.static import static
 from geonode.sitemap import LayerSitemap, MapSitemap
 import geonode.proxy.urls
 import geonode.maps.urls
+import os
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -50,7 +51,6 @@ urlpatterns = patterns('',
                 {'template': 'developer.html'}, name='dev'),
 
     # Data views
-    (r'^layers/upload/', include('geonode.upload.urls')),
     (r'^layers/', include('geonode.layers.urls')),
 
     # Map views
@@ -86,6 +86,10 @@ urlpatterns = patterns('',
     # Catalogue
     (r'^catalogue/', include('geonode.catalogue.urls')),
     )
+
+
+if getattr(settings, 'USE_NEW_UPLOAD', False):
+    urlpatterns += patterns('',(r'^layers/upload/', include('geonode.upload.urls')))
 
 urlpatterns += geonode.proxy.urls.urlpatterns
 

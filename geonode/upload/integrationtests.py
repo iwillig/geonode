@@ -1,17 +1,23 @@
+import os.path
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.conf.urls import patterns
+from django.core.urlresolvers import reverse
+from geonode.urls import include
+from geonode.urls import urlpatterns
 from geoserver.catalog import Catalog
 from gisdata import BAD_DATA
 from gisdata import GOOD_DATA
 from owslib.wms import WebMapService
 from unittest import TestCase
 import MultipartPostHandler
+import csv
 import json
 import os
+import tempfile
 import time
 import urllib
 import urllib2
-
 
 GEONODE_USER     = 'admin'
 GEONODE_PASSWD   = 'admin'
@@ -19,6 +25,27 @@ GEONODE_URL      = settings.SITEURL.rstrip('/')
 GEOSERVER_URL    = settings.GEOSERVER_BASE_URL
 GEOSERVER_USER, GEOSERVER_PASSWD = settings.GEOSERVER_CREDENTIALS
 
+'''
+To run these tests, make sure a test db is setup:
+  python manage.py syncdb --all
+
+Create the admin user as per the above account credentials
+
+Run geoserver and django. Run django like this to activate new uploader:
+
+  USE_NEW_UPLOAD= python manage.py runserver
+
+While geoserver and django are running, run tests:
+
+  python manage.py test geonode.upload.integrationtests
+'''
+
+# hack the global urls to ensure we're activated locally
+urlpatterns += patterns('',(r'^layers/upload/', include('geonode.upload.urls')))
+
+def upload_step(step=None):
+    step = reverse('data_upload',args=[step] if step else [])
+    return step
 
 def parse_cookies(cookies):
     res = {}
@@ -106,8 +133,12 @@ class Client(object):
                     params[spatial_file] = open(file_path, 'r')
 
         params['base_file'] = open(_file, 'r')
-        resp = self.make_request('/data/upload/', data=params)
-        return (resp, json.loads(resp.read()))
+        resp = self.make_request(upload_step(), data=params)
+        data = resp.read()
+        try:
+            return (resp, json.loads(data))
+        except ValueError:
+            raise ValueError('probably not json', data)
 
     def get_html(self, path):
         """ Method that make a get request and passes the results to bs4
@@ -183,11 +214,11 @@ class TestUpload(GeoNodeTest):
 
     def check_and_pass_through_timestep(self, data):
         redirect_to = data['redirect_to']
-        self.assertEquals(redirect_to, '/data/upload/time')
-        resp = self.client.make_request('/data/upload/time')
+        self.assertEquals(redirect_to, upload_step('time'))
+        resp = self.client.make_request(upload_step('time'))
         self.assertEquals(resp.code, 200)
         data = {'csrfmiddlewaretoken': self.client.get_crsf_token()}
-        resp = self.client.make_request('/data/upload/time', data)
+        resp = self.client.make_request(upload_step('time'), data)
         data = json.loads(resp.read())
         return resp, data
 
@@ -209,19 +240,19 @@ class TestUpload(GeoNodeTest):
         self.assertEquals(resp.code, 200)
         self.assertTrue(isinstance(data, dict))
         # make that the upload returns a success True key
-        self.assertTrue(data['success'])
+        self.assertTrue(data['success'], 'expected success but got %s' % data)
         self.assertTrue('redirect_to' in data)
         redirect_to = data['redirect_to']
 
         if (not is_raster and settings.UPLOADER_SHOW_TIME_STEP):
             resp, data = self.check_and_pass_through_timestep(data)
             self.assertEquals(resp.code, 200)
-            self.assertTrue(data['success'])
+            self.assertTrue(data['success'], 'expected success but got %s' % data)
             self.assertTrue('redirect_to' in data)
             redirect_to = data['redirect_to']
             self.wait_for_progress(data.get('progress'))
 
-        self.assertEquals(redirect_to, '/data/upload/final')
+        self.assertEquals(redirect_to, upload_step('final'))
         self.check_layer_geonode_page(redirect_to)
         self.check_layer_geoserver_caps(original_name)
         self.check_layer_geoserver_rest(original_name)
@@ -320,6 +351,26 @@ class TestUpload(GeoNodeTest):
                 self.wait_for_progress(progress_url)
 
 
+    def make_csv(self, *rows):
+        fd, abspath = tempfile.mkstemp('.csv')
+        fp = os.fdopen(fd,'wb')
+        out = csv.writer(fp)
+        for r in rows:
+            out.writerow(r)
+        fp.close()
+        return abspath
+    
+
+    def test_csv(self):
+        """Verify a CSV upload"""
+        
+        csv_file = self.make_csv(['lat','lon','thing'],['-100','-40','foo'])
+        self.client.login()
+        resp, data = self.client.upload_file(csv_file)
+        self.wait_for_progress(data.get('progress'))
+        base, ext = os.path.splitext(csv_file)
+        self.check_layer(base, resp, data)
+
     def test_time(self):
         """Verify that uploading time based csv files works properly"""
         if not settings.UPLOADER_SHOW_TIME_STEP:
@@ -336,20 +387,20 @@ class TestUpload(GeoNodeTest):
         self.wait_for_progress(data.get('progress'))
         self.assertEquals(resp.code, 200)
         self.assertTrue(data['success'])
-        self.assertTrue(data['redirect_to'], '/data/upload/time')
+        self.assertTrue(data['redirect_to'], upload_step('time'))
 
-        resp, data = self.client.get_html('/data/upload/time')
+        resp, data = self.client.get_html(upload_step('time'))
         self.assertEquals(resp.code, 200)
         data = dict(csrfmiddlewaretoken=self.client.get_crsf_token(),
                     time_attribute='date',
                     presentation_strategy='LIST',
                     )
-        resp = self.client.make_request('/data/upload/time', data)
+        resp = self.client.make_request(upload_step('time'), data)
         data = json.loads(resp.read())
         self.assertEquals(resp.code, 200)
         self.wait_for_progress(data.get('progress'))
         redirect_to = data['redirect_to']
-        self.assertEquals(redirect_to, '/data/upload/final')
+        self.assertEquals(redirect_to, upload_step('final'))
         self.check_layer_geonode_page(redirect_to)
         self.check_layer_geoserver_caps(base)
         self.check_layer_geoserver_rest(base)
