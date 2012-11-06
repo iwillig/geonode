@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.conf.urls import patterns
 from django.core.urlresolvers import reverse
+from geonode.layers.models import Layer
 from geonode.urls import include
 from geonode.urls import urlpatterns
 from geoserver.catalog import Catalog
@@ -25,6 +26,9 @@ GEONODE_URL      = settings.SITEURL.rstrip('/')
 GEOSERVER_URL    = settings.GEOSERVER_BASE_URL
 GEOSERVER_USER, GEOSERVER_PASSWD = settings.GEOSERVER_CREDENTIALS
 
+import logging
+logging.getLogger('south').setLevel(logging.WARNING)
+
 '''
 To run these tests, make sure a test db is setup:
   python manage.py syncdb --all
@@ -42,6 +46,9 @@ While geoserver and django are running, run tests:
 
 # hack the global urls to ensure we're activated locally
 urlpatterns += patterns('',(r'^layers/upload/', include('geonode.upload.urls')))
+
+# delete all layers first
+Layer.objects.filter().delete()
 
 def upload_step(step=None):
     step = reverse('data_upload',args=[step] if step else [])
@@ -91,10 +98,13 @@ class Client(object):
             MultipartPostHandler.MultipartPostHandler
         )
 
-    def make_request(self, path, data=None):
+    def make_request(self, path, data=None, ajax=False):
+        url = path if path.startswith("http") else self.url + path
         req = urllib2.Request(
-            url=self.url + path, data=data
+            url=url, data=data
         )
+        if ajax:
+            req.add_header('X_REQUESTED_WITH', 'XMLHttpRequest')
         return self.opener.open(req)
 
     def get(self, path):
@@ -133,7 +143,7 @@ class Client(object):
                     params[spatial_file] = open(file_path, 'r')
 
         params['base_file'] = open(_file, 'r')
-        resp = self.make_request(upload_step(), data=params)
+        resp = self.make_request(upload_step(), data=params, ajax=True)
         data = resp.read()
         try:
             return (resp, json.loads(data))
@@ -222,10 +232,18 @@ class TestUpload(GeoNodeTest):
         data = json.loads(resp.read())
         return resp, data
 
-    def check_raster_layer(self, file_path, resp, data):
-        return self.check_layer(file_path, resp, data, is_raster=True)
+    def complete_raster_upload(self, file_path, resp, data):
+        return self.complete_upload(file_path, resp, data, is_raster=True)
+    
+    def check_save_step(self, resp, data):
+        """Verify the initial save step"""
+        self.assertEquals(resp.code, 200)
+        self.assertTrue(isinstance(data, dict))
+        # make that the upload returns a success True key
+        self.assertTrue(data['success'], 'expected success but got %s' % data)
+        self.assertTrue('redirect_to' in data)
 
-    def check_layer(self, file_path, resp, data, is_raster=False):
+    def complete_upload(self, file_path, resp, data, is_raster=False):
         """Method to check if a layer was correctly uploaded to the
         GeoNode.
 
@@ -235,40 +253,58 @@ class TestUpload(GeoNodeTest):
            Checks to see if a layer is configured in GeoServer
                checks the Rest API
                checks the get cap document """
+               
+        layer_name, ext = os.path.splitext(os.path.basename(file_path))
+               
+        self.check_save_step(resp, data)
 
-        original_name = os.path.basename(file_path)
-        self.assertEquals(resp.code, 200)
-        self.assertTrue(isinstance(data, dict))
-        # make that the upload returns a success True key
-        self.assertTrue(data['success'], 'expected success but got %s' % data)
-        self.assertTrue('redirect_to' in data)
-        redirect_to = data['redirect_to']
+        layer_page = self.finish_upload(data['redirect_to'], layer_name, is_raster)
+                     
+        self.check_layer_complete(layer_page, layer_name)
+        
+    def finish_upload(self, current_step, layer_name, is_raster=False, skip_srs=False):
 
         if (not is_raster and settings.UPLOADER_SHOW_TIME_STEP):
             resp, data = self.check_and_pass_through_timestep(data)
             self.assertEquals(resp.code, 200)
             self.assertTrue(data['success'], 'expected success but got %s' % data)
             self.assertTrue('redirect_to' in data)
-            redirect_to = data['redirect_to']
+            current_step = data['redirect_to']
             self.wait_for_progress(data.get('progress'))
-
-        self.assertEquals(redirect_to, upload_step('final'))
-        self.check_layer_geonode_page(redirect_to)
+            
+        if not is_raster and not skip_srs:
+            self.assertEquals(current_step, upload_step('srs'))
+            # if all is good, the srs step will redirect to the final page
+            resp = self.client.get(current_step)
+        else:
+            self.assertEquals(current_step, upload_step('final'))
+            resp = self.client.get(current_step)
+           
+        # and the final page should redirect to tha layer page
+        self.assertTrue(resp.geturl().endswith(layer_name), 
+            'expected url to end with %s, but got %s' % (layer_name, resp.geturl()))
+        self.assertEquals(resp.code, 200)
+        
+        return resp.geturl()
+        
+    def check_layer_complete(self, layer_page, original_name):
+        '''check everything to verify the layer is complete'''
+        self.check_layer_geonode_page(layer_page)
         self.check_layer_geoserver_caps(original_name)
         self.check_layer_geoserver_rest(original_name)
-
-    def check_invalid_layer(self, _, resp, data):
+        
+    def check_invalid_projection(self, layer_name, resp, data):
         """ Makes sure that we got the correct response from an layer
         that can't be uploaded"""
         if settings.UPLOADER_SHOW_TIME_STEP:
             resp, data = self.check_and_pass_through_timestep(data)
-
         self.assertTrue(resp.code, 200)
-        self.assertTrue(not data['success'])
-        self.assertEquals(
-            data['errors'],
-            ['Unexpected exception No projection found']
-        )
+        self.assertTrue(data['success'])
+        self.assertEquals(upload_step("srs"), data['redirect_to'])
+        resp, soup = self.client.get_html(data['redirect_to'])
+        # grab an h2 and find the name there as part of a message saying it's bad
+        h2 = soup.find_all(['h2'])[0]
+        self.assertTrue(str(h2).find(layer_name))
 
     def upload_folder_of_files(self, folder, final_check):
 
@@ -290,17 +326,18 @@ class TestUpload(GeoNodeTest):
 
     def test_successful_layer_upload(self):
         """ Tests if layers can be upload to a running GeoNode GeoServer"""
+        Layer.objects.filter(title='single_point').delete()
         vector_path = os.path.join(GOOD_DATA, 'vector')
         raster_path = os.path.join(GOOD_DATA, 'raster')
-        self.upload_folder_of_files(vector_path, self.check_layer)
-        self.upload_folder_of_files(raster_path, self.check_raster_layer)
+        self.upload_folder_of_files(vector_path, self.complete_upload)
+        self.upload_folder_of_files(raster_path, self.complete_raster_upload)
 
     def test_invalid_layer_upload(self):
         """ Tests the layers that are invalid and should not be uploaded"""
         # this issue with this test is that the importer supports
         # shapefiles without an .prj
         invalid_path = os.path.join(BAD_DATA)
-        self.upload_folder_of_files(invalid_path, self.check_invalid_layer)
+        self.upload_folder_of_files(invalid_path, self.check_invalid_projection)
 
     def test_extension_not_implemented(self):
         """Verify a error message is return when an unsupported layer is
@@ -326,17 +363,19 @@ class TestUpload(GeoNodeTest):
 
     def test_repeated_upload(self):
         """Verify that we can upload a shapefile twice """
+        Layer.objects.filter(title='single_point').delete()
+        
         shp = os.path.join(GOOD_DATA, 'vector', 'single_point.shp')
         base = 'single_point'
         self.client.login()
         resp, data = self.client.upload_file(shp)
         self.wait_for_progress(data.get('progress'))
-        self.check_layer(base, resp, data)
+        self.complete_upload(base, resp, data)
 
-        # try uploading the same layer twice
+        # try uploading the same layer twice, note the appended '0'
         resp, data = self.client.upload_file(shp)
         self.wait_for_progress(data.get('progress'))
-        self.check_layer(base, resp, data)
+        self.complete_upload(base + "0", resp, data)
 
 
     def wait_for_progress(self, progress_url):
@@ -362,14 +401,25 @@ class TestUpload(GeoNodeTest):
     
 
     def test_csv(self):
-        """Verify a CSV upload"""
-        
+        """Verify a correct CSV upload"""
+        if not settings.DB_DATASTORE:
+            print '\nNo DB_DATASTORE configured, skipping CSV tests'
+            return
+        # @todo this only works with postgres!!!
+        # but no serious errors occur, the import just silently does nothing
         csv_file = self.make_csv(['lat','lon','thing'],['-100','-40','foo'])
         self.client.login()
-        resp, data = self.client.upload_file(csv_file)
-        self.wait_for_progress(data.get('progress'))
+        resp, form_data = self.client.upload_file(csv_file)
+        self.wait_for_progress(form_data.get('progress'))
         base, ext = os.path.splitext(csv_file)
-        self.check_layer(base, resp, data)
+        self.check_save_step(resp, form_data)
+        csv_step = form_data['redirect_to']
+        self.assertEquals(csv_step, upload_step('csv'))
+        form_data = dict(lat='lat', lng='lon', csrfmiddlewaretoken=self.client.get_crsf_token())
+        resp = self.client.make_request(csv_step, form_data)
+        #@todo do this elsewhere
+        url = resp.geturl().replace(GEONODE_URL, "")
+        self.finish_upload(url, base, is_raster=True, skip_srs=True)
 
     def test_time(self):
         """Verify that uploading time based csv files works properly"""

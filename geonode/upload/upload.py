@@ -28,7 +28,6 @@ from geonode.upload.utils import create_geoserver_db_featurestore
 import geoserver
 from geoserver.resource import Coverage
 from geoserver.resource import FeatureType
-from gsuploader.uploader import RequestFailed
 from gsuploader.uploader import BadRequest
 
 from django.conf import settings
@@ -36,7 +35,6 @@ from django.contrib.auth.models import User
 from django.db.models import Max
 
 import shutil
-import json
 import os.path
 import logging
 import uuid
