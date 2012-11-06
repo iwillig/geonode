@@ -42,7 +42,7 @@ from django.core.urlresolvers import reverse
 from geonode import GeoNodeException
 from geonode.utils import _wms, _user, _password, get_wms, bbox_to_wkt
 from geonode.gs_helpers import cascading_delete
-from geonode.people.models import Contact, Role
+from geonode.people.models import Profile, Role
 from geonode.security.models import PermissionLevelMixin
 from geonode.security.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.layers.ows import wcs_links, wfs_links, wms_links
@@ -57,9 +57,7 @@ from gsuploader.uploader import Uploader
 from taggit.managers import TaggableManager
 from agon_ratings.models import OverallRating
 
-
 logger = logging.getLogger("geonode.layers.models")
-
 
 class Style(models.Model):
     """Model for storing styles.
@@ -89,7 +87,7 @@ class LayerManager(models.Manager):
         if superusers.count() == 0:
             raise RuntimeError('GeoNode needs at least one admin/superuser set')
 
-        contact = Contact.objects.get_or_create(user=superusers[0],
+        contact = Profile.objects.get_or_create(user=superusers[0],
                                                 defaults={"name": "Geonode Admin"})[0]
         return contact
 
@@ -320,7 +318,7 @@ class Layer(ResourceBase):
     popular_count = models.IntegerField(default=0)
     share_count = models.IntegerField(default=0)
 
-    contacts = models.ManyToManyField(Contact, through='ContactRole')
+    contacts = models.ManyToManyField(Profile, through='ContactRole')
 
     default_style = models.ForeignKey(Style, related_name='layer_default_style', null=True, blank=True)
     styles = models.ManyToManyField(Style, related_name='layer_styles')
@@ -334,22 +332,24 @@ class Layer(ResourceBase):
         links.append((self.title, self.title, 'WWW:LINK-1.0-http--link', abs_url))
         return links
 
-    def thumbnail(self):
+    def thumbnail(self, width=20, height=None):
         """ Generate a URL representing thumbnail of the layer """
 
-        width = 20
-        height = 20
-
-        return settings.GEOSERVER_BASE_URL + "wms?" + urllib.urlencode({
-            'service': 'WMS',
-            'version': '1.1.1',
-            'request': 'GetMap',
+        params = {
             'layers': self.typename,
-            'format': 'image/png',
-            'height': height,
+            'format': 'image/png8',
             'width': width,
-            'srs': self.srid,
-            'bbox': self.bbox_string})
+        }
+        if height is not None:
+            params['height'] = height
+
+        # Avoid usring urllib.urlencode here because it breaks the url.
+        # commas and slashes in values get encoded and then cause trouble
+        # with the WMS parser.
+        p = "&".join("%s=%s"%item for item in params.items())
+
+        return settings.GEOSERVER_BASE_URL + "wms/reflect?" + p
+
 
     def verify(self):
         """Makes sure the state of the layer is consistent in GeoServer and Catalogue.
@@ -458,6 +458,9 @@ class Layer(ResourceBase):
     def get_absolute_url(self):
         return reverse('geonode.layers.views.layer_detail', None, [str(self.typename)])
 
+    def tiles_url(self):
+        return self.link_set.get(name='Tiles').url
+
     def __str__(self):
         return "%s Layer" % self.typename
 
@@ -491,9 +494,9 @@ class Attribute(models.Model):
 
 class ContactRole(models.Model):
     """
-    ContactRole is an intermediate model to bind Contacts and Layers and apply roles.
+    ContactRole is an intermediate model to bind Profiles as Contacts to Layers and apply roles.
     """
-    contact = models.ForeignKey(Contact)
+    contact = models.ForeignKey(Profile)
     layer = models.ForeignKey(Layer, null=True)
     role = models.ForeignKey(Role)
 
@@ -640,7 +643,7 @@ def geoserver_pre_save(instance, sender, **kwargs):
 
     if instance.poc and instance.poc.user:
         gs_layer.attribution = str(instance.poc.user)
-        profile = Contact.objects.get(user=instance.poc.user)
+        profile = Profile.objects.get(user=instance.poc.user)
         gs_layer.attribution_link = settings.SITEURL[:-1] + profile.get_absolute_url()
         gs_catalog.save(gs_layer)
 
@@ -785,7 +788,7 @@ def geoserver_post_save(instance, sender, **kwargs):
     tile_url = ('%sgwc/service/gmaps?' % settings.GEOSERVER_BASE_URL +
                 'layers=%s' % instance.typename +
                 '&zoom={z}&x={x}&y={y}' +
-                'format=image/png8'
+                '&format=image/png8'
                 )
 
     instance.link_set.get_or_create(url=tile_url,
@@ -904,10 +907,7 @@ def set_attributes(layer):
     else:
         logger.debug("No attributes found")
 
-
 signals.pre_save.connect(pre_save_layer, sender=Layer)
-
 signals.pre_save.connect(geoserver_pre_save, sender=Layer)
 signals.pre_delete.connect(geoserver_pre_delete, sender=Layer)
 signals.post_save.connect(geoserver_post_save, sender=Layer)
-
