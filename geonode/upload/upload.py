@@ -29,6 +29,7 @@ import geoserver
 from geoserver.resource import Coverage
 from geoserver.resource import FeatureType
 from gsuploader.uploader import RequestFailed
+from gsuploader.uploader import BadRequest
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -41,6 +42,15 @@ import logging
 import uuid
 
 logger = logging.getLogger(__name__)
+
+class UploadException(Exception):
+    '''A handled exception meant to be presented to the user'''
+    
+    @staticmethod
+    def from_exc(msg, ex):
+        args = [msg]
+        args.extend(ex.args)
+        return UploadException(*args)
 
 
 class UploaderSession(object):
@@ -205,8 +215,6 @@ def save_step(user, layer, base_file, overwrite=True):
         # which potentially may reset the id - hopefully prevent this...
         next_id = Upload.objects.all().aggregate(Max('import_id')).values()[0]
         next_id = next_id + 1 if next_id else 1
-        # @todo - when importer is ready, remove the next line
-        next_id = None
 
         # @todo settings for use_url or auto detection if geoserver is
         # on same host
@@ -214,12 +222,16 @@ def save_step(user, layer, base_file, overwrite=True):
             base_file, use_url=False, import_id=next_id)
             
         # save record of this whether valid or not - will help w/ debugging
-        Upload.objects.create_from_session(user, import_session)
+        upload = Upload.objects.create_from_session(user, import_session)
         
         if not import_session.tasks:
             error_msg = 'No upload tasks were created'
         elif not import_session.tasks[0].items:
             error_msg = 'No upload items found for task'
+            
+        if error_msg:
+            upload.state = upload.STATE_INVALID
+            upload.save()
            
         # @todo once the random tmp9723481758915 type of name is not
         # around, need to track the name computed above, for now, the
@@ -249,7 +261,8 @@ def run_import(upload_session, async):
             err = 'No projection found'
         else:
             err = item.state or 'Session not ready for import.'
-        raise Exception(err)
+        if err:
+            raise Exception(err)
 
     # if a target datastore is configured, ensure the datastore exists
     # in geoserver and set the uploader target appropriately
@@ -283,12 +296,8 @@ def time_step(upload_session, time_attribute, time_transform_type,
               end_time_transform_type=None,
               end_time_format=None,
               time_format=None,
-              srs=None,
               use_big_date=None):
     '''
-    Apply any time transformations, set dimension info, and SRS
-    (@todo SRS should be extracted to a different step)
-
     time_attribute - name of attribute to use as time
 
     time_transform_type - name of transform. either
@@ -304,7 +313,6 @@ def time_step(upload_session, time_attribute, time_transform_type,
     presentation_strategy - LIST, DISCRETE_INTERVAL, CONTINUOUS_INTERVAL
     precision_value - number
     precision_step - year, month, day, week, etc.
-    srs - optional srs to add to transformation
     '''
     resource = upload_session.import_session.tasks[0].items[0].resource
     transforms = []
@@ -370,29 +378,39 @@ def time_step(upload_session, time_attribute, time_transform_type,
 
     if transforms:
         logger.info('Setting transforms %s' % transforms)
-        upload_session.import_session.tasks[0].items[0].set_transforms(transforms)
-        upload_session.import_session.tasks[0].items[0].save()
-
-    if srs:
-        srs = srs.strip().upper()
-        if not srs.startswith("EPSG:"):
-            srs = "EPSG:%s" % srs
-        logger.info('Setting SRS to %s', srs)
-        # this particular REST operation provides nice error handling
+        upload_session.import_session.tasks[0].items[0].add_transforms(transforms)
         try:
-            resource.set_srs(srs)
-        except RequestFailed, ex:
-            args = ex.args
-            if ex.args[1] == 400:
-                errors = json.loads(ex.args[2])
-                args = "\n".join(errors['errors'])
-            raise Exception(args)
+            upload_session.import_session.tasks[0].items[0].save()
+        except BadRequest, br:
+            raise UploadException.from_exc('Error configuring time:',br)
+
+
+def csv_step(upload_session, lat_field, lng_field):
+    import_session = upload_session.import_session
+    item = import_session.tasks[0].items[0]
+    feature_type = item.resource
+    transform = {'type': 'AttributesToPointGeometryTransform',
+                 'latField': lat_field,
+                 'lngField': lng_field,
+                 }
+    feature_type.set_srs('EPSG:4326')
+    item.add_transforms([transform])
+    item.save()
+
+
+def srs_step(upload_session, srs):
+    resource = upload_session.import_session.tasks[0].items[0].resource
+    srs = srs.strip().upper()
+    if not srs.startswith("EPSG:"):
+        srs = "EPSG:%s" % srs
+    logger.info('Setting SRS to %s', srs)
+    resource.set_srs(srs)
 
 
 def final_step(upload_session, user):
     import_session = upload_session.import_session
     _log('Reloading session %s to check validity', import_session.id)
-    import_session = Layer.objects.gs_uploader.get_session(import_session.id)
+    import_session = import_session.reload()
     upload_session.import_session = import_session
 
     # the importer chooses an available featuretype name late in the game need

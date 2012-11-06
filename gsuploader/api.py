@@ -127,9 +127,14 @@ class Item(_UploadBase):
             self.resource = Coverage(resource['coverage'], self)
         else:
             raise Exception('not handling resource %s' % resource)
+        self.transformChain = json.get('transformChain',[])
     def set_transforms(self,transforms):
         """Set the transforms of this Item. transforms is a list of dicts"""
         self._transforms = transforms
+    def add_transforms(self,transforms):
+        if not hasattr(self, '_transforms') and 'transforms' in self.transformChain:
+            self._transforms = list(self.transformChain['transforms'])
+        self._transforms.extend(transforms)
     def get_progress(self):
         """Get a json object representing progress of this item"""
         if self.progress:
@@ -212,8 +217,7 @@ class FeatureType(_UploadBase):
                 'months': 2628000000, # this is the number geoserver computes for 1 month
                 'years': 31536000000
             }
-            kw['resolution'] = int(amt) * mult[period]
-        
+            kw['resolution'] = int(amt) * mult[period] * 1000 #yay millis
         self.add_meta_data_entry('time','dimensionInfo',**kw)
         
     def save(self):
@@ -261,6 +265,10 @@ class Session(_UploadBase):
             self._bind(json)
             if 'tasks' in json:
                 self.tasks = self._build(json['tasks'], Task)
+                
+    def reload(self):
+        '''return a reloaded version of this session'''
+        return self._uploader.get_session(self.id)
 
     def upload_task(self, files, use_url=False):
         """create a task with the provided files
