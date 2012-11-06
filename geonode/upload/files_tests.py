@@ -8,7 +8,7 @@ import unittest
 import zipfile
 
 @contextlib.contextmanager
-def create_test_files(names, zipped=False):
+def create_files(names, zipped=False):
     tmpdir = tempfile.mkdtemp()
     names = [ os.path.join(tmpdir, f) for f in names ]
     for f in names:
@@ -25,17 +25,15 @@ def create_test_files(names, zipped=False):
     yield names
     shutil.rmtree(tmpdir)
 
-
 class FilesTests(unittest.TestCase):
-    
+
     def test_types(self):
         for t in files.types:
             self.assertTrue(t.code is not None)
             self.assertTrue(t.name is not None)
             self.assertTrue(t.layer_type is not None)
-            
+
     def test_rename_files(self):
-        with create_test_files(['junk<y>','notjunky']) as tests:
+        with create_files(['junk<y>','notjunky']) as tests:
             renamed = files._rename_files(tests)
-            self.assertEqual("junk_y_", renamed[0])
-        
+            self.assertTrue(renamed[0].endswith("junk_y_"))
