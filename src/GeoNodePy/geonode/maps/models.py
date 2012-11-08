@@ -592,11 +592,9 @@ class ThumbnailMixin:
         and generate a new thumbnail image. Returns the thumbnail object.
         """
         thumb = Thumbnail.objects.get_thumbnail(self,allow_null=False)
-        thumb.thumb_spec = spec
-        thumb.generate_thumbnail()
         # if newly created, the thumb will not have an id
         created = thumb.id is not None
-        thumb.save()
+        thumb.set_spec(spec)
         self._thumbnail_updated(thumb, created)
         return thumb
     def _thumbnail_updated(self, thumb, created):
@@ -1876,27 +1874,36 @@ class Thumbnail(models.Model):
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
     content_object = generic.GenericForeignKey()
+    version = models.PositiveSmallIntegerField(null=True)
 
     def _path(self):
         if isinstance(self.content_object,Map):
-            parts = "map",str(self.content_object.id)
+            parts = "map",self.content_object.id,self._version()
         else:
-            parts = "layer",self.content_object.uuid
-        return "".join(parts) + ".png"
+            parts = "layer",self.content_object.uuid,self._version()
+        return "-".join(map(str,parts)) + ".png"
     def get_thumbnail_url(self):
         relative = Thumbnail.objects.storage.url(self._path())
         return settings.SITEURL[:-1] + relative
     def get_thumbnail_path(self):
         return Thumbnail.objects.storage.path(self._path())
-    def delete(self):
-        path = self.get_thumbnail_path()
+    def _delete_thumb_image(self, path=None):
+        path = path or self.get_thumbnail_path()
         if os.path.exists(path):
             os.unlink(path)
+    def delete(self):
+        self._delete_thumb_image()
         super(Thumbnail,self).delete()
+    def _version(self):
+        return self.version or 1
     def set_spec(self,spec):
         self.thumb_spec = spec
+        old_path = self.get_thumbnail_path()
+        # version will only stick on save but we need to write to the next one
+        self.version = self._version() + 1
         self.generate_thumbnail()
         self.save()
+        self._delete_thumb_image(old_path)
     def generate_thumbnail(self):
         http = httplib2.Http()
         url = "%srest/printng/render.png" % settings.GEOSERVER_BASE_URL
