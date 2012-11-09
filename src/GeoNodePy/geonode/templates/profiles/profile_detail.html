@@ -35,7 +35,7 @@
 Ext.onReady(function() {
     var mapsAndLayers = [];
     {% for lyr in profile.user.layer_set.filtered %}
-    mapsAndLayers.push(["lyr.{{ lyr.pk|escapejs }}", "{{ lyr.pk|escapejs }}", "layer", "{{ lyr.get_absolute_url|escapejs }}", "{{ lyr.title|escapejs }}", "{{ lyr.date|date:'Y-m-d H:i:s' }}"]);
+    mapsAndLayers.push(["lyr.{{ lyr.pk|escapejs }}", "{{ lyr.pk|escapejs }}", "layer", "{{ lyr.get_absolute_url|escapejs }}", "{{ lyr.title|default:lyr.name|escapejs }}", "{{ lyr.date|date:'Y-m-d H:i:s' }}"]);
     {% endfor %}
     {% for map in profile.user.map_set.all %}
     mapsAndLayers.push(["map.{{ map.pk|escapejs }}", "{{ map.pk|escapejs }}", "map", "{{ map.get_absolute_url|escapejs }}", "{{ map.title|escapejs }}", "{{ map.last_modified|date:'Y-m-d H:i:s' }}"]);

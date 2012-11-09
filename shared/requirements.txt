@@ -22,3 +22,5 @@ South==0.7.3
 django-taggit==0.9.3
 kaleo
 django-user-accounts
+django-activity-stream==0.4.4
+django-pagination

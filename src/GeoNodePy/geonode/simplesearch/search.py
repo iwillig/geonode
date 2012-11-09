@@ -170,7 +170,7 @@ class LayerNormalizer(Normalizer):
             doc['bbox'] = _bbox(layer)
         if not settings.USE_GEONETWORK:
             doc['keywords'] = layer.keyword_list()
-            doc['title'] = layer.title
+            doc['title'] = layer.title or layer.name
             doc['detail'] = layer.get_absolute_url()
         #if 'download_links' not in exclude:
         #    links = layer.download_links()

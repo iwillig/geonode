@@ -483,7 +483,7 @@ def final_step(upload_session, user):
             storeType=target.resource_type,
             typename=typename,
             workspace=target.workspace.name,
-            title=title or resource.title,
+            title=title,# or resource.title,
             uuid=layer_uuid,
             abstract=abstract or '',
             owner=user,

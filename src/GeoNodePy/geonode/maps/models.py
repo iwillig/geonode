@@ -761,7 +761,7 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
     temporal_extent_start = models.DateField(_('temporal extent start'), blank=True, null=True)
     temporal_extent_end = models.DateField(_('temporal extent end'), blank=True, null=True)
     geographic_bounding_box = models.TextField(_('geographic bounding box'))
-    supplemental_information = models.TextField(_('supplemental information'), default=DEFAULT_SUPPLEMENTAL_INFORMATION)
+    supplemental_information = models.TextField(_('supplemental information'), default='')
 
     # Section 6
     distribution_url = models.TextField(_('distribution URL'), blank=True, null=True)
@@ -1164,10 +1164,11 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
             self.poc = Layer.objects.default_poc()
         if self.metadata_author is None:
             self.metadata_author = Layer.objects.default_metadata_author()
-        if self.abstract == '' or self.abstract is None:
-            self.abstract = 'No abstract provided'
-        if self.title == '' or self.title is None:
-            self.title = self.name
+        if False:
+            if self.abstract == '' or self.abstract is None:
+                self.abstract = 'No abstract provided'
+            if self.title == '' or self.title is None:
+                self.title = self.name
 
     def _populate_from_gn(self):
         if not settings.USE_GEONETWORK:
