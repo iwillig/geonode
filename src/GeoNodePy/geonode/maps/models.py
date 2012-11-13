@@ -1276,7 +1276,7 @@ def describe_layer(typename):
         raise Exception('Non OK response from describeLayer',body)
     return body
 
-map_changed_signal = Signal(providing_args=['what_changed'])
+map_changed_signal = Signal(providing_args=['what_changed','old','new'])
 
 class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     """
@@ -1527,8 +1527,10 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
                     self, layer, source_for(layer), ordering
             ))
 
-        if layer_names != set([l.typename for l in self.local_layers]):
-            map_changed_signal.send_robust(sender=self,what_changed='layers')
+        new_layers = set([l.typename for l in self.local_layers])
+        if layer_names != new_layers:
+            map_changed_signal.send_robust(sender=self,what_changed='layers',
+                old=layer_names, new=new_layers)
 
         if 'tools' in conf:
             self.tools_params = json.dumps(conf['tools'])
