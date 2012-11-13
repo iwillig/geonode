@@ -1289,7 +1289,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     A display name suitable for search results and page headers
     """
 
-    abstract = models.TextField(_('Abstract'))
+    abstract = models.TextField(_('Abstract'), blank=True, null=True)
     """
     A longer description of the themes in the map.
     """
@@ -1340,7 +1340,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     A JSON-encoded dictionary of arbitrary parameters for the ...(what?)
     """
 
-    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
+    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
 
 
     def __unicode__(self):

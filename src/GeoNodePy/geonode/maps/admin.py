@@ -22,7 +22,8 @@ class MapAdmin(admin.ModelAdmin):
     list_display = ('id','title','owner')
     list_display_links = ('id',)
     list_editable = ('owner',)
-    inlines = [MapLayerInline,]
+    #inlines = [MapLayerInline,]
+    exclude = ('tools_params','portal_params')
 
 class ContactAdmin(admin.ModelAdmin):
     inlines = [ContactRoleInline]
