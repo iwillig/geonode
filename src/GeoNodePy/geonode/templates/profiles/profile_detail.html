@@ -20,9 +20,7 @@
     <li><a href="{% url maps_new %}">{% trans "Create a new map" %}</a></li>
   </ul>
   <h3>{% trans "Settings" %}</h3>
-  <ul>
-    <li><a href="{% url profiles_edit_profile %}">{% trans "Edit profile information" %}</a></li>
-  </ul>
+  {% block settings %}{% endblock %}
   {% endif %}
 </div>
 {% endblock %}
