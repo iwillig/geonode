@@ -91,6 +91,13 @@ def _bbox(obj):
     extent = idx.extent.extent if idx else (-180,-90,180,90)
     return dict(minx=extent[0], miny=extent[1], maxx=extent[2], maxy=extent[3])
 
+def _user_detail(obj):
+    if not isinstance(obj, Contact):
+        obj = obj.owner
+    else:
+        obj = obj.user
+    return "" if obj is None else obj.get_absolute_url()
+
 class Normalizer:
     '''Base class to allow lazy normalization of Map and Layer attributes.
     
@@ -111,14 +118,16 @@ class Normalizer:
         return getattr(self.o, 'relevance', 0)
     def as_dict(self, exclude):
         if self.dict is None:
+            data = self.data or {}
             if self.o._deferred:
                 self.o = getattr(type(self.o),'objects').get(pk = self.o.pk)
-            self.dict = self.populate(self.data or {}, exclude)
-            self.dict['iid'] = self.iid
-            self.dict['rating'] = self.rating
-            self.dict['relevance'] = getattr(self.o, 'relevance', 0)
+            data['iid'] = self.iid
+            data['rating'] = self.rating
+            data['relevance'] = getattr(self.o, 'relevance', 0)
             if hasattr(self,'views'):
-                self.dict['views'] = self.views
+                data['views'] = self.views
+            data['owner_detail'] = _user_detail(self.o)
+            self.dict = self.populate(data, exclude)
         if exclude:
             for e in exclude:
                 if e in self.dict: self.dict.pop(e)
@@ -140,7 +149,6 @@ class MapNormalizer(Normalizer):
         doc['topic'] = '', # @todo
         doc['detail'] = reverse('geonode.maps.views.map_controller', args=(map.id,))
         doc['owner'] = map.owner.username
-        doc['owner_detail'] = reverse('about_storyteller', args=(map.owner.username,))
         doc['last_modified'] = _date_fmt(map.last_modified)
         doc['_type'] = 'map'
         doc['_display_type'] = _MAP_DISPLAY
@@ -177,9 +185,6 @@ class LayerNormalizer(Normalizer):
         #    for i,e in enumerate(links):
         #        links[i] = [ unicode(l) for l in e]
         #    doc['download_links'] = links
-        owner = layer.owner
-        if owner:
-            doc['owner_detail'] = reverse('about_storyteller', args=(layer.owner.username,))
         return doc
 
 
@@ -201,9 +206,9 @@ class OwnerNormalizer(Normalizer):
         doc['organization'] = contact.organization
         doc['abstract'] = contact.blurb
         doc['last_modified'] = _date_fmt(self.last_modified())
-        doc['detail'] = reverse('about_storyteller', args=(user.username,))
         doc['layer_cnt'] = Layer.objects.filter(owner = user).count()
         doc['map_cnt'] = Map.objects.filter(owner = user).count()
+        doc['detail'] = doc['owner_detail']
         doc['_type'] = 'owner'
         doc['_display_type'] = _USER_DISPLAY
         return doc
