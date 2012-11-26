@@ -56,6 +56,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     localGeoServerBaseUrl: "",
 
     /**
+     * api: config[cachedSourceMatch]
+     * ``RegExp`` pattern to match the layer url to for adding extra subdomains
+     */
+    cachedSourceMatch: /mapstory\.dev/,
+
+    /**
+     * api: config[cachedSubdomains]
+     * @type {Array} extra subdomains to be tacked onto existing url
+     */
+    cachedSubdomains: ['t1', 't2', 't3', 't4'],
+
+    /**
      * private: property[toggleGroup]
      * ``String``
      */
@@ -263,17 +275,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         // without using syncShadow on the window
         Ext.Window.prototype.shadow = false;
         
-        //allow dynamic testing of client side techniques
-        var tests = OpenLayers.Util.getParameters(location.href).tests || [];
-        if(!Ext.isArray(tests)){
-            tests = [tests];
-        }
-        this.tests = {
-            dropFrames: tests.indexOf('1')>-1,
-            forceTiles: tests.indexOf('2')>-1,
-            delayTiles: tests.indexOf('3')>-1
-        };
-
         GeoExplorer.superclass.constructor.apply(this, [config]);
         
     },
@@ -534,38 +535,51 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         //add listeners to layer store (doesn't exist until after the superclass's function is called)
         this.mapPanel.layers.on({
             "add": function(store, records) {
+                //if the map starts out with more than 5 temporal wms-ish layers, then they will all be
+                //single tile layers. If layers are added to exceed the 5 layer limit, then only layers
+                //6+ will be single tile layers. dynamically changing all the layers when adding or removing
+                //layers introduced all kinds of potential error and issues
                 var layer;
-                for (var i=records.length-1; i>= 0; i--) {
+                var forceSingleTile = store.queryBy(function(rec){
+                    var lyr = rec.getLayer();
+                    return lyr.dimensions && lyr.dimensions.time && (lyr instanceof OpenLayers.Layer.Grid);
+                }).getCount()>5;
+                for(var i = records.length - 1; i >= 0; i--) {
                     layer = records[i].getLayer();
-                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)){
-                        if(this.tests.forceTiles){
-                            layer.addOptions({
-                                singleTile: false,
-                                transitionEffect: 'resize'
-                            });
-                            if(layer.params){layer.params.TILED = true;}
+                    if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)) {
+                        layer.addOptions({
+                            singleTile: forceSingleTile,
+                            transitionEffect: 'resize'
+                        });
+                        if(Ext.isString(layer.url) && layer.url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
+                            var uparts = layer.url.split('://');
+                            var urls = [];
+                            for(var j=0, h=uparts.slice(-1)[0], len=this.cachedSubdomains.length; j<len; j++){
+                                urls.push(
+                                    (uparts.length>1 ? uparts[0] + '://' : '') + this.cachedSubdomains[j] + '.' + h
+                                );
+                            }
+                            layer.url = urls.concat([layer.url]);
                         }
-                        else if(layer.params){
-                            layer.params.TILED = false;
+                        if(layer.params) {
+                            layer.params.TILED = true;
                         }
-                    }
-                    if(this.tests.delayTiles && !layer.isBaseLayer){
                         layer.events.on({
-                            'tileloaded':function(evt){
+                            'tileloaded': function(evt) {
                                 var img = evt.tile.imgDiv;
                                 img.style.visibility = 'hidden';
                                 img.style.opacity = 0;
                             },
-                            'loadend':function(evt){
+                            'loadend': function(evt) {
                                 var grid = evt.object.grid;
                                 var layer = evt.object;
-                                for(var i = 0, rlen = grid.length;i<rlen;i++){
-                                    for(var j = 0, clen = grid[i].length; j<clen; j++){
+                                for(var i = 0, rlen = grid.length; i < rlen; i++) {
+                                    for(var j = 0, clen = grid[i].length; j < clen; j++) {
                                         var img = grid[i][j].imgDiv;
-                                        if(img){
+                                        if(img) {
                                             img.style.visibility = 'inherit';
                                             img.style.opacity = layer.opacity;
-                                        } 
+                                        }
                                     }
                                 }
                             },
@@ -576,7 +590,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             },
             scope: this
         });
-        
     },
     
     /**
