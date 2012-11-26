@@ -201,33 +201,37 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             "beforerequest": function(conn, options) {
                 // use django's /geoserver endpoint when talking to the local
                 // GeoServer's RESTconfig API
-                var url = options.url.replace(this.urlPortRegEx, "$1/");
-                if (this.localGeoServerBaseUrl) {
-                    if (url.indexOf(this.localGeoServerBaseUrl) == 0) {
-                        // replace local GeoServer url with /geoserver/
-                        options.url = url.replace(
-                            new RegExp("^" + this.localGeoServerBaseUrl),
-                            "/geoserver/"
-                        );
-                        return;
+                var urls = (options.url instanceof Array) ? options.url : [options.url];
+                options.url = [];
+                for (var i = urls.length - 1; i >= 0; i--) {
+                    var url = urls[i].replace(this.urlPortRegEx, "$1/");
+                    if (this.localGeoServerBaseUrl) {
+                        if (url.indexOf(this.localGeoServerBaseUrl) == 0) {
+                            // replace local GeoServer url with /geoserver/
+                            options.url = url.replace(
+                                new RegExp("^" + this.localGeoServerBaseUrl),
+                                "/geoserver/"
+                            );
+                            return;
+                        }
+                        var localUrl = this.localGeoServerBaseUrl.replace(
+                            this.urlPortRegEx, "$1/");
+                        if(url.indexOf(localUrl + "rest/") === 0) {
+                            options.url.push(url.replace(new RegExp("^" +
+                                localUrl), "/geoserver/"));
+                            return;
+                        }
                     }
-                    var localUrl = this.localGeoServerBaseUrl.replace(
-                        this.urlPortRegEx, "$1/");
-                    if(url.indexOf(localUrl + "rest/") === 0) {
-                        options.url = url.replace(new RegExp("^" +
-                            localUrl), "/geoserver/");
-                        return;
+                    // use the proxy for all non-local requests
+                    if(this.proxy && url.indexOf(this.proxy) !== 0 &&
+                            url.indexOf(window.location.protocol) === 0) {
+                        var parts = url.replace(/&$/, "").split("?");
+                        var params = Ext.apply(parts[1] && Ext.urlDecode(
+                            parts[1]) || {}, options.params);
+                        url = Ext.urlAppend(parts[0], Ext.urlEncode(params));
+                        delete options.params;
+                        options.url.push(this.proxy + encodeURIComponent(url));
                     }
-                }
-                // use the proxy for all non-local requests
-                if(this.proxy && options.url.indexOf(this.proxy) !== 0 &&
-                        options.url.indexOf(window.location.protocol) === 0) {
-                    var parts = options.url.replace(/&$/, "").split("?");
-                    var params = Ext.apply(parts[1] && Ext.urlDecode(
-                        parts[1]) || {}, options.params);
-                    url = Ext.urlAppend(parts[0], Ext.urlEncode(params));
-                    delete options.params;
-                    options.url = this.proxy + encodeURIComponent(url);
                 }
             },
             "requestexception": function(conn, response, options) {
@@ -235,7 +239,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     // exceptions are handled elsewhere
                 } else {
                     this.mapPlugins[0].busyMask && this.mapPlugins[0].busyMask.hide();
-                    var url = options.url;
+                    var url = (options.url instanceof Array) ? options.url[0] : options.url;
                     if (response.status == 401 && url.indexOf("http" != 0) &&
                                             url.indexOf(this.proxy) === -1) {
                         this.authenticate(options);
