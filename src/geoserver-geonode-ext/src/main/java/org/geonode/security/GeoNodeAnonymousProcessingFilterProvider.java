@@ -17,8 +17,8 @@ public class GeoNodeAnonymousProcessingFilterProvider extends AbstractFilterProv
     
     private final GeoNodeAnonymousProcessingFilter filter;
     
-    public GeoNodeAnonymousProcessingFilterProvider(GeonodeSecurityClient client) {
-        filter = new GeoNodeAnonymousProcessingFilter(client);
+    public GeoNodeAnonymousProcessingFilterProvider(GeoNodeSecurityClientProvider clientProvider) {
+        filter = new GeoNodeAnonymousProcessingFilter(clientProvider.getSecurityClient());
     }
     
     public void setClient(GeonodeSecurityClient client) {

@@ -128,7 +128,7 @@ public class DefaultSecurityClientTest extends TestCase {
                 ((LayersGrantedAuthority) authorities.get(1)).getLayerNames());
 
         assertTrue(authorities.get(2) instanceof GrantedAuthority);
-        assertEquals(GeoNodeDataAccessManager.ADMIN_ROLE, authorities.get(2).getAuthority());
+        assertEquals(GeoNodeDataAccessManager.ADMIN_AUTHORITY, authorities.get(2));
     }
 
     public void testAuthenticateUserPassword() throws Exception {
