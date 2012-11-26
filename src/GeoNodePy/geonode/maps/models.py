@@ -1289,7 +1289,7 @@ class Map(models.Model, PermissionLevelMixin, ThumbnailMixin):
     A display name suitable for search results and page headers
     """
 
-    abstract = models.TextField(_('Abstract'), blank=True, null=True)
+    abstract = models.TextField(_('Abstract'), blank=True)
     """
     A longer description of the themes in the map.
     """
