@@ -208,10 +208,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     if (this.localGeoServerBaseUrl) {
                         if (url.indexOf(this.localGeoServerBaseUrl) == 0) {
                             // replace local GeoServer url with /geoserver/
-                            options.url = url.replace(
+                            options.url.push(url.replace(
                                 new RegExp("^" + this.localGeoServerBaseUrl),
                                 "/geoserver/"
-                            );
+                            ));
                             return;
                         }
                         var localUrl = this.localGeoServerBaseUrl.replace(
