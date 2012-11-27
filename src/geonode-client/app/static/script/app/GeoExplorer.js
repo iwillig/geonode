@@ -567,8 +567,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         layer.events.on({
                             'tileloaded': function(evt) {
                                 var img = evt.tile.imgDiv;
-                                img.style.visibility = 'hidden';
-                                img.style.opacity = 0;
+                                if (img) {
+                                    img.style.visibility = 'hidden';
+                                    img.style.opacity = 0;
+                                }
                             },
                             'loadend': function(evt) {
                                 var grid = evt.object.grid;
