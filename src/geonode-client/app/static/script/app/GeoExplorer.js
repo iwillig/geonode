@@ -233,6 +233,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         options.url.push(this.proxy + encodeURIComponent(url));
                     }
                 }
+                if(!options.url.length){
+                    options.url = (urls.length == 1) ? urls[0] : urls;
+                }
             },
             "requestexception": function(conn, response, options) {
                 if(options.failure) {
