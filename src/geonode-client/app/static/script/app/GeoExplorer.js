@@ -378,9 +378,6 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 ptype: "gxp_timeline",
                 id: "timeline-tool",
                 outputTarget: "timeline-container",
-                outputConfig: {
-                    title: null
-                },
                 featureEditor: "annotations_editor",
                 playbackTool: "playback-tool"
             }, {
@@ -688,10 +685,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             layout: "fit",
             id: "westpanel",
             border: false,
-            collapseMode: "mini",
             border: false,
-            collapsed:true,
-            header: false,
+            collapsed:false,
+            collapsible: true,
+            title: "Layers",
             split: true,
             region: "west",
             width: 250
