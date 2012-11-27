@@ -201,7 +201,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             "beforerequest": function(conn, options) {
                 // use django's /geoserver endpoint when talking to the local
                 // GeoServer's RESTconfig API
-                var urls = (options.url instanceof Array) ? options.url : [options.url];
+                var urls = (options.url instanceof Array) ? options.url.slice() : [options.url];
                 options.url = [];
                 for (var i = urls.length - 1; i >= 0; i--) {
                     var url = urls[i].replace(this.urlPortRegEx, "$1/");
