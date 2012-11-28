@@ -463,7 +463,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 iconClsAdd: 'gxp-icon-addnote',
                 editFeatureActionText: "Edit note"
             });
-	    }
+        }
         Ext.Ajax.request({
             url: window.location.href.split("?")[0].replace(/\/view|\/embed|(\/new)|([0-9])$/, "$1$2/data"),
             success: function(response) {
@@ -547,10 +547,11 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 //6+ will be single tile layers. dynamically changing all the layers when adding or removing
                 //layers introduced all kinds of potential error and issues
                 var layer;
-                var forceSingleTile = store.queryBy(function(rec){
+                /*var forceSingleTile = store.queryBy(function(rec){
                     var lyr = rec.getLayer();
                     return lyr.dimensions && lyr.dimensions.time && (lyr instanceof OpenLayers.Layer.Grid);
-                }).getCount()>5;
+                }).getCount()>5;*/
+                var forceSingleTile = true;
                 for(var i = records.length - 1; i >= 0; i--) {
                     layer = records[i].getLayer();
                     if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)) {
@@ -570,10 +571,11 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         }
                         if(layer.params) {
                             layer.params.TILED = true;
+                            layer.params['GWC.FULLWMS']='';
                         }
                         layer.events.on({
                             'tileloaded': function(evt) {
-                                var img = evt.tile.imgDiv;
+                                var img = evt.tile && evt.tile.imgDiv;
                                 if (img) {
                                     img.style.visibility = 'hidden';
                                     img.style.opacity = 0;
@@ -691,12 +693,10 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
 
         //needed for Safari
         var westPanel = new Ext.Panel({
-            id: "westpanel",
             layout: "fit",
             id: "westpanel",
             border: false,
-            border: false,
-            collapsed:false,
+            collapsed: false,
             collapsible: true,
             title: "Layers",
             split: true,
@@ -751,8 +751,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             id: "timeline-container",
                             xtype: "panel",
                             tbar: ['->'],
-                            layout: "fit",
-                            region: "south"
+                            layout: "fit"
                         }
                     ],
                     ref: "../../main"
