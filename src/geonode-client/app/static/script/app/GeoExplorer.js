@@ -534,31 +534,25 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             });
             
         }
-         
         GeoExplorer.superclass.initMapPanel.apply(this, arguments);
         // there are serialization issues with controls, delete them
         delete this.initialConfig.map.controls;
         
+        //add in the tile manager for internal img element caching
+        this.mapPanel.tileManager = new OpenLayers.TileManager({map:this.mapPanel.map});
+        
         //add listeners to layer store (doesn't exist until after the superclass's function is called)
         this.mapPanel.layers.on({
             "add": function(store, records) {
-                //if the map starts out with more than 5 temporal wms-ish layers, then they will all be
-                //single tile layers. If layers are added to exceed the 5 layer limit, then only layers
-                //6+ will be single tile layers. dynamically changing all the layers when adding or removing
-                //layers introduced all kinds of potential error and issues
-                var layer;
-                /*var forceSingleTile = store.queryBy(function(rec){
-                    var lyr = rec.getLayer();
-                    return lyr.dimensions && lyr.dimensions.time && (lyr instanceof OpenLayers.Layer.Grid);
-                }).getCount()>5;*/
-                var forceSingleTile = true;
+                //To take maximum advantage of tile caching and client caching combined, all dimensional layer
+                //will remain single tile, but mosaiced from GWC.
                 for(var i = records.length - 1; i >= 0; i--) {
                     layer = records[i].getLayer();
                     if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)) {
                         layer.addOptions({
-                            singleTile: forceSingleTile,
                             transitionEffect: 'resize'
                         });
+                        //hack for adding subdomain support to prevent socket flooding on client side
                         if(Ext.isString(layer.url) && layer.url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
                             var uparts = layer.url.split('://');
                             var urls = [];
@@ -569,10 +563,15 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             }
                             layer.url = urls.concat([layer.url]);
                         }
-                        if(layer.params) {
+                        //Make sure all temporal layers are using the single tile option and the GWC mosiacing
+                        if(layer.params && layer.dimensions && layer.dimensions.time) {
                             layer.params.TILED = true;
                             layer.params['GWC.FULLWMS']='';
                         }
+                        //this was to prevent tile by tile redraws and out of sync map portions.
+                        //should not be needed with singleTile, TileManager, & GWC tile mosiacing working.
+                        //TODO determine if / when this code can be deleted
+                        /*
                         layer.events.on({
                             'tileloaded': function(evt) {
                                 var img = evt.tile && evt.tile.imgDiv;
@@ -596,6 +595,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             },
                             scope: layer
                         });
+                        */
                     }
                 }
             },
@@ -628,6 +628,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
 
         this.on("ready", function(){
             var startSourceId = null;
+            //set up and modify sources as needed
             for (var id in this.layerSources) {
                 source = this.layerSources[id];
                 if (source.store && source instanceof gxp.plugins.WMSSource &&
