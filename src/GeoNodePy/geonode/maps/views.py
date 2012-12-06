@@ -1127,7 +1127,7 @@ def user_name(request):
         acl_user = authenticate(username=username, password=password)
         if acl_user:
             user = acl_user.username
-            superuser = user.is_superuser
+            superuser = acl_user.is_superuser
         elif _get_basic_auth_info(request) == settings.GEOSERVER_CREDENTIALS:
             geoserver = True
             superuser = True
