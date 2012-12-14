@@ -9,6 +9,10 @@ class Command(BaseCommand):
     def handle(self, *args, **keywordargs):
         all = 'all' in args
         for t in Thumbnail.objects.all():
-            if all or not os.path.exists(t.get_thumbnail_path()):
+            tpath = t.get_thumbnail_path()
+            if all or not os.path.exists(tpath) or os.stat(tpath).st_size == 0:
                 print "generate thumb for : %s" % t.content_object
-                t.generate_thumbnail()
+                try:
+                    t.generate_thumbnail()
+                except Exception, ex:
+                    print 'warning', ex

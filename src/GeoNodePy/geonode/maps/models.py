@@ -1944,6 +1944,8 @@ class Thumbnail(models.Model):
         if resp.status < 200 or resp.status > 299:
             logging.warning('Error generating thumbnail %s',content)
             raise Exception('Error generating thumbnail')
+        if len(content) == 0:
+           raise Exception('Empty thumb content')
         with open(self.get_thumbnail_path(),"wb") as fp:
             fp.write(content)
 
