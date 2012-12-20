@@ -156,7 +156,7 @@ GeoExplorer.GeonodePrintProvider = Ext.extend(Ext.util.Observable, {
                             if (node.component && !node.component.hidden) {
                                 var cmp = node.component;
                                 legend_html += '<div>' + cmp.layerRecord.get('title') + '</div>';
-                                legend_html += '<div>' + cmp.items.get(1).url + '</div>';
+                                legend_html += '<div><img src="' + cmp.items.get(1).url + '"></div>';
                             }
                         });
                     } else if (this.legend.ptype === "gxp_legend") {
@@ -167,7 +167,7 @@ GeoExplorer.GeonodePrintProvider = Ext.extend(Ext.util.Observable, {
                             lp.items.each(function(cmp) {
                                 if(!cmp.hidden) {
                                     legend_html += '<div>' + cmp.layerRecord.get('title') + '</div>';
-                                    legend_html += '<div>' + cmp.items.get(1).url + '</div>'; 
+                                    legend_html += '<div><img src="' + cmp.items.get(1).url + '"></div>'; 
                                 }
                             });
                         }
@@ -249,6 +249,12 @@ GeoExplorer.GeonodePrintProvider = Ext.extend(Ext.util.Observable, {
         var orientation = this.pageOrientation;
         var margins = this.pageMargins;
         if(Ext.isArray(size)) {
+            if (orientation === 'portrait' && (size[1] < size[0])) {
+                size = size.reverse();
+            }
+            if (orientation === 'landscape' && (size[0] < size[1])) {
+                size = size.reverse();
+            }
             size = '' + size[0] + units + ' ' + size[1] + units;
         }
         if(Ext.isArray(margins)) {
