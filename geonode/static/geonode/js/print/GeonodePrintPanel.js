@@ -343,7 +343,8 @@ GeoExplorer.GeonodePrintPanel = Ext.extend(Ext.Panel, {
         //Ext.get('printMapFrame').setSize(pmapDim[0], pmapDim[1]);
         var pmapDiv = Ext.DomQuery.selectNode('#printMap');//,Ext.DomQuery.selectNode('#printMapFrame').contentDocument);
         var pmapEl = new Ext.Element(pmapDiv);
-        pmapEl.setSize(pmapDim[0], pmapDim[1]);
+        //pmapEl.setSize(pmapDim[0], pmapDim[1]);
+        pmapEl.setSize('100%', '100%');
         var mapConfig = Ext.apply(olmap.options, {
             center: undefined,
             zoom: undefined,
