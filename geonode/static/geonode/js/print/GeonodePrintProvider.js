@@ -155,8 +155,10 @@ GeoExplorer.GeonodePrintProvider = Ext.extend(Ext.util.Observable, {
                         output[0].getRootNode().cascade(function(node) {
                             if (node.component && !node.component.hidden) {
                                 var cmp = node.component;
-                                legend_html += '<div>' + cmp.layerRecord.get('title') + '</div>';
-                                legend_html += '<div><img src="' + cmp.items.get(1).url + '"></div>';
+                                if (cmp.layerRecord.getLayer().getVisibility()) {
+                                    legend_html += '<div>' + cmp.layerRecord.get('title') + '</div>';
+                                    legend_html += '<div><img src="' + cmp.items.get(1).url + '"></div>';
+                                }
                             }
                         });
                     } else if (this.legend.ptype === "gxp_legend") {
