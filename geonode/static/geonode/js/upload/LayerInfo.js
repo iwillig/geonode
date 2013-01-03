@@ -271,12 +271,11 @@ define(['underscore', './FileTypes'], function (_, fileTypes, upload){
         }
 
     };
+
+    // Static methods
     /*
      * @returns {array}
      */
-
-    //TODO use regex to get filename parts
-
     LayerInfo.getBase = function (file) {
         return file.name.match(/(\w+)\.(\w+)/);
     };
