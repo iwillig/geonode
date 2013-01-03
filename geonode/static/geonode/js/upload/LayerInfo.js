@@ -188,9 +188,8 @@ define(['underscore', './FileTypes'], function (_, fileTypes, upload){
     };
 
     LayerInfo.prototype.display  = function (file_queue) {
-        var layerTemplate =_.template($('#layerTemplate').html());
-
-        var li = layerTemplate({
+        var layerTemplate =_.template($('#layerTemplate').html()),
+            li = layerTemplate({
                 name: this.name,
                 type: this.type.name,
             });
