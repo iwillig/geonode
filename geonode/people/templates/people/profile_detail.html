@@ -79,6 +79,7 @@
         <a href="{% actor_url profile.user %}" class="btn btn-primary" type="button">Activities</a>
     {% endif_has_tag %}
   {% if user == profile.user %}
+
         <h3>{% trans "Actions" %}</h3>
         <ul class="nav nav-list">
             <li><a href="{% url profile_edit user.username %}">{% trans "Edit profile information" %}</a></li>

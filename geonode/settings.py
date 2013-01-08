@@ -114,12 +114,16 @@ ROOT_URLCONF = 'geonode.urls'
 # Site id in the Django sites framework
 SITE_ID = 1
 
+
 # Login and logout urls override
 LOGIN_URL = '/account/login/'
 LOGOUT_URL = '/account/logout/'
 
 # Activate the Documents application
 DOCUMENTS_APP = True
+
+USE_NEW_UPLOAD = False
+
 
 INSTALLED_APPS = (
 
@@ -163,6 +167,7 @@ INSTALLED_APPS = (
 
     # GeoNode internal apps
     'geonode.maps',
+    'geonode.upload',
     'geonode.layers',
     'geonode.people',
     'geonode.proxy',
@@ -171,6 +176,14 @@ INSTALLED_APPS = (
     'geonode.catalogue',
     'geonode.documents',
 )
+
+
+if 'USE_NEW_UPLOAD' in os.environ:
+    USE_NEW_UPLOAD = True
+
+if USE_NEW_UPLOAD:
+    INSTALLED_APPS += ('geonode.upload',)
+
 
 LOGGING = {
     'version': 1,
@@ -197,6 +210,7 @@ LOGGING = {
             'class': 'django.utils.log.AdminEmailHandler',
         }
     },
+
     "loggers": {
         "django": {
             "handlers": ["console"],
@@ -499,11 +513,14 @@ DB_DATASTORE_PORT = ''
 DB_DATASTORE_TYPE = ''
 DB_DATASTORE_NAME = ''
 
-#The name of the store in Geoserver
 
+#The name of the store in Geoserver
 LEAFLET_CONFIG = {
     'TILES_URL': 'http://{s}.tile2.opencyclemap.org/transport/{z}/{x}/{y}.png'
 }
+
+UPLOADER_SHOW_TIME_STEP = False
+
 
 # Load more settings from a file called local_settings.py if it exists
 try:

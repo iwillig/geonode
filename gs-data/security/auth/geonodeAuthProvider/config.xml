@@ -1,0 +1,6 @@
+<org.geonode.security.GeoNodeAuthProviderConfig>
+  <id>4c490b43:138a594e596:-7fef</id>
+  <name>geonodeAuthProvider</name>
+  <className>org.geonode.security.GeoNodeAuthenticationProvider</className>
+  <baseUrl>http://localhost:8000/</baseUrl>
+</org.geonode.security.GeoNodeAuthProviderConfig>

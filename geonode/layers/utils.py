@@ -30,9 +30,9 @@ import glob
 import sys
 
 # Django functionality
+from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
 from django.conf import settings
-
 
 # Geonode functionality
 from geonode import GeoNodeException
@@ -50,6 +50,7 @@ from geonode.security.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 import geoserver
 from geoserver.catalog import FailedRequestError
 from geoserver.resource import FeatureType, Coverage
+from zipfile import ZipFile
 
 logger = logging.getLogger('geonode.layers.utils')
 
@@ -75,11 +76,27 @@ def layer_type(filename):
        returns a gsconfig resource_type string
        that can be either 'featureType' or 'coverage'
     """
-    extension = os.path.splitext(filename)[1]
-    if extension.lower() in ['.shp']:
-        return FeatureType.resource_type
-    elif extension.lower() in ['.tif', '.tiff', '.geotiff', '.geotif']:
-        return Coverage.resource_type
+    base_name, extension = os.path.splitext(filename)
+    
+    shp_exts = ['.shp',]
+    cov_exts = ['.tif', '.tiff', '.geotiff', '.geotif']
+    csv_exts = ['.csv']
+
+    if extension.lower() == '.zip':
+        zf = ZipFile(filename)
+        # ZipFile doesn't support with statement in 2.6, so don't do it
+        try:
+            for n in zf.namelist():
+                b, e = os.path.splitext(n.lower())
+                if e in shp_exts or e in cov_exts or e in csv_exts:
+                    base_name, extension = b,e
+        finally:
+            zf.close()
+
+    if extension.lower() in shp_exts or extension.lower() in csv_exts:
+         return FeatureType.resource_type
+    elif extension.lower() in cov_exts:
+         return Coverage.resource_type
     else:
         msg = ('Saving of extension [%s] is not implemented' % extension)
         raise GeoNodeException(msg)
@@ -732,3 +749,4 @@ def _create_db_featurestore(name, data, overwrite=False, charset=None):
     except Exception:
         delete_from_postgis(name)
         raise
+
