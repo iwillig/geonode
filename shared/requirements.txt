@@ -12,7 +12,7 @@ psycopg2
 -e git+https://github.com/opengeo/gsconfig.py.git#egg=gsconfig.py
 django-registration
 django-profiles
--e git://github.com/jezdez/django-avatar#egg=django-avatar
+geonode-avatar==2.1.1
 -e git://github.com/thornomad/django-hitcount.git#egg=django-hitcount
 django-staticfiles
 -e git+git://github.com/ischneider/dialogos.git@threaded-comments#egg=dialogos

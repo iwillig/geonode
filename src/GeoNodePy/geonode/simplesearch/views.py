@@ -260,11 +260,12 @@ def _new_search(query, start, limit, sort_field, sort_asc, filters):
     else:
         keyfunc = lambda r: getattr(r,sort_field)()
     results.sort(key=keyfunc,reverse=not sort_asc)
-    
+
+    total = len(results)
     if limit > 0:
         results = results[start:start+limit]
     
-    return len(results), results
+    return total, results
 
 
 def author_list(req):
