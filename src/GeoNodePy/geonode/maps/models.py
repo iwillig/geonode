@@ -1165,8 +1165,9 @@ class Layer(models.Model, PermissionLevelMixin, ThumbnailMixin):
         if False:
             if self.abstract == '' or self.abstract is None:
                 self.abstract = 'No abstract provided'
-            if self.title == '' or self.title is None:
-                self.title = self.name
+        # if we don't have a title, it won't show in the caps doc. this can be bad
+        if self.title == '' or self.title is None:
+            self.title = self.name
 
     def _populate_from_gn(self):
         if not settings.USE_GEONETWORK:
