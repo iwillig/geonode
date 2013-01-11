@@ -539,7 +539,9 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         delete this.initialConfig.map.controls;
         
         //add in the tile manager for internal img element caching
-        this.mapPanel.tileManager = new OpenLayers.TileManager({map:this.mapPanel.map});
+        var tileManager = new OpenLayers.TileManager();
+        this.mapPanel.map.tileManager = tileManager;
+        tileManager.addMap(this.mapPanel.map);
         
         //add listeners to layer store (doesn't exist until after the superclass's function is called)
         this.mapPanel.layers.on({
