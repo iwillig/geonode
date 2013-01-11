@@ -24,3 +24,4 @@ kaleo
 django-user-accounts
 django-activity-stream==0.4.4
 -e git://github.com/jtauber/django-mailer.git#egg=django-mailer
+

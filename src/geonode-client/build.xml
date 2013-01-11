@@ -78,9 +78,6 @@
         <copy todir="${build}/${ant.project.name}/WEB-INF/app/static/externals/geoext/resources">
             <fileset dir="app/static/externals/geoext/resources"/>
         </copy>
-        <copy todir="${build}/${ant.project.name}/WEB-INF/app/static/externals/PrintPreview/resources">
-            <fileset dir="app/static/externals/PrintPreview/resources"/>
-        </copy>
         <!-- copy OpenLayers resources -->
         <copy todir="${build}/${ant.project.name}/WEB-INF/app/static/externals/openlayers/theme">
             <fileset dir="app/static/externals/openlayers/theme"/>
