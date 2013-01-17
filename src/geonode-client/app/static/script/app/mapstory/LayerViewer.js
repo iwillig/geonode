@@ -44,12 +44,15 @@ mapstory.LayerViewer = Ext.extend(GeonodeViewer, {
         return tools;
     },
     initMapPanel: function(){
-        this.initialConfig.map = Ext.applyIf(this.initialConfig.map ||
-            {}, {
-                region: 'center',
-                ref: "../main"
-            });
+        this.initialConfig.map = Ext.applyIf(this.initialConfig.map || {}, {
+            region: 'center',
+            ref: "../main"
+        });
         mapstory.LayerViewer.superclass.initMapPanel.call(this);
+        //add in the tile manager for internal img element caching
+        var tileManager = new OpenLayers.TileManager({cacheSize: 512});
+        this.mapPanel.map.tileManager = tileManager;
+        tileManager.addMap(this.mapPanel.map);
     },
     initPortal: function(){
         var portalConfig = {

@@ -539,7 +539,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         delete this.initialConfig.map.controls;
         
         //add in the tile manager for internal img element caching
-        var tileManager = new OpenLayers.TileManager();
+        var tileManager = new OpenLayers.TileManager({cacheSize: 512});
         this.mapPanel.map.tileManager = tileManager;
         tileManager.addMap(this.mapPanel.map);
         
