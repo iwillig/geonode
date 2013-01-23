@@ -16,6 +16,10 @@ man
 
 # supporting stuff pulled in by paver script
 /src/GeoNodePy/geonode/media/static/
+/src/GeoNodePy/geonode/static/geonode/
+/src/dialogos/
+/src/django-mailer/
+/src/gsuploader/dist/
 /geoserver_token
 /development.db
 /django.log
