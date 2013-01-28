@@ -5,7 +5,9 @@
 {% endblock %}
 {% load i18n avatar_tags %}
 {% block content %}
+
 <div class="threecol">
+  {% block profile_messages %}{% endblock %}
   <div style="float: right">{% avatar profile.user 70 %}</div>
   <h2>{{ profile.name }}</h2>
   {% if user == profile.user %}
