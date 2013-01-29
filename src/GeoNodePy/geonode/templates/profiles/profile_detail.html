@@ -9,7 +9,7 @@
 <div class="threecol">
   {% block profile_messages %}{% endblock %}
   <div style="float: right">{% avatar profile.user 70 %}</div>
-  <h2>{{ profile.name }}</h2>
+  <h2>{{ profile.name|default:profile.user.username }}</h2>
   {% if user == profile.user %}
   <h3>{% trans "Actions" %}</h3>
   <ul>
