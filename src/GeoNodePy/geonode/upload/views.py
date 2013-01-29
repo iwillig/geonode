@@ -80,12 +80,10 @@ def _error_response(req, exception=None, errors=None, force_ajax=False):
         content_type = 'text/html' if not req.is_ajax() else None
         return json_response(exception=exception, errors=errors,
                              content_type=content_type)
-    # not sure if any responses will (ideally) ever be non-ajax
+    # is the only non-ajax response to a non-ajax ext form upload?
     if errors:
         exception = "<br>".join(errors)
-    return render_to_response('upload/upload_error.html', RequestContext(req,{
-        'error_msg' : '%s' % exception
-    }))
+    return HttpResponse(exception, status=400)
 
 
 def _next_step_response(req, upload_session, force_ajax=False):
