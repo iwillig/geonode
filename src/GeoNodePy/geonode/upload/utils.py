@@ -52,10 +52,11 @@ def rename_and_prepare(base_file):
     
     Additionally, if a SLD file is present, extract this.
     """
+    from geonode.upload import upload # workaround circular dep
     name, ext = os.path.splitext(os.path.basename(base_file))
     xml_unsafe = re.compile(r"(^[^a-zA-Z\._]+)|([^a-zA-Z\._0-9]+)")
     dirname = os.path.dirname(base_file)
-    if ext == ".zip":
+    if ext.lower() == ".zip":
         zf = ZipFile(base_file, 'r')
         rename = False
         main_file = None
@@ -74,7 +75,7 @@ def rename_and_prepare(base_file):
             # if an sld is there, extract so it can be found
             if ext.lower() == '.sld':
                 zf.extract(f, dirname)
-        if not main_file: raise Exception(
+        if not main_file: raise upload.UploadException(
                 'Could not locate a shapefile or tif file')
         if rename:
             # dang, have to unpack and rename
