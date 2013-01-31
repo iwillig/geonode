@@ -23,6 +23,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     legendOffsetY: 93,
     
     initComponent: function() {
+        this._fullscreen = false;
         if(!this.playbackActions){
             this.playbackActions = [
                 "play","slider","loop","fastforward","prev","next",
@@ -85,8 +86,9 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             'edit' : {
                 iconCls: 'gxp-icon-editMap',
                 handler: this.loadComposser,
-                hidden: this.layerManager == null,
+                hidden: this.layerManager == null || this._fullscreen !== true,
                 scope: this,
+                ref: 'btnEdit',
                 tooltip: this.editTooltip,
                 disabled: window.location.href.match(/view|new/)!=null
             }
@@ -112,7 +114,9 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
 
     toggleMapSize: function(btn,pressed){
+        this._fullscreen = pressed;
         if(pressed) {
+            this.btnEdit.show();
             if(!app.portal.originalSize) {
                 app.portal.originalSize = app.portal.getSize();
                 Ext.EventManager.onWindowResize(function() {
@@ -129,6 +133,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             Ext.getBody().setStyle({overflow:'hidden'});
         }
         else {
+            this.btnEdit.hide();
             app.portal.setSize(app.portal.originalSize);
             app.portal.setPosition(0, 0);
             app.mapPanel.removeClass('full-mapview');
