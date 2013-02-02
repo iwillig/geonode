@@ -59,7 +59,9 @@ Ext.onReady(function() {
     {% if user == profile.user %}
         columns.unshift(cb);
         columns.push({
-            tpl: "<span class='data-edit'>&nbsp;</span><span class='data-delete'>&nbsp;</span>",
+            header: "Delete",
+//            tpl: "<span class='data-edit'>&nbsp;</span><span class='data-delete'>&nbsp;</span>",
+            tpl: "<span class='data-delete'>&nbsp;</span>",
             width: 15
         });
     {% endif %} 
@@ -93,21 +95,21 @@ Ext.onReady(function() {
                 var view = doToRecord(function(rec) {
                     window.location = rec.get("href");
                 });
-                var edit = doToRecord(function(rec) {
-                    var link = rec.get("href");
-                    if (rec.get("type") === "map") {
-                        link += "/view";
-                    } else {
-                        link += "/metadata";
-                    }
-                    window.location = link;
-                });
+//                var edit = doToRecord(function(rec) {
+//                    var link = rec.get("href");
+//                    if (rec.get("type") === "map") {
+//                        link += "/view";
+//                    } else {
+//                        link += "/metadata";
+//                    }
+//                    window.location = link;
+//                });
                 var delete_ = doToRecord(function(rec) {
                     var link = rec.get("href") + "/remove";
                     window.location = link;
                 });
                 grid.getEl().on("click", view, this, { delegate: 'a' });
-                grid.getEl().on("click", edit, this, { delegate: '.data-edit' });
+                //grid.getEl().on("click", edit, this, { delegate: '.data-edit' });
                 grid.getEl().on("click", delete_, this, { delegate: '.data-delete' });
             }
         }
@@ -138,7 +140,7 @@ Ext.onReady(function() {
         unstyled: true,
         items: [
             { xtype: 'button',
-              text: gettext("Remove selected"),
+              text: gettext("Delete selected"),
               iconCls: 'icon-delete',
               handler: function() {
                   Ext.Msg.confirm(
@@ -159,7 +161,7 @@ Ext.onReady(function() {
                       }
                   );
               }
-            },
+            }/*,
             { xtype: 'button',
               text: gettext("Change permissions on selected"),
               iconCls: 'icon-security',
@@ -194,7 +196,7 @@ Ext.onReady(function() {
                   });
                   win.show();
               }
-            }
+            }*/
         ]
     }
 
