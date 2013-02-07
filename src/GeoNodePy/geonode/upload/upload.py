@@ -38,6 +38,7 @@ import shutil
 import json
 import os.path
 import logging
+import time
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -529,7 +530,7 @@ def final_step(upload_session, user):
     # @revisit - this should always work since we just created it above and the
     # message is confusing
     try:
-        Layer.objects.get(name=name)
+        saved_layer = Layer.objects.get(name=name)
     except Layer.DoesNotExist, e:
         msg = ('There was a problem saving the layer %s to GeoNetwork/Django. Error is: %s' % (name, str(e)))
         logger.exception(msg)
@@ -540,11 +541,18 @@ def final_step(upload_session, user):
         raise GeoNodeException(msg)
 
     # Verify it is correctly linked to GeoServer and GeoNetwork
-    try:
-        saved_layer.verify()
-    except GeoNodeException, e:
-        msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (name, str(e)))
-        logger.exception(msg)
+    verified = False
+    for i in range(10):
+        time.sleep(.5)
+        logger.info('Verifying layer in geoserver [%s]', (i+1))
+        try:
+            saved_layer.verify()
+            verified = True
+            break
+        except GeoNodeException, e:
+            msg = ('The layer [%s] was not correctly saved to GeoNetwork/GeoServer. Error is: %s' % (name, str(e)))
+            logger.exception(msg)
+    if not verified:
         e.args = (msg,)
         # Deleting the layer
         saved_layer.delete()
