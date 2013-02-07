@@ -1,4 +1,4 @@
-/*global Ext, gxp */
+/*global Ext, gxp, GeoExt */
 /**
  * Copyright (c) 2009 The Open Planning Project
  */
@@ -373,18 +373,47 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         // search options
                         var button,
                             cap = widget.capGrid,
+                            form,
+                            store = new Ext.data.Store({
+                                proxy: new GeoExt.data.ProtocolProxy({
+                                    protocol: new OpenLayers.Protocol.CSW({
+                                        url: '/search/api'
+                                    })
+                                })
+                            })
                             id     = source.initialConfig.id;
 
-                        console.log(widget.capGrid);
+
                         // filter out all servers that are not the
                         // local mapstory one, based on the advice
                         // from Ian.
                         if (id === 'search') {
-                            button = new Ext.Button({
-                                text: 'Search'
+
+                            // we need to reset this form when a user
+                            // selects this form twice
+                            form = new Ext.form.FormPanel({
+                                items: [
+                                    {
+                                        xtype: 'label',
+                                        text: widget.searchText
+                                    },
+                                    {
+                                        xtype: 'textfield'
+                                    },
+                                    {
+                                        xtype: 'button',
+                                        text: 'Search',
+                                        handler: function (event) {
+                                            console.log(event);
+                                        }
+                                    }
+                                ]
                             });
-                            cap.add(button);
-                            cap.doLayout();
+
+                            widget.capGrid.get(0).get(0).add(form);
+
+                            widget.capGrid.get(0).get(0).doLayout();
+
                         }
                     }
                 }
