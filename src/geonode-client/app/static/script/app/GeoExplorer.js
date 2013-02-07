@@ -359,41 +359,37 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 actionTarget: "treecontent.contextMenu"
             }, {
                 ptype: "gxp_addlayers",
+                search: true,
                 actionTarget: "treetbar",
-                createExpander: function() {
+                createExpander: function () {
                     return new GeoExplorer.CapabilitiesRowExpander({
                         ows: config.localGeoServerBaseUrl + "ows"
                     });
                 },
                 listeners: {
-                    'sourceselected': function (widget) {
+                    'sourceselected': function (widget, source) {
                         // add a listener to the source select event
                         // that appends the add layer widget with
                         // search options
-                        var source = widget.selectedSource,
-                            button,
+                        var button,
+                            cap = widget.capGrid,
                             id     = source.initialConfig.id;
 
+                        console.log(widget.capGrid);
                         // filter out all servers that are not the
                         // local mapstory one, based on the advice
-                        // from Ian. This seems like a bad way of
-                        // filtering the different sources
+                        // from Ian.
                         if (id === 'search') {
-
-                            widget.searchButton = new Ext.Button({
-                                text: 'Search',
-                                iconCls: 'cancel',
-                                handler: function () {
-                                    console.log('hello');
-                                }
-
+                            button = new Ext.Button({
+                                text: 'Search'
                             });
-
+                            cap.add(button);
+                            cap.doLayout();
                         }
-
                     }
                 }
-            }, {
+            },
+            {
                 ptype: "gxp_removelayer",
                 actionTarget: ["treetbar", "treecontent.contextMenu"]
             }, {
