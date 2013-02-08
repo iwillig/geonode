@@ -73,7 +73,7 @@ Ext.onReady(function() {
                 }
             }
             app.mapPanel.map.events.register("addlayer",null,function(ev) {
-                if (ev.layer.visibility) {
+                if (ev.layer.loading) {
                     toLoad++;
                     ev.layer.events.register("loadend",null,function(ev) {
                         checkload(ev.object);

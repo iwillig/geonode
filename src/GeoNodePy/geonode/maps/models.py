@@ -1855,6 +1855,12 @@ class ThumbnailManager(models.Manager):
         if not allow_null and not thumbs:
             thumbs.append(Thumbnail(content_object=obj))
         return thumbs and thumbs[0] or None
+
+    def has_thumbnail(self):
+        '''Determine if the thumbnail object exists and an image exists'''
+        thumb = self.get_thumbnail()
+        return os.path.exists(thumb.get_thumbnail_path()) if thumb else False
+
     def get_thumbnails(self,objs):
         """For the provided objects of the same type, get a dict
         with object.id as key and thumbnail as value. objs without
