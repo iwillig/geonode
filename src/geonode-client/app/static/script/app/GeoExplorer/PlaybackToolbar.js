@@ -113,10 +113,13 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
     },
 
     toggleMapSize: function(btn,pressed){
+        var mapviewer = app.id;
         if(pressed) {
-            Ext.getCmp('timeline-container').show();
-            if (app.isAuthorized()) {
-                this.btnEdit.show();
+            if (mapviewer) {
+                Ext.getCmp('timeline-container').show();
+                if (app.isAuthorized()) {
+                    this.btnEdit.show();
+                }
             }
             if(!app.portal.originalSize) {
                 app.portal.originalSize = app.portal.getSize();
@@ -134,8 +137,10 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             Ext.getBody().setStyle({overflow:'hidden'});
         }
         else {
-            Ext.getCmp('timeline-container').hide();
-            this.btnEdit.hide();
+            if (mapviewer) {
+                Ext.getCmp('timeline-container').hide();
+                this.btnEdit.hide();
+            }
             app.portal.setSize(app.portal.originalSize);
             app.portal.setPosition(0, 0);
             app.mapPanel.removeClass('full-mapview');
