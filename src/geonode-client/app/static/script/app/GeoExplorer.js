@@ -376,27 +376,29 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                         // search options
                         var button,
                             cap = widget.capGrid,
-                            form,
-                            id     = source.initialConfig.id;
-
-                        form = new Ext.form.FormPanel({
-                            items: [
-                                {
-                                    xtype: 'label',
-                                    text: widget.searchText
-                                },
-                                {
-                                    xtype: 'textfield'
-                                },
-                                {
-                                    xtype: 'button',
-                                    text: 'Search',
-                                    handler: function (event) {
-                                        console.log(event);
+                            id     = source.initialConfig.id,
+                            form = new Ext.form.FormPanel({
+                                items: [
+                                    {
+                                        xtype: 'label',
+                                        text: widget.searchText
+                                    },
+                                    {
+                                        xtype: 'textfield'
+                                    },
+                                    {
+                                        xtype: 'button',
+                                        text: 'Search',
+                                        handler: function (event) {
+                                            source.filter({
+                                                queryString: form.find('text')[0].getValue(),
+                                                limit: 10,
+                                                filters: ''
+                                            });
+                                        }
                                     }
-                                }
-                            ]
-                        });
+                                ]
+                            });
 
                         // filter out all servers that are not the
                         // local mapstory one, based on the advice
