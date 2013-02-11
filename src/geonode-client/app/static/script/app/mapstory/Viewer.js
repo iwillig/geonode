@@ -35,6 +35,38 @@ mapstory.Viewer = Ext.extend(mapstory.LayerViewer, {
                     width: 570,
                     defaults:{scale:'medium'}
                 }
+            }, {
+                ptype: "gxp_featuremanager",
+                id: "annotations_manager",
+                autoLoadFeatures: true,
+                autoSetLayer: false,
+                paging: false
+            }, {
+                ptype: "gxp_featureeditor",
+                readOnly: true,
+                id: "annotations_editor",
+                featureManager: "annotations_manager"
+            }, {
+                ptype: "app_notes",
+                outputConfig: {
+                    id: 'notes_menu'
+                },
+                layerNameTpl: "_map_{mapID}_annotations",
+                workspacePrefix: "geonode",
+                featureEditor: "annotations_editor"
+            }, {
+                ptype: "gxp_timeline",
+                id: "timeline-tool",
+                outputConfig: {
+                    title: null
+                },
+                featureEditor: "annotations_editor",
+                outputTarget: "timeline-container",
+                playbackTool: "playback-tool"
+            }, {
+                ptype: "gxp_timelinelayers",
+                timelineTool: "timeline-tool",
+                actionTarget: "timeline-container.tbar"
             }];
         return tools;
     },

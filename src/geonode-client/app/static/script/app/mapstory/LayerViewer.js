@@ -48,6 +48,7 @@ mapstory.LayerViewer = Ext.extend(GeonodeViewer, {
             region: 'center',
             ref: "../main"
         });
+        this.initialConfig.map.id = 'msmap';
         mapstory.LayerViewer.superclass.initMapPanel.call(this);
         //add in the tile manager for internal img element caching
         var tileManager = new OpenLayers.TileManager({cacheSize: 512});
@@ -60,6 +61,17 @@ mapstory.LayerViewer = Ext.extend(GeonodeViewer, {
             //renderTo: "embedded_map"
         };
         this.portalConfig = (this.portalConfig) ? Ext.applyIf(this.portalConfig,portalConfig) : portalConfig;
+        this.portalItems = [{
+            xtype: 'panel', 
+            region: 'south', 
+            hidden: true, 
+            layout: 'fit',
+            tbar: ['->'], 
+            id: 'timeline-container', 
+            collapsible: true, 
+            collapsed: true, 
+            height: 150
+          }, 'msmap'];
         mapstory.LayerViewer.superclass.initPortal.call(this);        
     }
 });

@@ -80,8 +80,10 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
     /** api: method[addActions]
      */
     addActions: function() {
-        if (this.target.mapID) {
-            this.layerName = this.getLayerName(this.target.mapID);
+        // in the composer it's mapID, in the viewer id!
+        var id = this.target.mapID || this.target.id;
+        if (id) {
+            this.layerName = this.getLayerName(id);
             // we need to wait for the baseLayer to be there
             this.target.mapPanel.on("afterlayeradd", this.setupLayer, this, {single: true});
         } else {
@@ -100,7 +102,7 @@ GeoExplorer.plugins.Notes = Ext.extend(gxp.plugins.Tool, {
         });
         return GeoExplorer.plugins.Notes.superclass.addActions.apply(this, [{
             text: this.notesText,
-            disabled: !this.target.mapID,
+            disabled: !id,
             iconCls: this.iconCls,
             menu: new Ext.menu.Menu({
                 id: this.outputConfig.id,

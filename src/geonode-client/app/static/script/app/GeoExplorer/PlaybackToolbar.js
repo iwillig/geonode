@@ -114,6 +114,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
 
     toggleMapSize: function(btn,pressed){
         if(pressed) {
+            Ext.getCmp('timeline-container').show();
             if (app.isAuthorized()) {
                 this.btnEdit.show();
             }
@@ -133,6 +134,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
             Ext.getBody().setStyle({overflow:'hidden'});
         }
         else {
+            Ext.getCmp('timeline-container').hide();
             this.btnEdit.hide();
             app.portal.setSize(app.portal.originalSize);
             app.portal.setPosition(0, 0);
