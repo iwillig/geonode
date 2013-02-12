@@ -1,6 +1,8 @@
-.mapstory-grid-cls {
-    opacity: 0 !important;
-    filter: alpha(opacity=0) !important;
+.fade-all .olTileImage {
+    display: none !important;
+}
+.fade-all .olBackBuffer .olTileImage {
+    display: inherit !important;
 }
 .gxp-annotations-tip {
     z-index: 9011;
