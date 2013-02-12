@@ -243,7 +243,8 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                     if(!layer.isBaseLayer && (layer instanceof OpenLayers.Layer.Grid)) {
                         layer.addOptions({
                             singleTile: forceSingleTile,
-                            transitionEffect: 'resize'
+                            transitionEffect: 'resize',
+                            removeBackBufferDelay: 2500
                         });
                         if(Ext.isString(layer.url) && layer.url.search(this.cachedSourceMatch)>-1 && this.cachedSubdomains){
                             var uparts = layer.url.split('://');
@@ -258,6 +259,14 @@ var GeonodeViewer = Ext.extend(gxp.Viewer, {
                         if(layer.params) {
                             layer.params.TILED = true;
                         }
+                        layer.events.on({
+                            'loadstart': function(evt) {
+                                Ext.get(evt.object.div).addClass('mapstory-grid-cls');
+                            },
+                            'loadend': function(evt) {
+                                Ext.get(evt.object.div).removeClass('mapstory-grid-cls');
+                            }
+                        });
                         /*layer.events.on({
                             'tileloaded': function(evt) {
                                 var img = evt.tile.imgDiv;

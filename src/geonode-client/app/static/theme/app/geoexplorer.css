@@ -1,3 +1,7 @@
+.mapstory-grid-cls {
+    opacity: 0 !important;
+    filter: alpha(opacity=0) !important;
+}
 .gxp-annotations-tip {
     z-index: 9011;
 }
