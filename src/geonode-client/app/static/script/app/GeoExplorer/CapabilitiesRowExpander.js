@@ -84,7 +84,8 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
             '<p><b>' + this.abstractText + '</b> {abstract}</p>' +
             '<p><b>' + this.attributionText + '</b> {attribution:this.attributionLink}</p>'  +
             '<p><b>' + this.metadataText + '</b> {metadataURLs:this.metadataLinks}</p>'  +
-            '<p><b>' + this.keywordText + '</b> {keywords:this.keywordList}</p>'
+            '<p><b>' + this.keywordText + '</b> {keywords:this.keywordList}</p>' + 
+            '<img src="{thumb}">'
         );
     },
 
