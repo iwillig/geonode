@@ -380,15 +380,11 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             form = new Ext.form.FormPanel({
                                 items: [
                                     {
-                                        xtype: 'label',
-                                        text: widget.searchText
-                                    },
-                                    {
                                         xtype: 'textfield'
                                     },
                                     {
                                         xtype: 'button',
-                                        text: 'Search',
+                                        text: widget.searchText,
                                         handler: function (event) {
                                             source.filter({
                                                 queryString: form.find('text')[0].getValue(),
@@ -411,7 +407,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             }
 
                         } else {
-                            // hide the search dialog
+
                         }
                     }
                 }
