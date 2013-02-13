@@ -41,7 +41,8 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
         }
 
         var id = config.name + '-' + config.source;
-        var source = this.target.layerSources[id] || this.target.addLayerSource({
+        var sourceExists = this.target.layerSources[id];
+        var source = sourceExists || this.target.addLayerSource({
             "id": id,
             config: {
                 isLazy: OpenLayers.Function.False,
@@ -52,15 +53,22 @@ mapstory.plugins.CatalogueSource = Ext.extend(gxp.plugins.GeoNodeCatalogueSource
                 url: url
             }
         });
-        source.on({
-            "ready": function() {
-                this.target.createLayerRecord({
-                    source: source.id,
-                    name: name
-                }, callback, scope);
-            },
-            scope: this
-        });
+        if (sourceExists) {
+            this.target.createLayerRecord({
+               source: source.id,
+                name: name
+            }, callback, scope);
+        } else {
+            source.on({
+                "ready": function() {
+                    this.target.createLayerRecord({
+                        source: source.id,
+                        name: name
+                    }, callback, scope);
+                },
+                scope: this
+            });
+        }
     }
 
 });
