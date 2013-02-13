@@ -81,10 +81,7 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
      */
     getDefaultTemplate: function() {
         return new Ext.Template(
-            '<p><b>' + this.abstractText + '</b> {abstract}</p>' +
-            '<p><b>' + this.attributionText + '</b> {attribution:this.attributionLink}</p>'  +
-            '<p><b>' + this.metadataText + '</b> {metadataURLs:this.metadataLinks}</p>'  +
-            '<p><b>' + this.keywordText + '</b> {keywords:this.keywordList}</p>' + 
+            '{abstract:this.renderAbstract}' +
             '<img src="{thumb}">'
         );
     },
@@ -143,7 +140,15 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
                 typeName: name
             };
         },
-        
+
+        renderAbstract: function (abstract, values) {
+
+            if (abstract ===  '<p></p>') {
+                return null;
+            } else {
+                return 'Because I do' + values;
+            }
+        },
         
         keywordList: function (keywords, values) {
             if (keywords == null ||
