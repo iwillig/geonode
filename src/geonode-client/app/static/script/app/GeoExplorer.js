@@ -407,7 +407,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                             }
 
                         } else {
-
+                            widget.capGrid.get(0).get(0).remove(form);
                         }
                     }
                 }
