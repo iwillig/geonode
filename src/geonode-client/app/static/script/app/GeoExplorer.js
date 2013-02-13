@@ -364,6 +364,13 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             }, {
                 ptype: "gxp_addlayers",
                 actionTarget: "treetbar",
+                // output config defines the container that the add
+                // layer dialog uses. Increase the default size for
+                // Mapstory
+                outputConfig: {
+                    height: 600,
+                    width: 600
+                },
                 createExpander: function () {
                     return new GeoExplorer.CapabilitiesRowExpander({
                         ows: config.localGeoServerBaseUrl + "ows"
