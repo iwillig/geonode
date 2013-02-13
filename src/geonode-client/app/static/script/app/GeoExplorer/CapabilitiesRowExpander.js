@@ -143,56 +143,6 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
             };
         },
         
-        showDownload: function(formats, values) {
-            return formats &&
-                formats.indexOf("application/vnd.google-earth.kmz+xml") !== -1 &&
-                formats.indexOf("application/pdf") !== -1 &&
-                formats.indexOf("image/geotiff") !== -1 ? "" : "nodisplay";
-        },
-
-        shpUrl: function (name, values) {
-            // There's no official mimetype for "A ZIP archive containing a Shapefile and its 
-            // associated metafiles" so we just use GeoServer's psuedo-type for it.
-            var shpParams = Ext.apply(this.wfsParams(name, values), {outputFormat: 'SHAPE-ZIP'});
-            return this.ows() + "?" + Ext.urlEncode(shpParams);
-        },
-
-        pdfUrl: function (name, values) {
-            var pdfParams = Ext.apply(this.wmsParams(name, values), {format: 'application/pdf'});
-            return this.ows() + "?" + Ext.urlEncode(pdfParams);
-        },
-
-        kmlUrl: function (name, values) {
-            var kmlParams = Ext.apply(this.wmsParams(name, values), {
-                format: 'application/vnd.google-earth.kmz+xml',
-                height: 2048,
-                width: 2048
-            }, 1);
-            return this.ows() + "?" + Ext.urlEncode(kmlParams);
-        },
-
-        geoTiffUrl: function (name, values) {
-            var geoTiffParams = Ext.apply(this.wmsParams(name, values), 
-                {format: "image/geotiff"});
-            return this.ows() + "?" + Ext.urlEncode(geoTiffParams);
-        },
-
-        metadataLinks: function (metadataURLs, values) {
-            if (metadataURLs == null  || 
-                metadataURLs.length === 0) 
-            {
-                return "<em>" + this.metadataEmptyText + "</em>"; 
-            } else {
-                var i, links, len;
-                links = [];
-                for (i = 0, len = metadataURLs.length; i < len; i++) {
-                    links.push("<a target=\"_blank\" href=\"" + metadataURLs[i].href + "\"> " +
-                        metadataURLs[i].type + "</a>");
-                }
-
-                return links.join(", ");
-            }
-        },
         
         keywordList: function (keywords, values) {
             if (keywords == null ||
