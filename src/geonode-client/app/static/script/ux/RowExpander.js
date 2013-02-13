@@ -69,12 +69,13 @@ Ext.extend(Ext.grid.RowExpander, Ext.util.Observable, {
     },
 
     getBodyContent : function(record, index){
+
         if(!this.enableCaching){
-            return this.tpl.apply(record.data);
+            return this.tpl.apply(record.json);
         }
         var content = this.bodyContent[record.id];
         if(!content){
-            content = this.tpl.apply(record.data);
+            content = this.tpl.apply(record.json);
             this.bodyContent[record.id] = content;
         }
         return content;
