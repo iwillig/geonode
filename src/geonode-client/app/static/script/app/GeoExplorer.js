@@ -3,7 +3,6 @@
  * Copyright (c) 2009 The Open Planning Project
  */
 'use strict';
-
 // http://www.sencha.com/forum/showthread.php?141254-Ext.Slider-not-working-properly-in-IE9
 // TODO re-evaluate once we move to Ext 4
 Ext.override(Ext.dd.DragTracker, {
