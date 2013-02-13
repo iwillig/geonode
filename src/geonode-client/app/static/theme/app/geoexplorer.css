@@ -4,8 +4,8 @@
 .fade-all .olBackBuffer .olTileImage {
     display: inherit !important;
 }
-.fade-all img.olTileImage.olTileReplacing {
-    display: inherit;
+img.olTileImage.olTileReplacing {
+    display: inherit !important;
 }
 .gxp-annotations-tip {
     z-index: 9011;
