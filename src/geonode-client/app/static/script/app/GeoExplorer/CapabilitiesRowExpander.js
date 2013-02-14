@@ -126,6 +126,15 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
             };
         },
 
+
+        wfsParams: function (name, values) {
+            return {
+                service: "wfs",
+                request: "GetFeature",
+                typeName: name
+            };
+        },
+
         adjustBounds: function (widthAdjust, heightAdjust, bbox) {
             var dx, dy, midx, midy;
             dx = bbox[2] - bbox[0];
@@ -136,14 +145,6 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
 
             return [midx - (widthAdjust * dx) / 2, midy - (heightAdjust * dy) / 2,
                     midx + (widthAdjust * dx) / 2, midy + (heightAdjust * dy) / 2];
-        },
-
-        wfsParams: function (name, values) {
-            return {
-                service: "wfs",
-                request: "GetFeature",
-                typeName: name
-            };
         },
 
         renderAbstract: function (abstract, values) {
