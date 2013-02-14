@@ -99,60 +99,6 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
     templateLibrary: {
         // these two methods don't seem to be used anymore, Ask Bart
         // about killing them
-        wmsParams: function (name, values, aspect) {
-            if (values.llbbox == null) {
-                // not a WMS layer
-                return;
-            }
-            // TODO: figure out a good default size and make sure we set the bounds properly.
-            aspect = aspect || (8.5 / 11);
-
-            var dx, dy, dataAspect, widthAdjust, heightAdjust;
-
-            dx = values.llbbox[2] - values.llbbox[0];
-            dy = values.llbbox[3] - values.llbbox[1];
-            dataAspect = dx / dy;
-
-            widthAdjust = 1;
-            heightAdjust = 1;
-
-            if (dataAspect > aspect) {
-                heightAdjust = dataAspect / aspect;
-            } else {
-                widthAdjust = aspect / dataAspect;
-            }
-
-            return {
-                service: "wms",
-                request: "GetMap",
-                bbox: this.adjustBounds(widthAdjust, heightAdjust, values.llbbox).toString(),
-                layers: name,
-                srs: "EPSG:4326",
-                width: 425, // = 8.5 * 50
-                height: 550 // = 11 * 50
-            };
-        },
-
-
-        wfsParams: function (name, values) {
-            return {
-                service: "wfs",
-                request: "GetFeature",
-                typeName: name
-            };
-        },
-
-        adjustBounds: function (widthAdjust, heightAdjust, bbox) {
-            var dx, dy, midx, midy;
-            dx = bbox[2] - bbox[0];
-            dy = bbox[3] - bbox[1];
-
-            midx = (bbox[2] + bbox[0]) / 2;
-            midy = (bbox[3] + bbox[1]) / 2;
-
-            return [midx - (widthAdjust * dx) / 2, midy - (heightAdjust * dy) / 2,
-                    midx + (widthAdjust * dx) / 2, midy + (heightAdjust * dy) / 2];
-        },
 
         renderAbstract: function (abstract, values) {
             var content = null;
