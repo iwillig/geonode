@@ -83,9 +83,10 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
      *       definition time
      */
     getDefaultTemplate: function() {
-        return new Ext.Template(
-            '{abstract:this.renderAbstract}' +
-            '<img src="{thumb}">'
+        return new Ext.Template([
+            '{abstract:this.renderAbstract}',
+            '{thumb:this.renderThumb}'
+            ]
         );
     },
 
