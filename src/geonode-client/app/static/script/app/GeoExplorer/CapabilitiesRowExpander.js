@@ -97,8 +97,6 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
     },
 
     templateLibrary: {
-        // these two methods don't seem to be used anymore, Ask Bart
-        // about killing them
 
         renderAbstract: function (abstract, values) {
             var content = null;
