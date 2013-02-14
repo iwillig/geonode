@@ -85,13 +85,18 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
      */
     getDefaultTemplate: function() {
         return new Ext.Template([
+            '<div>',
             '{abstract:this.renderAbstract}',
-            '{thumb:this.renderThumb}'
+            '<p>{keywords:this.keywordList}</p>',
+            '<span>{thumb:this.renderThumb}<span>',
+            '</div>'
             ]
         );
     },
 
     templateLibrary: {
+        // these two methods don't seem to be used anymore, Ask Bart
+        // about killing them
         wmsParams: function (name, values, aspect) {
             if (values.llbbox == null) {
                 // not a WMS layer
@@ -164,13 +169,13 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
         },
 
         keywordList: function (keywords, values) {
-            if (keywords == null ||
-                keywords.length === 0) 
-            {
-                return "<em>" + this.keywordEmptyText + "</em>"; 
+            var content = null;
+            if (keywords === null || keywords.length === 0) {
+                content = String.format('<em>{0}</em>', this.keywordEmptyText);
             } else {
-                return keywords.join(", ");
+                content = keywords.join(", ");
             }
+            return content;
         },
 
         attributionLink: function (attribution, values) {
