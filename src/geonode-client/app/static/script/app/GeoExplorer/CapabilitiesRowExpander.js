@@ -1,3 +1,4 @@
+
 Ext.namespace("GeoExplorer");
 
 GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
@@ -29,6 +30,8 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
                 return expander.ows;
             }
         }, this.templateLibrary);
+
+        templateLib.abstractText = this.abstractText;
         templateLib.metadataEmptyText = this.metadataEmptyText;
         templateLib.keywordEmptyText = this.keywordEmptyText;
         templateLib.attributionEmptyText = this.attributionEmptyText;
@@ -146,10 +149,10 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
             if (abstract ===  '<p></p>') {
                 return null;
             } else {
-                return 'Because I do' + values;
+                return '<p>' + this.abstractText + ' ' + abstract + '</p>';
             }
         },
-        
+
         keywordList: function (keywords, values) {
             if (keywords == null ||
                 keywords.length === 0) 
