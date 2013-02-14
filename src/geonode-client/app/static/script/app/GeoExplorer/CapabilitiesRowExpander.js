@@ -1,3 +1,4 @@
+/*global Ext, GeoExplorer */
 'use strict';
 Ext.namespace("GeoExplorer");
 
