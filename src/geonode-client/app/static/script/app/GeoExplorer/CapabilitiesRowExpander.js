@@ -1,3 +1,4 @@
+/*jslint browser: true, indent: 4, maxlen: 80 */
 /*global Ext, GeoExplorer */
 'use strict';
 Ext.namespace("GeoExplorer");
