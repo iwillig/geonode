@@ -85,14 +85,24 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
      *   * i18n values are applied properly at instantiation time, not 
      *       definition time
      */
-    getDefaultTemplate: function() {
-        return new Ext.Template([
-            '<div>',
-            '{owner:this.renderOwner}',
-            '{abstract:this.renderAbstract}',
-            '<p>{keywords:this.keywordList}</p>',
-            '<span>{thumb:this.renderThumb}<span>',
-            '</div>'
+    getDefaultTemplate: function () {
+        return new Ext.Template(
+            [
+                "<li class='tile' id='item{iid}'>",
+                "<a href='{detail}'>",
+                "<img class='thumb {thumbclass}' src='{thumb}'></img></a>",
+                "<div class='infoBox'><div class='itemTitle'>",
+                "<a href='{detail}'>{title}",
+                "</a>",
+                "</div>",
+                "<div class='itemInfo'>{_display_type}, by ",
+                "<a href='{owner_detail}'>{owner}</a> ",
+                "on {last_modified}</div>",
+                "<div class='itemAbstract'>Abstract: {abstract}</div>",
+                "<div class='rating'>{views} Views |",
+                " {rating} stars <span class='more'>More &#9660;</span></div>",
+                "<div class='actions' id='{_type}-{id}'></div>",
+                "</li>"
             ]
         );
     },
