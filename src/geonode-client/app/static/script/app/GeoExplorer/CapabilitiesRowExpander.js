@@ -145,12 +145,19 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
         },
 
         renderAbstract: function (abstract, values) {
-
-            if (abstract ===  '<p></p>') {
-                return null;
-            } else {
-                return '<p>' + this.abstractText + ' ' + abstract + '</p>';
+            var content = null;
+            if (abstract !==  '<p></p>') {
+                content = String.format(
+                    '<p><strong>{0}</strong>{1}</p>',
+                    this.abstractText,
+                    abstract
+                );
             }
+            return content;
+        },
+
+        renderThumb: function (thumb, values) {
+            return String.format('<img src="{0}">', thumb);
         },
 
         keywordList: function (keywords, values) {
