@@ -1,4 +1,4 @@
-
+'use strict';
 Ext.namespace("GeoExplorer");
 
 GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
