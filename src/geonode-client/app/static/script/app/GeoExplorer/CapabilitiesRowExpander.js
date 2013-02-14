@@ -36,6 +36,7 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
         templateLib.metadataEmptyText = this.metadataEmptyText;
         templateLib.keywordEmptyText = this.keywordEmptyText;
         templateLib.attributionEmptyText = this.attributionEmptyText;
+        templateLib.attributionText = this.attributionText;
 
         Ext.apply(config.tpl, templateLib);
 
@@ -86,6 +87,7 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
     getDefaultTemplate: function() {
         return new Ext.Template([
             '<div>',
+            '{owner:this.renderOwner}',
             '{abstract:this.renderAbstract}',
             '<p>{keywords:this.keywordList}</p>',
             '<span>{thumb:this.renderThumb}<span>',
@@ -166,6 +168,14 @@ GeoExplorer.CapabilitiesRowExpander = Ext.extend(Ext.grid.RowExpander, {
 
         renderThumb: function (thumb, values) {
             return String.format('<img src="{0}">', thumb);
+        },
+
+        renderOwner: function (owner, values) {
+            return String.format(
+                '<p>{0} {1}</p>',
+                this.attributionText,
+                owner
+            );
         },
 
         keywordList: function (keywords, values) {
