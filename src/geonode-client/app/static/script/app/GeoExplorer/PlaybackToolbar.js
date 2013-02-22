@@ -35,6 +35,7 @@ GeoExplorer.PlaybackToolbar = Ext.extend(gxp.PlaybackToolbar,{
         if(this.playbackActions.indexOf('legend')>-1){
             this.layerManager = this.addLayerManager();    
         }
+        this.aggressive = (window.location.href.match(/view|new/)===null);
         GeoExplorer.PlaybackToolbar.superclass.initComponent.call(this);
     },
     
