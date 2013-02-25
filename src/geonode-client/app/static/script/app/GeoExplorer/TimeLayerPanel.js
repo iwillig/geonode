@@ -67,18 +67,24 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
         return config;
     },
 
-    toggleLayerPlaybackMode : function(cmp, checked) {
+    attachAgent: function() {
+        var modeCombo = this.playbackModeCombo;
         var layer = this.layerRecord.getLayer();
+        if(!modeCombo.agents || !modeCombo.agents.length) {
+            modeCombo.agents = [this.splitManagerAgents(layer, this.timeManager)];
+        }
+    },
+
+    toggleLayerPlaybackMode : function(cmp, checked) {
         var modeCombo = cmp.refOwner.playbackModeCombo;
         if(checked) {
-            if(!modeCombo.agents || !modeCombo.agents.length) {
-                modeCombo.agents = [this.splitManagerAgents(layer, this.timeManager)];
-            }
+            this.attachAgent();
         }
         modeCombo.setDisabled(!checked);
     },
 
     setPlaybackMode : function(cmp, mode, agents) {
+        this.attachAgent();
         if(!this.playbackToolbar.playbackMode){
             this.playbackToolbar.playbackMode = 'track';
         }
