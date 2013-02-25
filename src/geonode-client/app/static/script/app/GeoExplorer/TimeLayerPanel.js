@@ -28,7 +28,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
     initComponent : function() {
         var playbackToolbar = app.portal.findByType('gxp_playbacktoolbar');
         playbackToolbar = playbackToolbar.length ? playbackToolbar[0] : app.tools['playback-tool'].playbackToolbar;
-        var timeManager = playbackToolbar.timeManager;
+        var timeManager = playbackToolbar.control;
         if(!timeManager) {
             timeManager = app.mapPanel.map.getControlsByClass('OpenLayers.Control.DimensionManager')[0];
         }
@@ -71,8 +71,8 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
         var layer = this.layerRecord.getLayer();
         var modeCombo = cmp.refOwner.playbackModeCombo;
         if(checked) {
-            if(!modeCombo.timeAgents || !modeCombo.timeAgents.length) {
-                modeCombo.timeAgents = [this.splitManagerAgents(layer, this.timeManager)];
+            if(!modeCombo.agents || !modeCombo.agents.length) {
+                modeCombo.agents = [this.splitManagerAgents(layer, this.timeManager)];
             }
         }
         modeCombo.setDisabled(!checked);
@@ -108,7 +108,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
             this.getLayerAgent();
         }
         var agent = this._agent;
-        return agent && agent.rangeMode;
+        return agent && agent.tickMode;
     },
     
     checkLayerPlaybackMode : function(){
@@ -119,7 +119,7 @@ GeoExplorer.TimeLayerPanel = Ext.extend(gxp.WMSLayerPanel, {
         var playbackCmp = this.playbackToolbar;
         var altMode = false;
         if(agent && playbackCmp){
-            switch(agent.rangeMode){
+            switch(agent.tickMode){
                 case 'range':
                     altMode = playbackCmp.playbackMode != 'ranged';
                     break;
