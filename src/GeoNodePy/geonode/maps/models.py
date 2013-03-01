@@ -604,7 +604,6 @@ class ThumbnailMixin:
     def has_thumbnail(self):
         '''Determine if the thumbnail object exists and an image exists'''
         thumb = self.get_thumbnail()
-        print thumb.get_thumbnail_path() if thumb else False
         return os.path.exists(thumb.get_thumbnail_path()) if thumb else False
 
 class LayerManager(models.Manager):
