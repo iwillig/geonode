@@ -368,7 +368,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 // Mapstory
                 outputConfig: {
                     height: 600,
-                    width: 600
+                    width: 400
                 },
                 createExpander: function () {
                     return new GeoExplorer.CapabilitiesRowExpander({
@@ -376,44 +376,36 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                     });
                 },
                 listeners: {
-                    'sourceselected': function (widget, source) {
+                    sourceselected: function (tool, source) {
                         // add a listener to the source select event
                         // that appends the add layer widget with
                         // search options
                         var button,
-                            cap = widget.capGrid,
+                            cap    = tool.capGrid,
                             id     = source.initialConfig.id,
-                            form = new Ext.form.FormPanel({
-                                items: [
-                                    {
-                                        xtype: 'textfield'
-                                    },
-                                    {
-                                        xtype: 'button',
-                                        text: widget.searchText,
-                                        handler: function (event) {
-                                            source.filter({
-                                                queryString: form.find('text')[0].getValue(),
-                                            });
-                                        }
-                                    }
-                                ]
-                            });
+                            // get the tool bar from the add layer
+                            // widget
+                            toolBar = tool.capGrid.getTopToolbar(),
+                            searchField = {
+                                xtype: 'textfield',
+                                emptyText: 'Search for Map Story Layers'
+                            },
+                            doSearch = function (event) {
+                                var query = toolBar.findByType('textfield')[1].getValue();
+                                source.filter({
+                                    queryString: query
+                                });
+                            },
+                            searchButton = {
+                                text: 'Search',
+                                handler: function (event) {
+                                    doSearch(event);
+                                }
+                            };
 
-                        // filter out all servers that are not the
-                        // local mapstory one, based on the advice
-                        // from Ian.
                         if (id === 'search') {
-                            // we need to reset this form when a user
-                            // selects this form twice
-                            if (!this.searchForm) {
-                                this.searchForm = form;
-                                widget.capGrid.get(0).get(0).add(this.searchForm);
-                                widget.capGrid.get(0).get(0).doLayout();
-                            }
-
-                        } else {
-                            widget.capGrid.get(0).get(0).remove(form);
+                            toolBar.addItem(searchField);
+                            toolBar.addItem(searchButton);
                         }
                     }
                 }
