@@ -1,9 +1,8 @@
 var set_thumbnail;
 function promptThumbnail() {
-    var img = '<img src="' + randURL() + '">';
     Ext.MessageBox.show({
        title:'Generate Thumbnail?',
-       msg: 'This will generate a new thumbnail. The existing one is shown below.<div>' + img + '</div>',
+       msg: 'This will generate a new thumbnail.',
        buttons: Ext.MessageBox.OKCANCEL,
        fn: function(buttonId) {
            if (buttonId == 'ok') {
@@ -46,14 +45,9 @@ function updateThumbnail(interactive) {
           "X-CSRFToken" : Ext.util.Cookies.get('csrftoken')
       },
       success: function() {
-          if (interactive) {
             Ext.select('#warn-missing-thumb').hide();
-            Ext.MessageBox.show({
-                title : "Thumbnail Updated",
-                msg : '<img src="' + randURL() + '">',
-                buttons: Ext.MessageBox.OK
-            });
-          }
+            Ext.select('img.thumbnail').set({'src': randURL()});
+            Ext.MessageBox.hide();
       }
     });
 }
